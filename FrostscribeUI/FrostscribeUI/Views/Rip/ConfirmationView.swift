@@ -3,8 +3,8 @@ import FrostscribeCore
 
 struct ConfirmationView: View {
     let vm: RipFlowViewModel
-    let input: RipInput
-    let outputURL: URL
+    let ripInput: RipInput
+    let encodeInput: EncodeInput
 
     var body: some View {
         VStack(spacing: FrostTheme.paddingL) {
@@ -17,11 +17,11 @@ struct ConfirmationView: View {
                 .bold()
 
             VStack(spacing: 0) {
-                infoRow(label: "Title", value: input.title)
-                if let ep = input.episode {
+                infoRow(label: "Title", value: encodeInput.title)
+                if let ep = encodeInput.episode {
                     infoRow(label: "Episode", value: ep)
                 }
-                infoRow(label: "Preset", value: input.preset)
+                infoRow(label: "Preset", value: encodeInput.preset)
                 infoRow(label: "Audio", value: audioSummary)
                 Divider().padding(.vertical, FrostTheme.paddingS)
                 pathRow
@@ -31,7 +31,7 @@ struct ConfirmationView: View {
             .padding(.horizontal, FrostTheme.paddingL)
 
             Button("Start Ripping") {
-                vm.confirm(input)
+                vm.confirm(ripInput, encodeInput)
             }
             .buttonStyle(.borderedProminent)
             .tint(FrostTheme.frostCyan)
@@ -43,7 +43,7 @@ struct ConfirmationView: View {
     }
 
     private var audioSummary: String {
-        if let tracks = input.selectedAudioTracks {
+        if let tracks = encodeInput.selectedAudioTracks {
             return "Tracks " + tracks.map(String.init).joined(separator: ", ")
         }
         return "All tracks (default)"
@@ -54,7 +54,7 @@ struct ConfirmationView: View {
             Text("Output")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(outputURL.path)
+            Text(encodeInput.outputURL.path)
                 .font(.caption.monospaced())
                 .foregroundStyle(.primary)
                 .lineLimit(3)

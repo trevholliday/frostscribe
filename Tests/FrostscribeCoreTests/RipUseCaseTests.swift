@@ -22,7 +22,7 @@ final class SpyMakeMKVRunner: MakeMKVRunning, @unchecked Sendable {
         ripCallCount += 1
         lastTitleNumber = titleNumber
         if let error = ripError { throw error }
-        // Create a fake MKV so RipUseCase.findMKV() succeeds
+        // Create a fake MKV so findMKV() succeeds
         FileManager.default.createFile(atPath: destination.appending(path: "t01.mkv").path, contents: nil)
     }
 }
@@ -74,7 +74,7 @@ final class SpyDiscEjector: DiscEjecting, @unchecked Sendable {
     func eject() -> Bool { ejectCallCount += 1; return true }
 }
 
-// MARK: - Tests
+// MARK: - RipUseCase tests
 
 @Suite("RipUseCase")
 struct RipUseCaseTests {
@@ -82,26 +82,21 @@ struct RipUseCaseTests {
         FileManager.default.temporaryDirectory.appending(path: "riptest-\(UUID().uuidString)")
     }
 
-    private func makeInput(baseTemp: URL, titleNumber: Int = 1, episode: String? = nil) -> RipInput {
+    private func makeInput(baseTemp: URL, titleNumber: Int = 1) -> RipInput {
         RipInput(
             titleNumber: titleNumber,
             baseTemp: baseTemp,
-            outputURL: URL(fileURLWithPath: "/output/Movie.mkv"),
-            preset: "H.265 MKV 1080p30",
-            jobLabel: "The Matrix (1999)",
             mediaType: .movie,
-            title: "The Matrix",
-            episode: episode
+            jobLabel: "The Matrix (1999)"
         )
     }
 
     private func makeUseCase(
         runner: any MakeMKVRunning = SpyMakeMKVRunner(),
-        queue: any QueueManaging = SpyQueueManager(),
         status: any StatusManaging = SpyStatusManager(),
         ejector: any DiscEjecting = SpyDiscEjector()
     ) -> RipUseCase {
-        RipUseCase(runner: runner, queue: queue, status: status, ejector: ejector)
+        RipUseCase(runner: runner, status: status, ejector: ejector)
     }
 
     // MARK: - Success path
@@ -110,7 +105,7 @@ struct RipUseCaseTests {
         let status = SpyStatusManager()
         let useCase = makeUseCase(status: status)
 
-        try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
+        _ = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
 
         #expect(status.writeCalls.count == 2)
         #expect(status.writeCalls[0].status == .ripping)
@@ -121,7 +116,7 @@ struct RipUseCaseTests {
         let status = SpyStatusManager()
         let useCase = makeUseCase(status: status)
 
-        try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
+        _ = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
 
         #expect(status.writeCalls[0].job?.title == "The Matrix (1999)")
     }
@@ -130,48 +125,16 @@ struct RipUseCaseTests {
         let ejector = SpyDiscEjector()
         let useCase = makeUseCase(ejector: ejector)
 
-        try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
+        _ = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
 
         #expect(ejector.ejectCallCount == 1)
-    }
-
-    @Test func successAddsOneJobToQueue() async throws {
-        let queue = SpyQueueManager()
-        let useCase = makeUseCase(queue: queue)
-
-        try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
-
-        #expect(queue.addCalls.count == 1)
-    }
-
-    @Test func successPassesCorrectTitleAndPresetToQueue() async throws {
-        let queue = SpyQueueManager()
-        let useCase = makeUseCase(queue: queue)
-
-        try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
-
-        #expect(queue.addCalls[0].title == "The Matrix")
-        #expect(queue.addCalls[0].preset == "H.265 MKV 1080p30")
-        #expect(queue.addCalls[0].output == URL(fileURLWithPath: "/output/Movie.mkv"))
-    }
-
-    @Test func successPassesEpisodeLabelToQueue() async throws {
-        let queue = SpyQueueManager()
-        let useCase = makeUseCase(queue: queue)
-
-        try await useCase.execute(
-            makeInput(baseTemp: makeTemp(), episode: "S01E01"),
-            onProgress: { _ in }
-        )
-
-        #expect(queue.addCalls[0].episode == "S01E01")
     }
 
     @Test func successPassesCorrectTitleNumberToRunner() async throws {
         let runner = SpyMakeMKVRunner()
         let useCase = makeUseCase(runner: runner)
 
-        try await useCase.execute(makeInput(baseTemp: makeTemp(), titleNumber: 7), onProgress: { _ in })
+        _ = try await useCase.execute(makeInput(baseTemp: makeTemp(), titleNumber: 7), onProgress: { _ in })
 
         #expect(runner.lastTitleNumber == 7)
     }
@@ -180,9 +143,16 @@ struct RipUseCaseTests {
         let runner = SpyMakeMKVRunner()
         let useCase = makeUseCase(runner: runner)
 
-        try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
+        _ = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
 
         #expect(runner.ripCallCount == 1)
+    }
+
+    @Test func successReturnsMKVURL() async throws {
+        let useCase = makeUseCase()
+        let mkvURL = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
+
+        #expect(mkvURL.pathExtension.lowercased() == "mkv")
     }
 
     // MARK: - Failure path
@@ -198,17 +168,6 @@ struct RipUseCaseTests {
         #expect(status.writeCalls.count == 2)
         #expect(status.writeCalls[0].status == .ripping)
         #expect(status.writeCalls[1].status == .idle)
-    }
-
-    @Test func ripErrorSkipsQueueAdd() async throws {
-        let runner = SpyMakeMKVRunner()
-        runner.ripError = FrostscribeError.makemkvFailed(exitCode: 1)
-        let queue = SpyQueueManager()
-        let useCase = makeUseCase(runner: runner, queue: queue)
-
-        try? await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
-
-        #expect(queue.addCalls.isEmpty)
     }
 
     @Test func ripErrorSkipsEjector() async throws {
@@ -228,10 +187,78 @@ struct RipUseCaseTests {
         let useCase = makeUseCase(runner: runner)
 
         do {
-            try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
+            _ = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
             #expect(Bool(false), "Expected error to propagate")
         } catch FrostscribeError.makemkvFailed(let code) {
             #expect(code == 99)
         }
+    }
+}
+
+// MARK: - EncodeUseCase tests
+
+@Suite("EncodeUseCase")
+struct EncodeUseCaseTests {
+    private func makeTemp() -> URL {
+        FileManager.default.temporaryDirectory.appending(path: "enctest-\(UUID().uuidString)")
+    }
+
+    private func fakeMKV(in baseTemp: URL) -> URL {
+        let dir = baseTemp.appending(path: UUID().uuidString)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let mkv = dir.appending(path: "t01.mkv")
+        FileManager.default.createFile(atPath: mkv.path, contents: nil)
+        return mkv
+    }
+
+    private func makeInput(episode: String? = nil) -> EncodeInput {
+        EncodeInput(
+            outputURL: URL(fileURLWithPath: "/output/Movie.mkv"),
+            preset: "H.265 MKV 1080p30",
+            title: "The Matrix",
+            episode: episode
+        )
+    }
+
+    @Test func addsOneJobToQueue() throws {
+        let queue = SpyQueueManager()
+        let useCase = EncodeUseCase(queue: queue)
+        let mkv = fakeMKV(in: makeTemp())
+
+        try useCase.execute(makeInput(), inputMKV: mkv)
+
+        #expect(queue.addCalls.count == 1)
+    }
+
+    @Test func passesCorrectTitleAndPreset() throws {
+        let queue = SpyQueueManager()
+        let useCase = EncodeUseCase(queue: queue)
+        let mkv = fakeMKV(in: makeTemp())
+
+        try useCase.execute(makeInput(), inputMKV: mkv)
+
+        #expect(queue.addCalls[0].title == "The Matrix")
+        #expect(queue.addCalls[0].preset == "H.265 MKV 1080p30")
+        #expect(queue.addCalls[0].output == URL(fileURLWithPath: "/output/Movie.mkv"))
+    }
+
+    @Test func passesEpisodeLabelToQueue() throws {
+        let queue = SpyQueueManager()
+        let useCase = EncodeUseCase(queue: queue)
+        let mkv = fakeMKV(in: makeTemp())
+
+        try useCase.execute(makeInput(episode: "S01E01"), inputMKV: mkv)
+
+        #expect(queue.addCalls[0].episode == "S01E01")
+    }
+
+    @Test func passesMKVAsInput() throws {
+        let queue = SpyQueueManager()
+        let useCase = EncodeUseCase(queue: queue)
+        let mkv = fakeMKV(in: makeTemp())
+
+        try useCase.execute(makeInput(), inputMKV: mkv)
+
+        #expect(queue.addCalls[0].input == mkv)
     }
 }

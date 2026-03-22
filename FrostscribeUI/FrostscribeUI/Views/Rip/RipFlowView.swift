@@ -25,8 +25,8 @@ struct RipFlowView: View {
                 AudioTrackSelectionView(vm: vm, chosenTitle: title, scanResult: scanResult,
                                         title: mediaTitle, year: year,
                                         isTV: isTV, season: season, episode: episode)
-            case .confirmation(let input, let outputURL):
-                ConfirmationView(vm: vm, input: input, outputURL: outputURL)
+            case .confirmation(let ripInput, let encodeInput):
+                ConfirmationView(vm: vm, ripInput: ripInput, encodeInput: encodeInput)
             case .ripping(let title, let progress):
                 RippingProgressView(title: title, progress: progress)
             case .done(let title):

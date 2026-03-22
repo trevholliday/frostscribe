@@ -3,59 +3,42 @@ import Foundation
 public struct RipInput: Sendable {
     public let titleNumber: Int
     public let baseTemp: URL
-    public let outputURL: URL
-    public let preset: String
-    public let jobLabel: String
     public let mediaType: RipJob.MediaType
-    public let title: String
-    public let episode: String?
-    public let selectedAudioTracks: [Int]?
+    public let jobLabel: String
 
     public init(
         titleNumber: Int,
         baseTemp: URL,
-        outputURL: URL,
-        preset: String,
-        jobLabel: String,
         mediaType: RipJob.MediaType,
-        title: String,
-        episode: String?,
-        selectedAudioTracks: [Int]? = nil
+        jobLabel: String
     ) {
         self.titleNumber = titleNumber
         self.baseTemp = baseTemp
-        self.outputURL = outputURL
-        self.preset = preset
-        self.jobLabel = jobLabel
         self.mediaType = mediaType
-        self.title = title
-        self.episode = episode
-        self.selectedAudioTracks = selectedAudioTracks
+        self.jobLabel = jobLabel
     }
 }
 
 public final class RipUseCase: Sendable {
     private let runner: any MakeMKVRunning
-    private let queue: any QueueManaging
     private let status: any StatusManaging
     private let ejector: any DiscEjecting
 
     public init(
         runner: any MakeMKVRunning,
-        queue: any QueueManaging,
         status: any StatusManaging,
         ejector: any DiscEjecting
     ) {
         self.runner = runner
-        self.queue = queue
         self.status = status
         self.ejector = ejector
     }
 
+    /// Rips the selected title to a temp directory, ejects the disc, and returns the raw MKV URL.
     public func execute(
         _ input: RipInput,
         onProgress: @escaping @Sendable (Int) -> Void
-    ) async throws {
+    ) async throws -> URL {
         let ripJob = RipJob(type: input.mediaType, title: input.jobLabel)
         try status.write(status: .ripping, job: ripJob)
         defer { try? status.write(status: .idle, job: nil) }
@@ -72,15 +55,7 @@ public final class RipUseCase: Sendable {
 
         let mkv = try findMKV(in: tempDir)
         ejector.eject()
-
-        try queue.add(
-            input: mkv,
-            output: input.outputURL,
-            preset: input.preset,
-            title: input.title,
-            episode: input.episode,
-            audioTracks: input.selectedAudioTracks
-        )
+        return mkv
     }
 
     private func findMKV(in dir: URL) throws -> URL {

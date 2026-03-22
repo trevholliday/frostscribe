@@ -86,33 +86,32 @@ struct RipCommand: AsyncParsableCommand {
             }
         }
 
-        // Build use case and execute
+        // Build use case inputs
         let jobLabel = [title, episodeLabel].compactMap { $0 }.joined(separator: " — ")
         let ripInput = RipInput(
             titleNumber: chosen.number,
             baseTemp: URL(fileURLWithPath: config.tempDir),
+            mediaType: isTV ? .tvshow : .movie,
+            jobLabel: jobLabel
+        )
+        let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
-            jobLabel: jobLabel,
-            mediaType: isTV ? .tvshow : .movie,
             title: title,
             episode: episodeLabel,
             selectedAudioTracks: selectedAudioTracks
         )
 
-        let ripUseCase = RipUseCase(
-            runner: runner,
-            queue: queueManager,
-            status: statusManager,
-            ejector: ejector
-        )
+        let ripUseCase = RipUseCase(runner: runner, status: statusManager, ejector: ejector)
+        let encodeUseCase = EncodeUseCase(queue: queueManager)
 
         print()
         let startTime = Date()
-        try await ripUseCase.execute(ripInput) { pct in
+        let mkvURL = try await ripUseCase.execute(ripInput) { pct in
             let tick = Int(Date().timeIntervalSince(startTime) * 10)
             ProgressBar.printRip(percent: pct, message: chosen.name, tick: tick)
         }
+        try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
 
         print("\r  \(Colors.teal)✔\(Colors.reset) \(Colors.bold)Rip complete.\(Colors.reset)                                        ")
 

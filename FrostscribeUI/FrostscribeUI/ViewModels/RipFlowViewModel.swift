@@ -16,7 +16,7 @@ final class RipFlowViewModel {
         case tvEpisode(DiscTitle, DiscScanResult, title: String, year: String)
         case audioTrackSelection(DiscTitle, DiscScanResult, title: String, year: String,
                                  isTV: Bool, season: Int, episode: Int)
-        case confirmation(RipInput, outputURL: URL)
+        case confirmation(RipInput, EncodeInput)
         case ripping(title: String, progress: Int)
         case done(title: String)
         case error(String)
@@ -178,49 +178,53 @@ final class RipFlowViewModel {
         }
 
         let jobLabel = [title, episodeLabel].compactMap { $0 }.joined(separator: " — ")
-        let input = RipInput(
+        let ripInput = RipInput(
             titleNumber: chosenTitle.number,
             baseTemp: URL(fileURLWithPath: config.tempDir),
+            mediaType: mediaType,
+            jobLabel: jobLabel
+        )
+        let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
-            jobLabel: jobLabel,
-            mediaType: mediaType,
             title: title,
             episode: episodeLabel,
             selectedAudioTracks: selectedTracks
         )
-        phase = .confirmation(input, outputURL: outputURL)
+        phase = .confirmation(ripInput, encodeInput)
     }
 
     // MARK: - Execute rip
 
-    func confirm(_ input: RipInput) {
+    func confirm(_ ripInput: RipInput, _ encodeInput: EncodeInput) {
         let config = storedConfig ?? Config()
-        phase = .ripping(title: input.jobLabel, progress: 0)
-        ripTask = Task { await executeRip(input, config: config) }
+        phase = .ripping(title: ripInput.jobLabel, progress: 0)
+        ripTask = Task { await executeRip(ripInput, encode: encodeInput, config: config) }
     }
 
-    private func executeRip(_ input: RipInput, config: Config) async {
-        let runner = MakeMKVRunner(binPath: config.makemkvBin)
-        let useCase = RipUseCase(
-            runner: runner,
-            queue: QueueManager(appSupportURL: ConfigManager.appSupportURL),
+    private func executeRip(_ ripInput: RipInput, encode encodeInput: EncodeInput, config: Config) async {
+        let ripUseCase = RipUseCase(
+            runner: MakeMKVRunner(binPath: config.makemkvBin),
             status: StatusManager(appSupportURL: ConfigManager.appSupportURL),
             ejector: DiscEjector()
         )
+        let encodeUseCase = EncodeUseCase(
+            queue: QueueManager(appSupportURL: ConfigManager.appSupportURL)
+        )
 
         do {
-            try await useCase.execute(input) { [weak self] pct in
+            let mkvURL = try await ripUseCase.execute(ripInput) { [weak self] pct in
                 Task { @MainActor [weak self] in
-                    self?.phase = .ripping(title: input.jobLabel, progress: pct)
+                    self?.phase = .ripping(title: ripInput.jobLabel, progress: pct)
                 }
             }
+            try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
             if config.notificationsEnabled {
                 let svc = NotificationService.shared
                 await svc.requestAuthorizationIfNeeded()
-                svc.send(title: "Rip Complete", body: "\(input.jobLabel) added to encode queue")
+                svc.send(title: "Rip Complete", body: "\(ripInput.jobLabel) added to encode queue")
             }
-            phase = .done(title: input.jobLabel)
+            phase = .done(title: ripInput.jobLabel)
         } catch {
             phase = .error(error.localizedDescription)
         }
