@@ -28,6 +28,12 @@ final class RipFlowViewModel {
     private(set) var tmdbResults: [TMDBClient.SearchResult] = []
     private(set) var isSearching = false
 
+    // Persisted across phases for the left panel
+    private(set) var posterURL: URL?
+    private(set) var confirmedTitle: String?
+    private(set) var confirmedYear: String?
+    private(set) var confirmedEncodeInput: EncodeInput?
+
     var canCancel: Bool {
         switch phase {
         case .ripping, .done: return false
@@ -106,6 +112,7 @@ final class RipFlowViewModel {
 
     func confirmTMDB(result: TMDBClient.SearchResult, chosenTitle: DiscTitle,
                      scanResult: DiscScanResult, isTV: Bool) {
+        posterURL = result.posterURL
         advance(title: result.title, year: result.year,
                 chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
     }
@@ -118,6 +125,8 @@ final class RipFlowViewModel {
 
     private func advance(title: String, year: String, chosenTitle: DiscTitle,
                          scanResult: DiscScanResult, isTV: Bool) {
+        confirmedTitle = title
+        confirmedYear = year
         if isTV {
             phase = .tvEpisode(chosenTitle, scanResult, title: title, year: year)
         } else {
@@ -191,6 +200,7 @@ final class RipFlowViewModel {
             episode: episodeLabel,
             selectedAudioTracks: selectedTracks
         )
+        confirmedEncodeInput = encodeInput
         phase = .confirmation(ripInput, encodeInput)
     }
 
@@ -240,6 +250,10 @@ final class RipFlowViewModel {
         storedConfig = nil
         tmdbResults = []
         isSearching = false
+        posterURL = nil
+        confirmedTitle = nil
+        confirmedYear = nil
+        confirmedEncodeInput = nil
         phase = .idle
     }
 }

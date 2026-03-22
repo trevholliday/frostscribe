@@ -24,6 +24,7 @@
 		H3B2C3D4E5F6A7B8C9D0E1F2 /* DiskArbitration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = H3B2C3D4E5F6A7B8C9D0E1F1 /* DiskArbitration.framework */; };
 		FA01C3D4E5F6A7B8C9D0E1F2 /* RipFlowViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */; };
 		FA02C3D4E5F6A7B8C9D0E1F2 /* RipFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA02C3D4E5F6A7B8C9D0E1F1 /* RipFlowView.swift */; };
+		FA13C4D5E6F7A8B9C0D1E2F2 /* LeftPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA13C4D5E6F7A8B9C0D1E2F1 /* LeftPanelView.swift */; };
 		FA03C3D4E5F6A7B8C9D0E1F2 /* RipIdleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA03C3D4E5F6A7B8C9D0E1F1 /* RipIdleView.swift */; };
 		FA04C3D4E5F6A7B8C9D0E1F2 /* RipScanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA04C3D4E5F6A7B8C9D0E1F1 /* RipScanningView.swift */; };
 		FA05C3D4E5F6A7B8C9D0E1F2 /* TitleSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA05C3D4E5F6A7B8C9D0E1F1 /* TitleSelectionView.swift */; };
@@ -42,6 +43,7 @@
 		F3B2C3D4E5F6A7B8C9D0E1F2 /* VigilViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VigilViewModel.swift; sourceTree = "<group>"; };
 		FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipFlowViewModel.swift; sourceTree = "<group>"; };
 		FA02C3D4E5F6A7B8C9D0E1F1 /* RipFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipFlowView.swift; sourceTree = "<group>"; };
+		FA13C4D5E6F7A8B9C0D1E2F1 /* LeftPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeftPanelView.swift; sourceTree = "<group>"; };
 		FA03C3D4E5F6A7B8C9D0E1F1 /* RipIdleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipIdleView.swift; sourceTree = "<group>"; };
 		FA04C3D4E5F6A7B8C9D0E1F1 /* RipScanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipScanningView.swift; sourceTree = "<group>"; };
 		FA05C3D4E5F6A7B8C9D0E1F1 /* TitleSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleSelectionView.swift; sourceTree = "<group>"; };
@@ -175,6 +177,7 @@
 			isa = PBXGroup;
 			children = (
 				FA02C3D4E5F6A7B8C9D0E1F1 /* RipFlowView.swift */,
+				FA13C4D5E6F7A8B9C0D1E2F1 /* LeftPanelView.swift */,
 				FA03C3D4E5F6A7B8C9D0E1F1 /* RipIdleView.swift */,
 				FA04C3D4E5F6A7B8C9D0E1F1 /* RipScanningView.swift */,
 				FA05C3D4E5F6A7B8C9D0E1F1 /* TitleSelectionView.swift */,
@@ -285,6 +288,7 @@
 				F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */,
 				FA01C3D4E5F6A7B8C9D0E1F2 /* RipFlowViewModel.swift in Sources */,
 				FA02C3D4E5F6A7B8C9D0E1F2 /* RipFlowView.swift in Sources */,
+				FA13C4D5E6F7A8B9C0D1E2F2 /* LeftPanelView.swift in Sources */,
 				FA03C3D4E5F6A7B8C9D0E1F2 /* RipIdleView.swift in Sources */,
 				FA04C3D4E5F6A7B8C9D0E1F2 /* RipScanningView.swift in Sources */,
 				FA05C3D4E5F6A7B8C9D0E1F2 /* TitleSelectionView.swift in Sources */,

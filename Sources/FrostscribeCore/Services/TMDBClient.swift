@@ -11,6 +11,12 @@ public final class TMDBClient: Sendable {
         public var title: String
         public var year: String
         public var mediaType: MediaType
+        public var posterPath: String?
+
+        public var posterURL: URL? {
+            guard let path = posterPath else { return nil }
+            return URL(string: "https://image.tmdb.org/t/p/w500\(path)")
+        }
     }
 
     private let apiKey: String
@@ -40,7 +46,7 @@ public final class TMDBClient: Sendable {
                 let title = result.title ?? result.name ?? "Unknown"
                 let date = result.releaseDate ?? result.firstAirDate ?? ""
                 let year = String(date.prefix(4))
-                return SearchResult(id: result.id, title: title, year: year, mediaType: mediaType)
+                return SearchResult(id: result.id, title: title, year: year, mediaType: mediaType, posterPath: result.posterPath)
             }
     }
 
@@ -67,6 +73,7 @@ public final class TMDBClient: Sendable {
         var name: String?
         var releaseDate: String?
         var firstAirDate: String?
+        var posterPath: String?
 
         enum CodingKeys: String, CodingKey {
             case id
@@ -75,6 +82,7 @@ public final class TMDBClient: Sendable {
             case name
             case releaseDate = "release_date"
             case firstAirDate = "first_air_date"
+            case posterPath = "poster_path"
         }
     }
 
