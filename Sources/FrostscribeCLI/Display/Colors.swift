@@ -1,6 +1,5 @@
 import Foundation
 
-/// ANSI terminal color codes.
 public enum Colors {
     public static let reset         = "\u{001B}[0m"
     public static let bold          = "\u{001B}[1m"

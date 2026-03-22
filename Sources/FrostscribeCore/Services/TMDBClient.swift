@@ -1,6 +1,5 @@
 import Foundation
 
-/// Client for the TMDB v3 REST API.
 public final class TMDBClient: Sendable {
     public enum MediaType: String, Sendable {
         case movie
@@ -22,8 +21,6 @@ public final class TMDBClient: Sendable {
 
     public var isConfigured: Bool { !apiKey.isEmpty }
 
-    /// Searches TMDB for movies and TV shows matching the query.
-    /// Returns up to 5 results.
     public func searchMulti(query: String) async throws -> [SearchResult] {
         guard isConfigured else { return [] }
         guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return [] }
@@ -47,7 +44,6 @@ public final class TMDBClient: Sendable {
             }
     }
 
-    /// Returns the number of episodes in a given TV season.
     public func seasonEpisodeCount(tvId: Int, season: Int) async throws -> Int? {
         guard isConfigured else { return nil }
 
@@ -59,8 +55,6 @@ public final class TMDBClient: Sendable {
         let response = try JSONDecoder().decode(SeasonResponse.self, from: data)
         return response.episodes?.count
     }
-
-    // MARK: - Private response types
 
     private struct MultiSearchResponse: Decodable {
         var results: [MultiSearchResult]

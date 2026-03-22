@@ -1,6 +1,5 @@
 import Foundation
 
-/// Manages atomic read/write of the encode queue file.
 public final class QueueManager: Sendable {
     private struct QueueFile: Codable {
         var jobs: [EncodeJob]
@@ -12,7 +11,6 @@ public final class QueueManager: Sendable {
         self.fileURL = appSupportURL.appending(path: "queue.json")
     }
 
-    /// Returns all jobs in the queue.
     public func read() throws -> [EncodeJob] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return []
@@ -21,12 +19,10 @@ public final class QueueManager: Sendable {
         return try JSONDecoder.frostscribe.decode(QueueFile.self, from: data).jobs
     }
 
-    /// Returns only pending and encoding jobs.
     public func activeJobs() throws -> [EncodeJob] {
         try read().filter(\.isActive)
     }
 
-    /// Appends a new pending job to the queue.
     public func add(
         input: URL,
         output: URL,
@@ -46,7 +42,6 @@ public final class QueueManager: Sendable {
         try write(jobs)
     }
 
-    /// Updates the progress string for a specific job.
     public func updateProgress(id: UUID, progress: String) throws {
         var jobs = try read()
         guard let index = jobs.firstIndex(where: { $0.id == id }) else { return }
@@ -54,7 +49,6 @@ public final class QueueManager: Sendable {
         try write(jobs)
     }
 
-    /// Updates the status of a specific job.
     public func updateStatus(
         id: UUID,
         status: EncodeJob.Status,

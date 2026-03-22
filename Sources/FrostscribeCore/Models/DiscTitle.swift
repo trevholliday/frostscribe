@@ -1,4 +1,3 @@
-/// Represents a single title found on a disc during MakeMKV scanning.
 public struct DiscTitle: Sendable {
     public var number: Int
     public var name: String

@@ -1,6 +1,5 @@
 import Foundation
 
-/// Manages atomic read/write of the ripper status file.
 public final class StatusManager: Sendable {
     public enum RipperStatus: String, Codable, Sendable {
         case idle
@@ -22,7 +21,6 @@ public final class StatusManager: Sendable {
         self.fileURL = appSupportURL.appending(path: "status.json")
     }
 
-    /// Reads and returns the current status file, or a default idle state if unavailable.
     public func read() throws -> StatusFile {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return StatusFile(status: .idle, updatedAt: .now, currentJob: nil, history: [])
@@ -31,7 +29,6 @@ public final class StatusManager: Sendable {
         return try JSONDecoder.frostscribe.decode(StatusFile.self, from: data)
     }
 
-    /// Writes the current status atomically to disk.
     public func write(status: RipperStatus, job: RipJob? = nil) throws {
         let existing = (try? read()) ?? StatusFile(status: .idle, updatedAt: .now, currentJob: nil, history: [])
         var history = existing.history

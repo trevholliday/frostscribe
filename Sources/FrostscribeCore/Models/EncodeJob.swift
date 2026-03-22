@@ -1,6 +1,5 @@
 import Foundation
 
-/// Represents a single entry in the encode queue.
 public struct EncodeJob: Codable, Identifiable, Sendable {
     public enum Status: String, Codable, Sendable {
         case pending
@@ -21,7 +20,6 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
     public var startedAt: Date?
     public var completedAt: Date?
 
-    /// Returns a display label combining title and episode if present.
     public var label: String {
         if let episode { return "\(title) — \(episode)" }
         return title

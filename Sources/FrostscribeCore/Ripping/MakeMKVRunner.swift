@@ -1,6 +1,5 @@
 import Foundation
 
-/// Spawns and manages makemkvcon child processes.
 public final class MakeMKVRunner: Sendable {
     public struct ScanResult: Sendable {
         public var titles: [DiscTitle]
@@ -14,14 +13,11 @@ public final class MakeMKVRunner: Sendable {
         self.binPath = binPath
     }
 
-    /// Scans the disc and returns all available titles.
     public func scan(onMessage: @escaping @Sendable (String) -> Void = { _ in }) throws -> ScanResult {
         let output = try run(arguments: ["-r", "info", "disc:0"], onLine: onMessage)
         return buildScanResult(from: output)
     }
 
-    /// Rips a single title to the destination directory.
-    /// Calls onProgress with a 0–99 integer as the rip advances.
     public func rip(
         titleNumber: Int,
         to destination: URL,
@@ -43,8 +39,6 @@ public final class MakeMKVRunner: Sendable {
             }
         )
     }
-
-    // MARK: - Private
 
     @discardableResult
     private func run(
@@ -111,9 +105,6 @@ public final class MakeMKVRunner: Sendable {
     }
 }
 
-// MARK: - OutputCollector
-
-/// Thread-safe line buffer for subprocess output.
 private final class OutputCollector: @unchecked Sendable {
     private let lock = NSLock()
     private var buffer = Data()

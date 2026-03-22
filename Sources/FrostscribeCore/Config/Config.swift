@@ -1,4 +1,3 @@
-/// Top-level user configuration loaded from Application Support.
 public struct Config: Codable, Sendable {
     public var mediaServer: MediaServer
     public var moviesDir: String

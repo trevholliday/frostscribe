@@ -1,8 +1,6 @@
 import Foundation
 
-/// Constructs output file paths for each supported media server format.
 public enum PathBuilder {
-    /// Builds the output directory and filename for a movie.
     public static func moviePath(
         title: String,
         year: String,
@@ -14,7 +12,6 @@ public enum PathBuilder {
         return baseDir.appending(path: folder).appending(path: filename)
     }
 
-    /// Builds the output path for a TV episode.
     public static func episodePath(
         show: String,
         year: String,

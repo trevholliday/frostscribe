@@ -1,7 +1,5 @@
 import Foundation
 
-/// Parses raw makemkvcon output lines into structured data.
-/// Pure parsing logic — no I/O, fully unit testable.
 public enum MakeMKVParser {
     public enum Line {
         case message(String)
@@ -13,7 +11,6 @@ public enum MakeMKVParser {
         case unknown
     }
 
-    /// Parses a single line of makemkvcon output into a structured value.
     public static func parse(_ line: String) -> Line {
         if let m = line.firstMatch(of: /^MSG:\d+,\d+,\d+,"([^"]+)"/) {
             return .message(String(m.1))

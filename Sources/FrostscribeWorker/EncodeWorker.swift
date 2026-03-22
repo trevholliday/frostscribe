@@ -1,7 +1,6 @@
 import Foundation
 import FrostscribeCore
 
-/// The core encode worker — polls the queue and encodes jobs sequentially.
 final class EncodeWorker: @unchecked Sendable {
     private let appSupportURL: URL
     private let queueManager: QueueManager
@@ -25,8 +24,6 @@ final class EncodeWorker: @unchecked Sendable {
         running = false
         exit(0)
     }
-
-    // MARK: - Private
 
     private func scheduleNextPoll() {
         guard running else { return }

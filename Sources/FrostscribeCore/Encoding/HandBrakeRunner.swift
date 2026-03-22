@@ -1,6 +1,5 @@
 import Foundation
 
-/// Spawns and manages HandBrakeCLI child processes.
 public final class HandBrakeRunner: Sendable {
     private let binPath: String
 
@@ -8,8 +7,6 @@ public final class HandBrakeRunner: Sendable {
         self.binPath = binPath
     }
 
-    /// Encodes a file using the given preset.
-    /// Calls onProgress with a 0.0–100.0 float as encoding advances.
     public func encode(
         input: URL,
         output: URL,

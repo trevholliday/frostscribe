@@ -1,6 +1,5 @@
 import Foundation
 
-/// Represents an active or recently completed rip operation.
 public struct RipJob: Codable, Sendable {
     public enum MediaType: String, Codable, Sendable {
         case movie

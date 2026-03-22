@@ -1,6 +1,5 @@
 import Foundation
 
-/// Unified error type for all Frostscribe operations.
 public enum FrostscribeError: Error, LocalizedError {
     case makemkvFailed(exitCode: Int32)
     case handbrakeFailed(exitCode: Int32)
