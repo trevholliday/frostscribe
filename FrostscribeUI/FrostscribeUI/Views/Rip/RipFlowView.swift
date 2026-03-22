@@ -17,7 +17,11 @@ struct RipFlowView: View {
         }
         .frame(width: 640, height: 460)
         .toolbar {
-            if vm.canCancel {
+            if vm.isShowingSettings {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { vm.hideSettings() }
+                }
+            } else if vm.canCancel {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { vm.reset() }
                 }
@@ -29,7 +33,11 @@ struct RipFlowView: View {
 
     @ViewBuilder
     private var rightContent: some View {
-        switch vm.phase {
+        if vm.isShowingSettings {
+            NavigationStack {
+                SettingsView()
+            }
+        } else { switch vm.phase {
         case .idle:
             RipIdleView(vm: vm)
         case .scanning:
@@ -57,7 +65,7 @@ struct RipFlowView: View {
                             message: "Added to encode queue.")
         case .error(let message):
             RipCompleteView(vm: vm, title: "Rip Failed", isError: true, message: message)
-        }
+        } }
     }
 
     // MARK: - Ripping detail

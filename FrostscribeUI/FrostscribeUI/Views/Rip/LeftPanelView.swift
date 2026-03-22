@@ -30,11 +30,18 @@ struct LeftPanelView: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomLeading) {
             if showPoster {
                 posterPanel
             } else {
                 stepPanel
+            }
+
+            // Settings button always visible when on poster panel
+            if showPoster {
+                settingsButton
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+                    .padding(FrostTheme.paddingS)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -64,7 +71,26 @@ struct LeftPanelView: View {
             .padding(.top, FrostTheme.paddingL)
 
             Spacer()
+
+            settingsButton
         }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            vm.toggleSettings()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "gear")
+                    .font(.system(size: 12))
+                Text("Settings")
+                    .font(.caption)
+            }
+            .foregroundStyle(vm.isShowingSettings ? FrostTheme.teal : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .disabled(!vm.canShowSettings)
+        .padding(FrostTheme.paddingM)
     }
 
     private func stepRow(index: Int, label: String, icon: String) -> some View {

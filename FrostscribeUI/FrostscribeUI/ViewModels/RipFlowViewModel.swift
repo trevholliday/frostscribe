@@ -27,6 +27,7 @@ final class RipFlowViewModel {
     private(set) var phase: Phase = .idle
     private(set) var tmdbResults: [TMDBClient.SearchResult] = []
     private(set) var isSearching = false
+    private(set) var isShowingSettings = false
 
     // Persisted across phases for the left panel
     private(set) var posterURL: URL?
@@ -39,6 +40,22 @@ final class RipFlowViewModel {
         case .ripping, .done: return false
         default: return true
         }
+    }
+
+    var canShowSettings: Bool {
+        switch phase {
+        case .ripping: return false
+        default: return true
+        }
+    }
+
+    func toggleSettings() {
+        guard canShowSettings else { return }
+        isShowingSettings.toggle()
+    }
+
+    func hideSettings() {
+        isShowingSettings = false
     }
 
     var isTMDBConfigured: Bool {
@@ -254,6 +271,7 @@ final class RipFlowViewModel {
         confirmedTitle = nil
         confirmedYear = nil
         confirmedEncodeInput = nil
+        isShowingSettings = false
         phase = .idle
     }
 }

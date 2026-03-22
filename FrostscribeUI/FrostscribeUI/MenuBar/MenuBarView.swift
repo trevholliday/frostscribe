@@ -5,7 +5,6 @@ struct MenuBarView: View {
     @Environment(StatusViewModel.self) private var statusVM
     @Environment(QueueViewModel.self) private var queueVM
     @Environment(VigilViewModel.self) private var vigilVM
-    @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -70,7 +69,7 @@ struct MenuBarView: View {
             .foregroundStyle(FrostTheme.teal)
             Spacer()
             Button {
-                openSettings()
+                openWindow(id: "rip-flow")
             } label: {
                 Label("Settings", systemImage: "gear")
                     .font(.caption)
