@@ -5,6 +5,7 @@ public struct DiscTitle: Sendable {
     public var chapters: String
     public var sizeBytes: Int
     public var angle: Int?
+    public var audioTracks: [AudioTrack]
 
     public var sizeFormatted: String {
         let gb = Double(sizeBytes) / 1_073_741_824
@@ -17,7 +18,8 @@ public struct DiscTitle: Sendable {
         duration: String,
         chapters: String,
         sizeBytes: Int,
-        angle: Int? = nil
+        angle: Int? = nil,
+        audioTracks: [AudioTrack] = []
     ) {
         self.number = number
         self.name = name
@@ -25,5 +27,6 @@ public struct DiscTitle: Sendable {
         self.chapters = chapters
         self.sizeBytes = sizeBytes
         self.angle = angle
+        self.audioTracks = audioTracks
     }
 }

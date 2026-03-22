@@ -2,6 +2,7 @@ import Foundation
 
 public enum FrostscribeError: Error, LocalizedError {
     case makemkvFailed(exitCode: Int32)
+    case makemkvCriticalError(code: Int, message: String)
     case handbrakeFailed(exitCode: Int32)
     case noMKVFound(directory: URL)
     case configNotFound
@@ -12,6 +13,8 @@ public enum FrostscribeError: Error, LocalizedError {
         switch self {
         case .makemkvFailed(let code):
             return "makemkvcon failed with exit code \(code)"
+        case .makemkvCriticalError(let code, let message):
+            return "MakeMKV critical error \(code): \(message)"
         case .handbrakeFailed(let code):
             return "HandBrakeCLI failed with exit code \(code)"
         case .noMKVFound(let dir):

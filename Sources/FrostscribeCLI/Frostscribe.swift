@@ -1,7 +1,7 @@
 import ArgumentParser
 
 @main
-struct Frostscribe: ParsableCommand {
+struct Frostscribe: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "frostscribe",
         abstract: "A native macOS tool for ripping and preserving disc media.",
