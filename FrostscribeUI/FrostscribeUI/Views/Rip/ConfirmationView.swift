@@ -33,9 +33,7 @@ struct ConfirmationView: View {
             Button("Start Ripping") {
                 vm.confirm(ripInput, encodeInput)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(FrostTheme.frostCyan)
-            .controlSize(.large)
+            .buttonStyle(.frostPrimary)
 
             Spacer()
         }

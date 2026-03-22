@@ -76,13 +76,10 @@ struct SettingsView: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 6) {
-                TextField(hint, text: value)
-                    .textFieldStyle(.roundedBorder)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                saveButtonIfDirty(value.wrappedValue != saved)
-            }
+            TextField(hint, text: value)
+                .textFieldStyle(.roundedBorder)
+                .multilineTextAlignment(.leading)
+            saveButtonIfDirty(value.wrappedValue != saved)
         }
     }
 
@@ -92,13 +89,10 @@ struct SettingsView: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 6) {
-                SecureField(hint, text: value)
-                    .textFieldStyle(.roundedBorder)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                saveButtonIfDirty(value.wrappedValue != saved)
-            }
+            SecureField(hint, text: value)
+                .textFieldStyle(.roundedBorder)
+                .multilineTextAlignment(.leading)
+            saveButtonIfDirty(value.wrappedValue != saved)
         }
     }
 
@@ -106,11 +100,7 @@ struct SettingsView: View {
     private func saveButtonIfDirty(_ isDirty: Bool) -> some View {
         if isDirty {
             Button("Save") { save() }
-                .font(.caption.bold())
-                .foregroundStyle(.black)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(FrostTheme.frostCyan, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+                .buttonStyle(.frostPrimary)
                 .transition(.opacity.combined(with: .scale(scale: 0.92)))
         }
     }

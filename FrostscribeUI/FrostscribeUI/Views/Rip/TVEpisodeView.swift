@@ -41,9 +41,7 @@ struct TVEpisodeView: View {
                               chosenTitle: chosenTitle, scanResult: scanResult,
                               title: title, year: year)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(FrostTheme.frostCyan)
-            .controlSize(.large)
+            .buttonStyle(.frostPrimary)
 
             Spacer()
         }

@@ -31,7 +31,7 @@ struct TMDBSearchView: View {
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { search() }
                 Button("Search", action: search)
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.frostPrimary)
             }
             .padding(FrostTheme.paddingM)
 
@@ -90,8 +90,7 @@ struct TMDBSearchView: View {
             Text("Add one in Settings, or enter the title manually.")
                 .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button("Enter manually") { showManualEntry = true }
-                .buttonStyle(.borderedProminent)
-                .tint(FrostTheme.glacier)
+                .buttonStyle(.frostPrimary)
             Spacer()
         }
         .padding(FrostTheme.paddingM)
@@ -139,15 +138,13 @@ struct TMDBSearchView: View {
             }
             HStack {
                 Button("Cancel") { showManualEntry = false }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    .buttonStyle(.frostDestructive)
                 Spacer()
                 Button("Continue") {
                     vm.enterManually(title: manualTitle, year: manualYear,
                                      chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(FrostTheme.frostCyan)
+                .buttonStyle(.frostPrimary)
                 .disabled(manualTitle.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }

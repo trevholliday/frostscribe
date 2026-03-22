@@ -18,9 +18,7 @@ struct RipIdleView: View {
             Button("Scan Disc") {
                 vm.startRip()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(FrostTheme.frostCyan)
-            .controlSize(.large)
+            .buttonStyle(.frostPrimary)
             Spacer()
         }
         .padding(FrostTheme.paddingL)

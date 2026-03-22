@@ -20,12 +20,13 @@ struct RipCompleteView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, FrostTheme.paddingL)
-            Button(isError ? "Try Again" : "Rip Another Disc") {
-                vm.reset()
+            if isError {
+                Button("Try Again") { vm.reset() }
+                    .buttonStyle(.frostDestructive)
+            } else {
+                Button("Rip Another Disc") { vm.reset() }
+                    .buttonStyle(.frostPrimary)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(isError ? FrostTheme.alert : FrostTheme.frostCyan)
-            .controlSize(.large)
             Spacer()
         }
         .padding(FrostTheme.paddingL)

@@ -96,8 +96,7 @@ struct AudioTrackSelectionView: View {
                                          title: title, year: year, isTV: isTV,
                                          season: season, episode: episode)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(FrostTheme.frostCyan)
+                .buttonStyle(.frostPrimary)
                 .disabled(selectedIndices.isEmpty)
             }
             .padding(FrostTheme.paddingM)

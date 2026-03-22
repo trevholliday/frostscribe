@@ -17,6 +17,44 @@ enum FrostTheme {
     static let popoverWidth: CGFloat = 320
 }
 
+// MARK: - Button styles
+
+struct FrostPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.bold())
+            .foregroundStyle(.black)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                FrostTheme.frostCyan.opacity(configuration.isPressed ? 0.75 : 1),
+                in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius)
+            )
+    }
+}
+
+struct FrostDestructiveButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.bold())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                FrostTheme.alert.opacity(configuration.isPressed ? 0.75 : 1),
+                in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius)
+            )
+    }
+}
+
+extension ButtonStyle where Self == FrostPrimaryButtonStyle {
+    static var frostPrimary: FrostPrimaryButtonStyle { FrostPrimaryButtonStyle() }
+}
+
+extension ButtonStyle where Self == FrostDestructiveButtonStyle {
+    static var frostDestructive: FrostDestructiveButtonStyle { FrostDestructiveButtonStyle() }
+}
+
 // MARK: - Status color
 
 extension StatusManager.RipperStatus {
