@@ -1,6 +1,6 @@
 import Foundation
 
-public final class HandBrakeRunner: Sendable {
+public final class HandBrakeRunner: HandBrakeRunning {
     private let binPath: String
 
     public init(binPath: String = "HandBrakeCLI") {
@@ -8,6 +8,20 @@ public final class HandBrakeRunner: Sendable {
     }
 
     public func encode(
+        input: URL,
+        output: URL,
+        preset: String,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws {
+        try await withCheckedThrowingContinuation { cont in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do { try self.encodeSync(input: input, output: output, preset: preset, onProgress: onProgress); cont.resume() }
+                catch { cont.resume(throwing: error) }
+            }
+        }
+    }
+
+    private func encodeSync(
         input: URL,
         output: URL,
         preset: String,

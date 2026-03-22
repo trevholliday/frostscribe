@@ -1,7 +1,15 @@
 import Foundation
 import FrostscribeCore
 
-let worker = EncodeWorker()
+// Composition root — wire concrete dependencies
+let appSupportURL = ConfigManager.appSupportURL
+let config = try? ConfigManager().load()
+
+let worker = EncodeWorker(
+    queueManager: QueueManager(appSupportURL: appSupportURL),
+    handbrakeRunner: HandBrakeRunner(binPath: config?.handbrakeBin ?? "HandBrakeCLI"),
+    notificationService: NotificationService.shared
+)
 
 let sigSrc = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
 sigSrc.setEventHandler { Task { await worker.stop() } }

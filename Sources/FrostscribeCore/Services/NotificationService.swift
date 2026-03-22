@@ -1,10 +1,10 @@
 import Foundation
 import UserNotifications
 
-public final class NotificationService: Sendable {
+public final class NotificationService: NotificationServing, Sendable {
     public static let shared = NotificationService()
 
-    public func requestAuthorization() async {
+    public func requestAuthorizationIfNeeded() async {
         _ = try? await UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound])
     }

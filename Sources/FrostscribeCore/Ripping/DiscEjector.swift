@@ -1,8 +1,10 @@
 import Foundation
 
-public enum DiscEjector {
+public struct DiscEjector: DiscEjecting {
+    public init() {}
+
     @discardableResult
-    public static func eject() -> Bool {
+    public func eject() -> Bool {
         for _ in 0..<5 {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/drutil")

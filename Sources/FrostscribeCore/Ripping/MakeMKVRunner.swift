@@ -1,27 +1,46 @@
 import Foundation
 
-public final class MakeMKVRunner: Sendable {
-    public struct ScanResult: Sendable {
-        public var titles: [DiscTitle]
-        public var discName: String?
-        public var discType: String?
-    }
-
+public final class MakeMKVRunner: MakeMKVRunning {
     private let binPath: String
 
     public init(binPath: String = "makemkvcon") {
         self.binPath = binPath
     }
 
-    public func scan(onMessage: @escaping @Sendable (String) -> Void = { _ in }) throws -> ScanResult {
-        let output = try run(arguments: ["-r", "info", "disc:0"], onLine: onMessage)
-        return buildScanResult(from: output)
+    public func scan(onMessage: @escaping @Sendable (String) -> Void = { _ in }) async throws -> DiscScanResult {
+        try await withCheckedThrowingContinuation { cont in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do { cont.resume(returning: try self.scanSync(onMessage: onMessage)) }
+                catch { cont.resume(throwing: error) }
+            }
+        }
     }
 
     public func rip(
         titleNumber: Int,
         to destination: URL,
         onMessage: @escaping @Sendable (String) -> Void = { _ in },
+        onProgress: @escaping @Sendable (Int) -> Void
+    ) async throws {
+        try await withCheckedThrowingContinuation { cont in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do { try self.ripSync(titleNumber: titleNumber, to: destination, onMessage: onMessage, onProgress: onProgress); cont.resume() }
+                catch { cont.resume(throwing: error) }
+            }
+        }
+    }
+
+    // MARK: - Sync implementations
+
+    private func scanSync(onMessage: @escaping @Sendable (String) -> Void) throws -> DiscScanResult {
+        let output = try run(arguments: ["-r", "info", "disc:0"], onLine: onMessage)
+        return buildScanResult(from: output)
+    }
+
+    private func ripSync(
+        titleNumber: Int,
+        to destination: URL,
+        onMessage: @escaping @Sendable (String) -> Void,
         onProgress: @escaping @Sendable (Int) -> Void
     ) throws {
         let lines = try run(
@@ -45,6 +64,8 @@ public final class MakeMKVRunner: Sendable {
             }
         }
     }
+
+    // MARK: - Process runner
 
     @discardableResult
     private func run(
@@ -75,7 +96,7 @@ public final class MakeMKVRunner: Sendable {
         return collector.lines
     }
 
-    private func buildScanResult(from lines: [String]) -> ScanResult {
+    private func buildScanResult(from lines: [String]) -> DiscScanResult {
         var titleData: [Int: [Int: String]] = [:]
         var streamData: [Int: [Int: [Int: String]]] = [:]
         var discName: String?
@@ -109,12 +130,11 @@ public final class MakeMKVRunner: Sendable {
             )
         }.sorted { $0.number < $1.number }
 
-        return ScanResult(titles: titles, discName: discName, discType: discType)
+        return DiscScanResult(titles: titles, discName: discName, discType: discType)
     }
 
     private func buildAudioTracks(from streams: [Int: [Int: String]]) -> [AudioTrack] {
         streams.sorted { $0.key < $1.key }.compactMap { _, attrs in
-            // attr 1 = stream type; audio streams have value starting with "A_"
             guard let typeVal = attrs[1], typeVal.hasPrefix("A_") else { return nil }
             let codec = attrs[2] ?? String(typeVal.dropFirst(2))
             let language = attrs[14] ?? attrs[13] ?? "Unknown"

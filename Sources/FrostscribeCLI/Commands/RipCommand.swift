@@ -19,7 +19,14 @@ struct RipCommand: AsyncParsableCommand {
         Colors.section("Frostscribe Rip")
         print()
 
-        let scanResult = try await scanDisc(config: config)
+        // Build concrete services
+        let runner       = MakeMKVRunner(binPath: config.makemkvBin)
+        let queueManager = QueueManager(appSupportURL: ConfigManager.appSupportURL)
+        let statusManager = StatusManager(appSupportURL: ConfigManager.appSupportURL)
+        let ejector      = DiscEjector()
+
+        // Scan
+        let scanResult = try await scanDisc(runner: runner)
 
         guard !scanResult.titles.isEmpty else {
             Colors.error("No titles found. Is a disc inserted?")
@@ -59,27 +66,34 @@ struct RipCommand: AsyncParsableCommand {
             return
         }
 
-        print()
+        // Build use case and execute
         let jobLabel = [title, episodeLabel].compactMap { $0 }.joined(separator: " — ")
-        let statusManager = StatusManager(appSupportURL: ConfigManager.appSupportURL)
-        let ripJob = RipJob(type: isTV ? .tvshow : .movie, title: jobLabel)
-        try statusManager.write(status: .ripping, job: ripJob)
-        defer { try? statusManager.write(status: .idle) }
-
-        let mkv = try await ripTitle(chosen, config: config)
-
-        if !DiscEjector.eject() {
-            Colors.info("Could not eject disc — please eject manually.")
-        }
-
-        let queueManager = QueueManager(appSupportURL: ConfigManager.appSupportURL)
-        try queueManager.add(
-            input: mkv,
-            output: outputURL,
+        let ripInput = RipInput(
+            titleNumber: chosen.number,
+            baseTemp: URL(fileURLWithPath: config.tempDir),
+            outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
+            jobLabel: jobLabel,
+            mediaType: isTV ? .tvshow : .movie,
             title: title,
             episode: episodeLabel
         )
+
+        let ripUseCase = RipUseCase(
+            runner: runner,
+            queue: queueManager,
+            status: statusManager,
+            ejector: ejector
+        )
+
+        print()
+        let startTime = Date()
+        try await ripUseCase.execute(ripInput) { pct in
+            let tick = Int(Date().timeIntervalSince(startTime) * 10)
+            ProgressBar.printRip(percent: pct, message: chosen.name, tick: tick)
+        }
+
+        print("\r  \(Colors.teal)✔\(Colors.reset) \(Colors.bold)Rip complete.\(Colors.reset)                                        ")
 
         print()
         Colors.success("\(jobLabel) added to encode queue.")
@@ -89,9 +103,7 @@ struct RipCommand: AsyncParsableCommand {
 
     // MARK: - Scan
 
-    private func scanDisc(config: Config) async throws -> MakeMKVRunner.ScanResult {
-        let runner = MakeMKVRunner(binPath: config.makemkvBin)
-
+    private func scanDisc(runner: any MakeMKVRunning) async throws -> DiscScanResult {
         let spinner = Task {
             var tick = 0
             while !Task.isCancelled {
@@ -102,13 +114,7 @@ struct RipCommand: AsyncParsableCommand {
             }
         }
 
-        let result = try await withCheckedThrowingContinuation { cont in
-            DispatchQueue.global().async {
-                do { cont.resume(returning: try runner.scan()) }
-                catch { cont.resume(throwing: error) }
-            }
-        }
-
+        let result = try await runner.scan()
         spinner.cancel()
         print("\r  \(Colors.teal)✔\(Colors.reset) \(Colors.bold)Scan complete.\(Colors.reset)                              ")
         return result
@@ -228,40 +234,5 @@ struct RipCommand: AsyncParsableCommand {
                 mediaServer: config.mediaServer
             )
         }
-    }
-
-    // MARK: - Rip
-
-    private func ripTitle(_ title: DiscTitle, config: Config) async throws -> URL {
-        let tempDir = URL(fileURLWithPath: config.tempDir).appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-
-        let startTime = Date()
-        let runner    = MakeMKVRunner(binPath: config.makemkvBin)
-
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            DispatchQueue.global().async {
-                do {
-                    try runner.rip(titleNumber: title.number, to: tempDir, onMessage: { _ in }) { pct in
-                        let tick = Int(Date().timeIntervalSince(startTime) * 10)
-                        ProgressBar.printRip(percent: pct, message: title.name, tick: tick)
-                    }
-                    cont.resume()
-                } catch {
-                    cont.resume(throwing: error)
-                }
-            }
-        }
-
-        print("\r  \(Colors.teal)✔\(Colors.reset) \(Colors.bold)Rip complete.\(Colors.reset)                                        ")
-        return try findMKV(in: tempDir)
-    }
-
-    private func findMKV(in dir: URL) throws -> URL {
-        let contents = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-        guard let mkv = contents.first(where: { $0.pathExtension.lowercased() == "mkv" }) else {
-            throw FrostscribeError.noMKVFound(directory: dir)
-        }
-        return mkv
     }
 }

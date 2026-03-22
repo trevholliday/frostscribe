@@ -1,6 +1,6 @@
 import Foundation
 
-public final class StatusManager: Sendable {
+public final class StatusManager: StatusManaging, Sendable {
     public enum RipperStatus: String, Codable, Sendable {
         case idle
         case ripping
