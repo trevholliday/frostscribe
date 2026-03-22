@@ -2,17 +2,8 @@ import SwiftUI
 import FrostscribeCore
 
 struct SettingsView: View {
-    @State private var moviesDir = ""
-    @State private var tvDir = ""
-    @State private var tempDir = ""
-    @State private var mediaServer = MediaServer.jellyfin
-    @State private var tmdbKey = ""
-    @State private var makemkvKey = ""
-    @State private var makemkvBin = ""
-    @State private var handbrakeBin = ""
-    @State private var notificationsEnabled = true
-    @State private var vigilMode = false
-    @State private var selectAudioTracks = false
+    @State private var config      = Config()
+    @State private var savedConfig = Config()
     @State private var saveError: String?
     @State private var savedConfirmation = false
 
@@ -21,51 +12,34 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Paths") {
-                LabeledContent("Movies directory") {
-                    TextField("e.g. /Volumes/Media/Movies", text: $moviesDir)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("TV Shows directory") {
-                    TextField("e.g. /Volumes/Media/TV Shows", text: $tvDir)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("Temp directory") {
-                    TextField("e.g. /tmp/frostscribe", text: $tempDir)
-                        .textFieldStyle(.roundedBorder)
-                }
+                textRow("Movies directory",  hint: "/Volumes/Media/Movies",       value: $config.moviesDir,    saved: savedConfig.moviesDir)
+                textRow("TV Shows directory",hint: "/Volumes/Media/TV Shows",     value: $config.tvDir,        saved: savedConfig.tvDir)
+                textRow("Temp directory",    hint: "/Volumes/Media/Ripping/queue",value: $config.tempDir,      saved: savedConfig.tempDir)
             }
 
             Section("Media") {
-                Picker("Media server", selection: $mediaServer) {
+                Picker("Media server", selection: $config.mediaServer) {
                     ForEach(MediaServer.allCases, id: \.self) { server in
                         Text(server.rawValue.capitalized).tag(server)
                     }
                 }
+                .onChange(of: config.mediaServer) { save() }
             }
 
             Section("Tools & API Keys") {
-                LabeledContent("makemkvcon path") {
-                    TextField("e.g. /opt/homebrew/bin/makemkvcon", text: $makemkvBin)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("HandBrakeCLI path") {
-                    TextField("e.g. /opt/homebrew/bin/HandBrakeCLI", text: $handbrakeBin)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("MakeMKV key") {
-                    SecureField("optional", text: $makemkvKey)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("TMDB API key") {
-                    SecureField("optional", text: $tmdbKey)
-                        .textFieldStyle(.roundedBorder)
-                }
+                textRow("makemkvcon path",   hint: "/Applications/MakeMKV.app/Contents/MacOS/makemkvcon", value: $config.makemkvBin,  saved: savedConfig.makemkvBin)
+                textRow("HandBrakeCLI path", hint: "/opt/homebrew/bin/HandBrakeCLI",                      value: $config.handbrakeBin, saved: savedConfig.handbrakeBin)
+                secureRow("MakeMKV key",  hint: "optional", value: $config.makemkvKey,  saved: savedConfig.makemkvKey)
+                secureRow("TMDB API key", hint: "optional", value: $config.tmdbApiKey,  saved: savedConfig.tmdbApiKey)
             }
 
             Section("Options") {
-                Toggle("Enable notifications", isOn: $notificationsEnabled)
-                Toggle("Vigil Mode — auto-rip when disc is inserted", isOn: $vigilMode)
-                Toggle("Select audio tracks before ripping", isOn: $selectAudioTracks)
+                Toggle("Enable notifications", isOn: $config.notificationsEnabled)
+                    .onChange(of: config.notificationsEnabled) { save() }
+                Toggle("Vigil Mode — auto-rip when disc inserted", isOn: $config.vigilMode)
+                    .onChange(of: config.vigilMode) { save() }
+                Toggle("Select audio tracks before ripping", isOn: $config.selectAudioTracks)
+                    .onChange(of: config.selectAudioTracks) { save() }
             }
 
             if let error = saveError {
@@ -78,14 +52,10 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Settings")
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save", action: saveConfig)
-            }
-        }
         .overlay(alignment: .bottom) {
             if savedConfirmation {
-                Label("Settings saved", systemImage: "checkmark.circle.fill")
+                Label("Saved", systemImage: "checkmark.circle.fill")
+                    .font(.caption)
                     .foregroundStyle(FrostTheme.teal)
                     .padding(.horizontal, FrostTheme.paddingM)
                     .padding(.vertical, FrostTheme.paddingS)
@@ -98,43 +68,59 @@ struct SettingsView: View {
         .onAppear(perform: loadConfig)
     }
 
+    // MARK: - Row helpers
+
+    private func textRow(_ label: String, hint: String,
+                         value: Binding<String>, saved: String) -> some View {
+        LabeledContent(label) {
+            HStack(spacing: 6) {
+                TextField(hint, text: value)
+                    .textFieldStyle(.roundedBorder)
+                saveButtonIfDirty(value.wrappedValue != saved)
+            }
+        }
+    }
+
+    private func secureRow(_ label: String, hint: String,
+                            value: Binding<String>, saved: String) -> some View {
+        LabeledContent(label) {
+            HStack(spacing: 6) {
+                SecureField(hint, text: value)
+                    .textFieldStyle(.roundedBorder)
+                saveButtonIfDirty(value.wrappedValue != saved)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func saveButtonIfDirty(_ isDirty: Bool) -> some View {
+        if isDirty {
+            Button("Save") { save() }
+                .font(.caption.bold())
+                .foregroundStyle(.black)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(FrostTheme.frostCyan, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+        }
+    }
+
     // MARK: - Config I/O
 
     private func loadConfig() {
-        guard let config = try? configManager.load() else { return }
-        moviesDir            = config.moviesDir
-        tvDir                = config.tvDir
-        tempDir              = config.tempDir
-        mediaServer          = config.mediaServer
-        tmdbKey              = config.tmdbApiKey
-        makemkvKey           = config.makemkvKey
-        makemkvBin           = config.makemkvBin
-        handbrakeBin         = config.handbrakeBin
-        notificationsEnabled = config.notificationsEnabled
-        vigilMode            = config.vigilMode
-        selectAudioTracks    = config.selectAudioTracks
+        guard let loaded = try? configManager.load() else { return }
+        config = loaded
+        savedConfig = loaded
     }
 
-    private func saveConfig() {
-        let config = Config(
-            mediaServer:          mediaServer,
-            moviesDir:            moviesDir,
-            tvDir:                tvDir,
-            tempDir:              tempDir,
-            tmdbApiKey:           tmdbKey,
-            makemkvKey:           makemkvKey,
-            makemkvBin:           makemkvBin,
-            handbrakeBin:         handbrakeBin,
-            notificationsEnabled: notificationsEnabled,
-            vigilMode:            vigilMode,
-            selectAudioTracks:    selectAudioTracks
-        )
+    private func save() {
         do {
             try configManager.save(config)
+            withAnimation { savedConfig = config }
             saveError = nil
             savedConfirmation = true
             Task {
-                try? await Task.sleep(for: .seconds(2))
+                try? await Task.sleep(for: .seconds(1.5))
                 savedConfirmation = false
             }
         } catch {
