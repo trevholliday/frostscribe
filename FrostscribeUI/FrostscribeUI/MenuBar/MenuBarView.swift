@@ -18,6 +18,8 @@ struct MenuBarView: View {
                 .padding(FrostTheme.paddingM)
             Divider()
             footerRow
+            Divider()
+            quitRow
         }
         .frame(width: FrostTheme.popoverWidth)
     }
@@ -81,6 +83,20 @@ struct MenuBarView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
+        .padding(.horizontal, FrostTheme.paddingM)
+        .padding(.vertical, FrostTheme.paddingS)
+    }
+
+    private var quitRow: some View {
+        Button {
+            NSApplication.shared.terminate(nil)
+        } label: {
+            Label("Quit Frostscribe", systemImage: "power")
+                .font(.caption)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
         .padding(.horizontal, FrostTheme.paddingM)
         .padding(.vertical, FrostTheme.paddingS)
     }
