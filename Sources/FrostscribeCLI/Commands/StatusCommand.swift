@@ -24,9 +24,9 @@ struct StatusCommand: ParsableCommand {
         let statusLabel: String
         switch file.status {
         case .idle:     statusLabel = "\(Colors.dim)idle\(Colors.reset)"
-        case .ripping:  statusLabel = "\(Colors.brightCyan)ripping\(Colors.reset)"
-        case .encoding: statusLabel = "\(Colors.brightYellow)encoding\(Colors.reset)"
-        case .error:    statusLabel = "\(Colors.brightRed)error\(Colors.reset)"
+        case .ripping:  statusLabel = "\(Colors.frostCyan)ripping\(Colors.reset)"
+        case .encoding: statusLabel = "\(Colors.frostCyan)encoding\(Colors.reset)"
+        case .error:    statusLabel = "\(Colors.alert)error\(Colors.reset)"
         }
 
         print("  \(Colors.bold)Status\(Colors.reset)      \(statusLabel)")

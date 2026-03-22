@@ -80,7 +80,7 @@ struct InitCommand: ParsableCommand {
     }
 
     private func askOptional(_ label: String) -> String {
-        print("  \(Colors.cyan)›\(Colors.reset) \(label) \(Colors.dim)(optional)\(Colors.reset): ", terminator: "")
+        print("  \(Colors.frostCyan)›\(Colors.reset) \(label) \(Colors.dim)(optional)\(Colors.reset): ", terminator: "")
         fflush(stdout)
         return (readLine(strippingNewline: true) ?? "").trimmingCharacters(in: .whitespaces)
     }
