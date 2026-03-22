@@ -16,7 +16,8 @@ struct RipCommand: AsyncParsableCommand {
             throw ExitCode.failure
         }
 
-        Colors.section("Frostscribe Rip")
+        Colors.banner()
+        Colors.section("Rip")
         print()
 
         // Build concrete services

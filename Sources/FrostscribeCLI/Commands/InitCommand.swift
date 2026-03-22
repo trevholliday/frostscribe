@@ -14,7 +14,8 @@ struct InitCommand: ParsableCommand {
     func run() throws {
         let manager = ConfigManager()
 
-        Colors.section("Frostscribe Setup")
+        Colors.banner()
+        Colors.section("Setup")
 
         if manager.exists && !force {
             Colors.info("A config already exists at Application Support/Frostscribe/config.json")

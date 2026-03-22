@@ -18,7 +18,8 @@ struct StatusCommand: ParsableCommand {
             throw ExitCode.failure
         }
 
-        Colors.section("Frostscribe Status")
+        Colors.banner()
+        Colors.section("Status")
         print()
 
         let statusLabel: String

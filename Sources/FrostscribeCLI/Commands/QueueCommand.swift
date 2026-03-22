@@ -18,6 +18,7 @@ struct QueueCommand: ParsableCommand {
             throw ExitCode.failure
         }
 
+        Colors.banner()
         Colors.section("Encode Queue")
         print()
 
