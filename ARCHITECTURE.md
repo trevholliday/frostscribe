@@ -648,6 +648,7 @@ v1.0.0 ships when: rip, encode, worker, and menu bar app are all functional on m
 |---|---|
 | 2026-03-21 | MakeMKV error handling — `MSG:` lines with error codes (4xxx range) are now tracked during ripping. If any critical errors are detected, the rip is marked as failed and the job is not added to the encode queue. Prevents corrupt or incomplete rips from silently entering the encode pipeline. |
 | 2026-03-21 | TMDB search cleanup — disc-specific terms such as `bluray`, `blu-ray`, `dvd`, `disc`, `disk`, `remux`, `uhd`, `hdr`, `4k` are stripped from the disc name before sending it to the TMDB search endpoint. Improves match accuracy for discs whose raw MakeMKV names include media format labels. |
+| 2026-03-22 | Audio language display — `SINFO:` lines from `makemkvcon -r info` are now parsed to extract audio track languages per title. The title selection table includes an Audio column showing all audio track languages (e.g. `English, French`) so the user can confirm language availability before selecting a title to rip. |
 
 ---
 

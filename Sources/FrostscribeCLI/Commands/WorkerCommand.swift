@@ -1,5 +1,11 @@
 import ArgumentParser
+import Foundation
 import FrostscribeCore
+
+private let label    = "com.frostscribe.worker"
+private let plistURL = FileManager.default
+    .homeDirectoryForCurrentUser
+    .appending(path: "Library/LaunchAgents/\(label).plist")
 
 struct WorkerCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
@@ -19,20 +25,46 @@ struct WorkerStart: ParsableCommand {
         commandName: "start",
         abstract: "Install and start the encode worker."
     )
+
     func run() throws {
-        // TODO: write plist and launchctl load
-        print("worker start — coming soon")
+        let binPath = resolveWorkerBin()
+        let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path
+
+        try FileManager.default.createDirectory(
+            at: ConfigManager.appSupportURL,
+            withIntermediateDirectories: true
+        )
+
+        let plist = buildPlist(binPath: binPath, logPath: logPath)
+        try plist.write(to: plistURL, atomically: true, encoding: .utf8)
+
+        let result = launchctl("bootstrap", "gui/\(getuid())", plistURL.path)
+        if result == 0 {
+            Colors.success("Worker started.")
+            Colors.info("Logs: \(logPath)")
+        } else {
+            Colors.error("Failed to start worker (launchctl exited \(result)).")
+            throw ExitCode.failure
+        }
     }
 }
 
 struct WorkerStop: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "stop",
-        abstract: "Stop and uninstall the encode worker."
+        abstract: "Stop and remove the encode worker agent."
     )
+
     func run() throws {
-        // TODO: launchctl unload and remove plist
-        print("worker stop — coming soon")
+        let result = launchctl("bootout", "gui/\(getuid())/\(label)")
+        try? FileManager.default.removeItem(at: plistURL)
+
+        if result == 0 {
+            Colors.success("Worker stopped.")
+        } else {
+            Colors.error("Failed to stop worker (launchctl exited \(result)).")
+            throw ExitCode.failure
+        }
     }
 }
 
@@ -41,19 +73,104 @@ struct WorkerRestart: ParsableCommand {
         commandName: "restart",
         abstract: "Restart the encode worker."
     )
+
     func run() throws {
-        // TODO: launchctl unload then load
-        print("worker restart — coming soon")
+        _ = launchctl("bootout", "gui/\(getuid())/\(label)")
+        Thread.sleep(forTimeInterval: 1)
+        let result = launchctl("bootstrap", "gui/\(getuid())", plistURL.path)
+
+        if result == 0 {
+            Colors.success("Worker restarted.")
+        } else {
+            Colors.error("Failed to restart worker (launchctl exited \(result)).")
+            throw ExitCode.failure
+        }
     }
 }
 
 struct WorkerStatus: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "status",
-        abstract: "Show whether the worker is running and its current job."
+        abstract: "Show whether the worker is running."
     )
+
     func run() throws {
-        // TODO: launchctl list + read status.json
-        print("worker status — coming soon")
+        Colors.section("Worker Status")
+        print()
+
+        let running = launchctl("print", "gui/\(getuid())/\(label)") == 0
+        let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path
+
+        if running {
+            print("  \(Colors.bold)State\(Colors.reset)   \(Colors.frostCyan)running\(Colors.reset)")
+        } else {
+            print("  \(Colors.bold)State\(Colors.reset)   \(Colors.dim)stopped\(Colors.reset)")
+        }
+
+        print("  \(Colors.bold)Label\(Colors.reset)   \(Colors.dim)\(label)\(Colors.reset)")
+        print("  \(Colors.bold)Plist\(Colors.reset)   \(Colors.dim)\(plistURL.path)\(Colors.reset)")
+        print("  \(Colors.bold)Logs\(Colors.reset)    \(Colors.dim)\(logPath)\(Colors.reset)")
+        print()
+
+        if running {
+            Colors.info("Run \(Colors.bold)frostscribe queue\(Colors.reset) to see active encode jobs.")
+        } else {
+            Colors.info("Run \(Colors.bold)frostscribe worker start\(Colors.reset) to start the worker.")
+        }
+        print()
     }
+}
+
+// MARK: - Helpers
+
+@discardableResult
+private func launchctl(_ args: String...) -> Int32 {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+    process.arguments = args
+    process.standardOutput = FileHandle.nullDevice
+    process.standardError = FileHandle.nullDevice
+    try? process.run()
+    process.waitUntilExit()
+    return process.terminationStatus
+}
+
+private func resolveWorkerBin() -> String {
+    let sibling = URL(fileURLWithPath: CommandLine.arguments[0])
+        .deletingLastPathComponent()
+        .appending(path: "frostscribe-worker")
+        .path
+
+    if FileManager.default.fileExists(atPath: sibling) { return sibling }
+
+    for path in ["/opt/homebrew/bin/frostscribe-worker", "/usr/local/bin/frostscribe-worker"] {
+        if FileManager.default.fileExists(atPath: path) { return path }
+    }
+
+    return sibling
+}
+
+private func buildPlist(binPath: String, logPath: String) -> String {
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>\(label)</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>\(binPath)</string>
+        </array>
+        <key>RunAtLoad</key>
+        <false/>
+        <key>KeepAlive</key>
+        <false/>
+        <key>StandardOutPath</key>
+        <string>\(logPath)</string>
+        <key>StandardErrorPath</key>
+        <string>\(logPath)</string>
+    </dict>
+    </plist>
+    """
 }
