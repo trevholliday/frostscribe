@@ -57,6 +57,11 @@ final class EncodeWorker: @unchecked Sendable {
             let input  = URL(fileURLWithPath: job.input)
             let output = URL(fileURLWithPath: job.output)
 
+            try FileManager.default.createDirectory(
+                at: output.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+
             try runner.encode(input: input, output: output, preset: job.preset) { [weak self] pct in
                 let label = String(format: "%.1f%%", pct)
                 try? self?.queueManager.updateProgress(id: job.id, progress: label)
