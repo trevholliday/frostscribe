@@ -13,6 +13,13 @@ public final class StatusManager: StatusManaging, Sendable {
         public var updatedAt: Date
         public var currentJob: RipJob?
         public var history: [RipJob]
+
+        public init(status: RipperStatus, updatedAt: Date, currentJob: RipJob?, history: [RipJob]) {
+            self.status = status
+            self.updatedAt = updatedAt
+            self.currentJob = currentJob
+            self.history = history
+        }
     }
 
     private let fileURL: URL

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FB01C3D4E5F6A7B8C9D0E1F2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB01C3D4E5F6A7B8C9D0E1F1 /* Assets.xcassets */; };
 		D1B2C3D4E5F6A7B8C9D0E1F8 /* FrostscribeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2C3D4E5F6A7B8C9D0E1F4 /* FrostscribeApp.swift */; };
 		D1B2C3D4E5F6A7B8C9D0E1F9 /* FrostTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2C3D4E5F6A7B8C9D0E1F5 /* FrostTheme.swift */; };
 		E1B2C3D4E5F6A7B8C9D0E1F2 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2C3D4E5F6A7B8C9D0E1F6 /* MenuBarView.swift */; };
@@ -61,6 +62,7 @@
 		D1B2C3D4E5F6A7B8C9D0E1F3 /* QueueSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueSectionView.swift; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueRowView.swift; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FB01C3D4E5F6A7B8C9D0E1F1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F7 /* FrostscribeUI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FrostscribeUI.entitlements; sourceTree = "<group>"; };
 		F1B2C3D4E5F6A7B8C9D0E1F2 /* FrostscribeUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FrostscribeUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -109,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				C1B2C3D4E5F6A7B8C9D0E1F4 /* FrostscribeApp.swift */,
+				FB01C3D4E5F6A7B8C9D0E1F1 /* Assets.xcassets */,
 				D1B2C3D4E5F6A7B8C9D0E1F6 /* Info.plist */,
 				D1B2C3D4E5F6A7B8C9D0E1F7 /* FrostscribeUI.entitlements */,
 				A1B2C3D4E5F6A7B8C9D0E1F6 /* Design */,
@@ -257,6 +260,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FB01C3D4E5F6A7B8C9D0E1F2 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

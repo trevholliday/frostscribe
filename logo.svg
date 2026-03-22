@@ -1,0 +1,177 @@
+<svg width="400" height="420" viewBox="0 0 400 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Icy frost gradient for the bird body -->
+    <linearGradient id="birdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#F4FCFF"/>
+      <stop offset="45%"  stop-color="#7DD4F8"/>
+      <stop offset="100%" stop-color="#1E7DC8"/>
+    </linearGradient>
+    <!-- Wing inner shadow -->
+    <linearGradient id="wingShad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#0A2A45" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0A2A45" stop-opacity="0.10"/>
+    </linearGradient>
+    <!-- Dark background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#070D18"/>
+      <stop offset="100%" stop-color="#0A1628"/>
+    </linearGradient>
+    <!-- Monk hood -->
+    <linearGradient id="hoodGrad" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%"   stop-color="#1C3358"/>
+      <stop offset="100%" stop-color="#0C1C30"/>
+    </linearGradient>
+    <!-- Snowflake glow -->
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ── Background ─────────────────────────────────────── -->
+  <rect width="400" height="420" rx="48" fill="url(#bgGrad)"/>
+
+  <!-- ── Background snowflake watermark (dim) ──────────── -->
+  <!-- Centre 195,172, radius 98 -->
+  <g stroke="#0080AA" stroke-linecap="round" fill="none" opacity="0.09">
+    <line x1="195" y1="74"  x2="195" y2="270" stroke-width="2.5"/>
+    <line x1="110" y1="123" x2="280" y2="221" stroke-width="2.5"/>
+    <line x1="110" y1="221" x2="280" y2="123" stroke-width="2.5"/>
+    <!-- branch ticks at 58% -->
+    <line x1="195" y1="117" x2="184" y2="106" stroke-width="1.8"/>
+    <line x1="195" y1="117" x2="206" y2="106" stroke-width="1.8"/>
+    <line x1="195" y1="227" x2="184" y2="238" stroke-width="1.8"/>
+    <line x1="195" y1="227" x2="206" y2="238" stroke-width="1.8"/>
+    <line x1="152" y1="149" x2="141" y2="149" stroke-width="1.8"/>
+    <line x1="152" y1="149" x2="147" y2="139" stroke-width="1.8"/>
+    <line x1="238" y1="195" x2="249" y2="195" stroke-width="1.8"/>
+    <line x1="238" y1="195" x2="243" y2="205" stroke-width="1.8"/>
+    <line x1="152" y1="195" x2="141" y2="195" stroke-width="1.8"/>
+    <line x1="152" y1="195" x2="147" y2="205" stroke-width="1.8"/>
+    <line x1="238" y1="149" x2="249" y2="149" stroke-width="1.8"/>
+    <line x1="238" y1="149" x2="243" y2="139" stroke-width="1.8"/>
+  </g>
+
+  <!-- ── Swift bird ──────────────────────────────────────
+       Beak points RIGHT (≈330,155). Back arcs UP then LEFT.
+       Forked tail on the LEFT: two prongs pointing UP-LEFT.
+       Underbody sweeps back RIGHT to beak.
+  ─────────────────────────────────────────────────────── -->
+  <path d="
+    M 330,155
+
+    C 325,128  308,96   280,78
+    C 258,63   228,57   196,60
+    C 168,63   140,76   114,98
+    C 95,114   78,136   72,155
+
+    C 70,160   68,165   70,170
+    C 68,166   62,152   64,136
+    C 66,122   76,112   84,116
+    C 92,120   96,132   90,144
+    C 88,149   89,153   92,156
+
+    C 92,153   90,143   94,132
+    C 98,121   108,117  116,122
+    C 124,127  126,140  120,152
+
+    C 124,164  136,188  160,212
+    C 180,232  205,244  232,240
+    C 258,236  280,218  298,196
+    C 312,178  322,165  330,155
+    Z
+  " fill="url(#birdGrad)"/>
+
+  <!-- Wing inner feather shadow -->
+  <path d="
+    M 120,148
+    C 136,132  162,122  190,120
+    C 210,118  228,124  228,138
+    C 228,150  212,158  194,160
+    C 172,162  144,158  120,148
+    Z
+  " fill="url(#wingShad)"/>
+
+  <!-- ── Monk / falconry hood over the head ─────────────
+       Head area is on the right side (≈295–330, 135–172).
+       A pointed hood with topknot tassel — hawking hood
+       doubled as a monk's cowl.
+  ─────────────────────────────────────────────────────── -->
+  <path d="
+    M 292,148
+    C 290,130  296,112  308,108
+    C 320,104  334,114  336,130
+    C 338,146  330,162  318,166
+    C 306,170  292,162  290,150
+    C 290,149  291,148  292,148
+    Z
+  " fill="url(#hoodGrad)"/>
+
+  <!-- Hood tassel / topknot -->
+  <line x1="316" y1="108" x2="316" y2="93"
+    stroke="#243C5A" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="316" cy="90" r="5"   fill="#1A2E48"/>
+  <circle cx="316" cy="90" r="2.2" fill="#2E4A6A"/>
+
+  <!-- Hood seam stitching (dashed) -->
+  <path d="M 294,150 C 300,138 310,132 320,134 C 330,136 336,146 335,158"
+    stroke="#243858" stroke-width="1.2" fill="none"
+    stroke-dasharray="3,2.5" opacity="0.6"/>
+
+  <!-- Hood rim highlight -->
+  <path d="M 292,158 C 296,168 308,172 318,170 C 328,168 336,160 337,150"
+    stroke="#3A5A80" stroke-width="1.1" fill="none" opacity="0.5"/>
+
+  <!-- Eye — glint through hood gap -->
+  <circle cx="322" cy="148" r="3.5" fill="#04101E"/>
+  <circle cx="323" cy="147" r="1.3" fill="#55CCFF" opacity="0.80"/>
+
+  <!-- ── Frost breath from beak (≈330,155) ─────────────── -->
+  <circle cx="345" cy="148" r="5.5" fill="#AADFFF" opacity="0.22"/>
+  <circle cx="356" cy="140" r="3.8" fill="#AADFFF" opacity="0.14"/>
+  <circle cx="350" cy="132" r="2.5" fill="#AADFFF" opacity="0.10"/>
+
+  <!-- ── Chest snowflake (≈248,162) ─────────────────────── -->
+  <g stroke="#C8EEFF" stroke-linecap="round" fill="none"
+     filter="url(#glow)" opacity="0.92">
+    <!-- 3 axes, 13px each way -->
+    <line x1="248" y1="149" x2="248" y2="175" stroke-width="1.9"/>
+    <line x1="235" y1="156" x2="261" y2="168" stroke-width="1.9"/>
+    <line x1="235" y1="168" x2="261" y2="156" stroke-width="1.9"/>
+    <!-- Tip tick marks -->
+    <line x1="248" y1="152" x2="244" y2="148" stroke-width="1.2"/>
+    <line x1="248" y1="152" x2="252" y2="148" stroke-width="1.2"/>
+    <line x1="248" y1="172" x2="244" y2="176" stroke-width="1.2"/>
+    <line x1="248" y1="172" x2="252" y2="176" stroke-width="1.2"/>
+    <line x1="237" y1="158" x2="234" y2="154" stroke-width="1.2"/>
+    <line x1="237" y1="158" x2="233" y2="160" stroke-width="1.2"/>
+    <line x1="259" y1="166" x2="262" y2="170" stroke-width="1.2"/>
+    <line x1="259" y1="166" x2="263" y2="164" stroke-width="1.2"/>
+    <line x1="237" y1="166" x2="234" y2="170" stroke-width="1.2"/>
+    <line x1="237" y1="166" x2="233" y2="164" stroke-width="1.2"/>
+    <line x1="259" y1="158" x2="262" y2="154" stroke-width="1.2"/>
+    <line x1="259" y1="158" x2="263" y2="160" stroke-width="1.2"/>
+    <!-- Centre dot -->
+    <circle cx="248" cy="162" r="2.6" fill="#C8EEFF" stroke="none"/>
+  </g>
+
+  <!-- ── Wordmark ──────────────────────────────────────── -->
+  <text
+    x="200" y="320"
+    font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    font-size="36"
+    font-weight="700"
+    fill="white"
+    text-anchor="middle"
+    letter-spacing="4">FROSTSCRIBE</text>
+
+  <!-- ── Tagline ───────────────────────────────────────── -->
+  <text
+    x="200" y="346"
+    font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    font-size="11.5"
+    fill="#66B2FF"
+    text-anchor="middle"
+    letter-spacing="3"
+    opacity="0.80">DISC TO LIBRARY · NATIVELY</text>
+</svg>

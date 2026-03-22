@@ -126,32 +126,38 @@ final class VigilViewModel {
         let ripInput = RipInput(
             titleNumber: largestTitle.number,
             baseTemp: URL(fileURLWithPath: config.tempDir),
+            mediaType: .movie,
+            jobLabel: mediaTitle
+        )
+
+        let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
-            jobLabel: mediaTitle,
-            mediaType: .movie,
-            title: mediaTitle,
-            episode: nil
+            title: mediaTitle
         )
 
         await notifications.requestAuthorizationIfNeeded()
         notifications.send(title: "Ripping Started", body: mediaTitle)
 
-        let useCase = RipUseCase(
+        let ripUseCase = RipUseCase(
             runner: runner,
-            queue: QueueManager(appSupportURL: ConfigManager.appSupportURL),
             status: StatusManager(appSupportURL: ConfigManager.appSupportURL),
             ejector: DiscEjector()
+        )
+
+        let encodeUseCase = EncodeUseCase(
+            queue: QueueManager(appSupportURL: ConfigManager.appSupportURL)
         )
 
         phase = .ripping(progress: 0)
 
         do {
-            try await useCase.execute(ripInput) { [weak self] pct in
+            let mkvURL = try await ripUseCase.execute(ripInput) { [weak self] pct in
                 Task { @MainActor [weak self] in
                     self?.phase = .ripping(progress: pct)
                 }
             }
+            try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
             notifications.send(title: "Rip Complete", body: "\(mediaTitle) — added to encode queue")
         } catch {
             notifications.send(title: "Rip Failed", body: mediaTitle)

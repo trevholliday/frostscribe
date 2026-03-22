@@ -9,13 +9,30 @@
 # One-time tap repo setup (run after creating homebrew-frostscribe on GitHub):
 #   make setup-tap
 
-.PHONY: build test release setup-tap
+.PHONY: build test build-ui release setup-tap
 
 build:
 	swift build -c release
 
 test:
 	swift test
+
+build-ui:
+	@echo "→ Archiving FrostscribeUI..."
+	xcodebuild -project FrostscribeUI/FrostscribeUI.xcodeproj \
+	           -scheme FrostscribeUI \
+	           -configuration Release \
+	           -archivePath .build/FrostscribeUI.xcarchive \
+	           archive
+	@echo "→ Exporting .app..."
+	xcodebuild -exportArchive \
+	           -archivePath .build/FrostscribeUI.xcarchive \
+	           -exportPath .build/FrostscribeUI \
+	           -exportOptionsPlist scripts/ExportOptions.plist
+	@echo "→ Installing to /Applications..."
+	cp -r .build/FrostscribeUI/FrostscribeUI.app /Applications/
+	@echo ""
+	@echo "✓ FrostscribeUI installed to /Applications/FrostscribeUI.app"
 
 release:
 ifndef VERSION

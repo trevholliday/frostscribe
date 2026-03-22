@@ -31,9 +31,14 @@ struct QueueRowView: View {
                 Image(systemName: "clock")
                     .foregroundStyle(.secondary)
             case .encoding:
-                Image(systemName: "gear")
-                    .foregroundStyle(FrostTheme.glacier)
-                    .symbolEffect(.rotate, isActive: true)
+                if #available(macOS 15.0, *) {
+                    Image(systemName: "gear")
+                        .foregroundStyle(FrostTheme.glacier)
+                        .symbolEffect(.rotate, isActive: true)
+                } else {
+                    Image(systemName: "gear")
+                        .foregroundStyle(FrostTheme.glacier)
+                }
             case .done:
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(FrostTheme.teal)
