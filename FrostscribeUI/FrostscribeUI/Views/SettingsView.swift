@@ -64,6 +64,7 @@ struct SettingsView: View {
             Section("Options") {
                 Toggle("Enable notifications", isOn: $notificationsEnabled)
                 Toggle("Vigil Mode — auto-rip when disc is inserted", isOn: $vigilMode)
+                Toggle("Select audio tracks before ripping", isOn: $selectAudioTracks)
             }
 
             if let error = saveError {

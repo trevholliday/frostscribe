@@ -34,6 +34,7 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
         let preset: String
         let title: String
         let episode: String?
+        let audioTracks: [Int]?
     }
 
     private(set) var addCalls: [AddCall] = []
@@ -42,9 +43,9 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
     func read() throws -> [EncodeJob] { [] }
     func activeJobs() throws -> [EncodeJob] { [] }
 
-    func add(input: URL, output: URL, preset: String, title: String, episode: String?) throws {
+    func add(input: URL, output: URL, preset: String, title: String, episode: String?, audioTracks: [Int]?) throws {
         if let error = addError { throw error }
-        addCalls.append(AddCall(input: input, output: output, preset: preset, title: title, episode: episode))
+        addCalls.append(AddCall(input: input, output: output, preset: preset, title: title, episode: episode, audioTracks: audioTracks))
     }
 
     func updateProgress(id: UUID, progress: String) throws {}

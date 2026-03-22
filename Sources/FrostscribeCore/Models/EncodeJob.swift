@@ -14,6 +14,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
     public var input: String
     public var output: String
     public var preset: String
+    public var audioTracks: [Int]?
     public var status: Status
     public var progress: String
     public var addedAt: Date
@@ -36,6 +37,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         input: String,
         output: String,
         preset: String,
+        audioTracks: [Int]? = nil,
         status: Status = .pending,
         progress: String = "—",
         addedAt: Date = .now,
@@ -48,6 +50,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         self.input = input
         self.output = output
         self.preset = preset
+        self.audioTracks = audioTracks
         self.status = status
         self.progress = progress
         self.addedAt = addedAt

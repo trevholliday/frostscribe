@@ -11,11 +11,12 @@ public final class HandBrakeRunner: HandBrakeRunning {
         input: URL,
         output: URL,
         preset: String,
+        audioTracks: [Int]?,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws {
         try await withCheckedThrowingContinuation { cont in
             DispatchQueue.global(qos: .userInitiated).async {
-                do { try self.encodeSync(input: input, output: output, preset: preset, onProgress: onProgress); cont.resume() }
+                do { try self.encodeSync(input: input, output: output, preset: preset, audioTracks: audioTracks, onProgress: onProgress); cont.resume() }
                 catch { cont.resume(throwing: error) }
             }
         }
@@ -25,12 +26,14 @@ public final class HandBrakeRunner: HandBrakeRunning {
         input: URL,
         output: URL,
         preset: String,
+        audioTracks: [Int]?,
         onProgress: @escaping @Sendable (Double) -> Void
     ) throws {
         let args = EncoderPreset.arguments(
             input: input.path,
             output: output.path,
-            preset: preset
+            preset: preset,
+            audioTracks: audioTracks
         )
 
         let process = Process()

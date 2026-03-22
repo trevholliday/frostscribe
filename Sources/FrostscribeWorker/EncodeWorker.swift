@@ -62,7 +62,7 @@ actor EncodeWorker {
                 withIntermediateDirectories: true
             )
 
-            try await handbrakeRunner.encode(input: input, output: output, preset: job.preset) { pct in
+            try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks) { pct in
                 let label = String(format: "%.1f%%", pct)
                 try? qm.updateProgress(id: id, progress: label)
             }

@@ -7,8 +7,9 @@ public enum EncoderPreset {
         return discType.lowercased().contains("blu") ? bluray : dvd
     }
 
-    public static func arguments(input: String, output: String, preset: String) -> [String] {
-        [
+    public static func arguments(input: String, output: String, preset: String, audioTracks: [Int]? = nil) -> [String] {
+        let audio = audioArgs(tracks: audioTracks)
+        return [
             "-i", input,
             "-o", output,
             "--preset", preset,
@@ -16,10 +17,20 @@ public enum EncoderPreset {
             "--quality", "80",
             "--encoder-level", "auto",
             "--subtitle", "none",
-            "--audio", "1,1",
-            "--aencoder", "ca_aac,copy:ac3",
-            "--ab", "160,auto",
-            "--aname", "AAC Stereo,Surround",
-        ]
+        ] + audio
+    }
+
+    // Generates --audio / --aencoder / --ab / --aname arguments.
+    // nil → default dual-track (AAC stereo + AC3 passthrough from track 1).
+    // [N, M, ...] → one AAC stream per selected track.
+    private static func audioArgs(tracks: [Int]?) -> [String] {
+        guard let tracks, !tracks.isEmpty else {
+            return ["--audio", "1,1", "--aencoder", "ca_aac,copy:ac3", "--ab", "160,auto", "--aname", "AAC Stereo,Surround"]
+        }
+        let audioList  = tracks.map(String.init).joined(separator: ",")
+        let encoders   = Array(repeating: "ca_aac", count: tracks.count).joined(separator: ",")
+        let bitrates   = Array(repeating: "160", count: tracks.count).joined(separator: ",")
+        let names      = tracks.enumerated().map { i, t in "Track \(t)" }.joined(separator: ",")
+        return ["--audio", audioList, "--aencoder", encoders, "--ab", bitrates, "--aname", names]
     }
 }

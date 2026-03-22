@@ -67,6 +67,25 @@ struct RipCommand: AsyncParsableCommand {
             return
         }
 
+        // Audio track selection (optional)
+        var selectedAudioTracks: [Int]? = nil
+        if config.selectAudioTracks, chosen.audioTracks.count > 1 {
+            print()
+            Colors.section("Audio Tracks")
+            for (i, track) in chosen.audioTracks.enumerated() {
+                let label = "\(Colors.dim)[\(i + 1)]\(Colors.reset) \(track.language) (\(track.codec))"
+                let losslessTag = track.isLossless ? " \(Colors.teal)✦ lossless\(Colors.reset)" : ""
+                print("  \(label)\(losslessTag)")
+            }
+            print()
+            let raw = Prompt.ask("Tracks to include (e.g. 1,3) or press Enter for all")
+            if !raw.isEmpty {
+                selectedAudioTracks = raw.split(separator: ",")
+                    .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+                    .filter { $0 >= 1 && $0 <= chosen.audioTracks.count }
+            }
+        }
+
         // Build use case and execute
         let jobLabel = [title, episodeLabel].compactMap { $0 }.joined(separator: " — ")
         let ripInput = RipInput(
@@ -77,7 +96,8 @@ struct RipCommand: AsyncParsableCommand {
             jobLabel: jobLabel,
             mediaType: isTV ? .tvshow : .movie,
             title: title,
-            episode: episodeLabel
+            episode: episodeLabel,
+            selectedAudioTracks: selectedAudioTracks
         )
 
         let ripUseCase = RipUseCase(

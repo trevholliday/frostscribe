@@ -29,7 +29,8 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
         output: URL,
         preset: String,
         title: String,
-        episode: String? = nil
+        episode: String? = nil,
+        audioTracks: [Int]? = nil
     ) throws {
         try lock.withLock {
             var jobs = (try? _read()) ?? []
@@ -38,7 +39,8 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
                 episode: episode,
                 input: input.path,
                 output: output.path,
-                preset: preset
+                preset: preset,
+                audioTracks: audioTracks
             )
             jobs.append(job)
             try _write(jobs)

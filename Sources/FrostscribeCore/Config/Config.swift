@@ -9,6 +9,7 @@ public struct Config: Codable, Sendable {
     public var handbrakeBin: String
     public var notificationsEnabled: Bool
     public var vigilMode: Bool
+    public var selectAudioTracks: Bool
 
     public init(
         mediaServer: MediaServer = .jellyfin,
@@ -20,7 +21,8 @@ public struct Config: Codable, Sendable {
         makemkvBin: String = "",
         handbrakeBin: String = "",
         notificationsEnabled: Bool = true,
-        vigilMode: Bool = false
+        vigilMode: Bool = false,
+        selectAudioTracks: Bool = false
     ) {
         self.mediaServer = mediaServer
         self.moviesDir = moviesDir
@@ -32,5 +34,6 @@ public struct Config: Codable, Sendable {
         self.handbrakeBin = handbrakeBin
         self.notificationsEnabled = notificationsEnabled
         self.vigilMode = vigilMode
+        self.selectAudioTracks = selectAudioTracks
     }
 }

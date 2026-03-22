@@ -9,6 +9,7 @@ public struct RipInput: Sendable {
     public let mediaType: RipJob.MediaType
     public let title: String
     public let episode: String?
+    public let selectedAudioTracks: [Int]?
 
     public init(
         titleNumber: Int,
@@ -18,7 +19,8 @@ public struct RipInput: Sendable {
         jobLabel: String,
         mediaType: RipJob.MediaType,
         title: String,
-        episode: String?
+        episode: String?,
+        selectedAudioTracks: [Int]? = nil
     ) {
         self.titleNumber = titleNumber
         self.baseTemp = baseTemp
@@ -28,6 +30,7 @@ public struct RipInput: Sendable {
         self.mediaType = mediaType
         self.title = title
         self.episode = episode
+        self.selectedAudioTracks = selectedAudioTracks
     }
 }
 
@@ -75,7 +78,8 @@ public final class RipUseCase: Sendable {
             output: input.outputURL,
             preset: input.preset,
             title: input.title,
-            episode: input.episode
+            episode: input.episode,
+            audioTracks: input.selectedAudioTracks
         )
     }
 
