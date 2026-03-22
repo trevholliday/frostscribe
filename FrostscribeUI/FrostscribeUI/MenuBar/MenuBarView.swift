@@ -28,7 +28,7 @@ struct MenuBarView: View {
     private var headerRow: some View {
         HStack(spacing: 6) {
             Image(systemName: "snowflake")
-                .foregroundStyle(FrostTheme.frostCyan)
+                .foregroundStyle(FrostTheme.teal)
             Text("Frostscribe")
                 .bold()
             if vigilVM.isWatching {
@@ -67,7 +67,7 @@ struct MenuBarView: View {
                     .font(.caption)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(FrostTheme.frostCyan)
+            .foregroundStyle(FrostTheme.teal)
             Spacer()
             Button {
                 openSettings()

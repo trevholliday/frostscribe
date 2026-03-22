@@ -34,7 +34,7 @@ struct TVEpisodeView: View {
 
             Text("Label: \(String(format: "S%02dE%02d", season, episode))")
                 .font(.caption.monospaced())
-                .foregroundStyle(FrostTheme.frostCyan)
+                .foregroundStyle(FrostTheme.teal)
 
             Button("Continue") {
                 vm.setEpisode(season: season, episode: episode,

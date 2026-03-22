@@ -38,7 +38,7 @@ struct StatusSectionView: View {
             HStack {
                 Text(job.progress)
                     .font(.caption)
-                    .foregroundStyle(FrostTheme.frostCyan)
+                    .foregroundStyle(FrostTheme.teal)
                 Spacer()
                 if let item = job.currentItem {
                     Text(item)

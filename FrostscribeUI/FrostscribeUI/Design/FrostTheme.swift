@@ -23,7 +23,7 @@ extension StatusManager.RipperStatus {
     var color: Color {
         switch self {
         case .idle:     return .secondary
-        case .ripping:  return FrostTheme.frostCyan
+        case .ripping:  return FrostTheme.teal
         case .encoding: return FrostTheme.glacier
         case .error:    return FrostTheme.alert
         }

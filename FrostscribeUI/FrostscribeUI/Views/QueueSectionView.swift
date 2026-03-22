@@ -18,7 +18,7 @@ struct QueueSectionView: View {
                 if queueVM.activeCount > 0 {
                     Text("\(queueVM.activeCount) active")
                         .font(.caption)
-                        .foregroundStyle(FrostTheme.frostCyan)
+                        .foregroundStyle(FrostTheme.teal)
                 }
             }
 

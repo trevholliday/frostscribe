@@ -11,6 +11,8 @@ struct FrostscribeApp: App {
     )
     @State private var vigilVM = VigilViewModel()
 
+    @Environment(\.openWindow) private var openWindow
+
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
@@ -24,6 +26,7 @@ struct FrostscribeApp: App {
                     statusVM.startPolling()
                     queueVM.startPolling()
                     vigilVM.startWatchingIfEnabled()
+                    openWindow(id: "rip-flow")
                 }
         }
         .menuBarExtraStyle(.window)

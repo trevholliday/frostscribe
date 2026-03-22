@@ -9,7 +9,7 @@ struct RippingProgressView: View {
             Spacer()
             Image(systemName: "opticaldisc")
                 .font(.system(size: 44))
-                .foregroundStyle(FrostTheme.frostCyan)
+                .foregroundStyle(FrostTheme.teal)
                 .symbolEffect(.pulse, isActive: true)
             Text(title)
                 .font(.title3)
