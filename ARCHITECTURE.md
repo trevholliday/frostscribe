@@ -103,7 +103,17 @@ Frostscribe/
 │   │   ├── Models/
 │   │   │   ├── RipJob.swift
 │   │   │   ├── EncodeJob.swift
-│   │   │   └── DiscTitle.swift
+│   │   │   ├── DiscTitle.swift
+│   │   │   └── DiscScanResult.swift
+│   │   ├── Protocols/
+│   │   │   ├── QueueManaging.swift
+│   │   │   ├── StatusManaging.swift
+│   │   │   ├── NotificationServing.swift
+│   │   │   ├── MakeMKVRunning.swift
+│   │   │   ├── HandBrakeRunning.swift
+│   │   │   └── DiscEjecting.swift
+│   │   ├── UseCases/
+│   │   │   └── RipUseCase.swift
 │   │   ├── Services/
 │   │   │   ├── StatusManager.swift
 │   │   │   ├── QueueManager.swift
@@ -149,7 +159,8 @@ Frostscribe/
     └── FrostscribeCoreTests/
         ├── MakeMKVParserTests.swift
         ├── PathBuilderTests.swift
-        └── QueueManagerTests.swift
+        ├── QueueManagerTests.swift
+        └── RipUseCaseTests.swift
 ```
 
 ---
@@ -168,6 +179,21 @@ The heart of the application. Contains all business logic with zero UI dependenc
 - `RipJob.swift` — represents an active or completed rip operation. Written to `status.json` during ripping.
 - `EncodeJob.swift` — represents a single entry in the encode queue (`queue.json`). Has states: `pending`, `encoding`, `done`, `error`.
 - `DiscTitle.swift` — represents a single title found on a disc during the MakeMKV scan phase. Contains title number, duration, chapter count, file size, and filename.
+- `DiscScanResult.swift` — top-level value type returned by a disc scan: title list, disc name, disc type.
+
+**Protocols/**
+
+Protocol abstractions that decouple callers from concrete implementations. All services and runners conform to their respective protocol, enabling injection and stub-based testing without touching real discs, files, or processes.
+
+- `QueueManaging.swift` — read, add, and update encode jobs in `queue.json`.
+- `StatusManaging.swift` — read and write rip status to `status.json`.
+- `NotificationServing.swift` — request notification authorization and send notifications.
+- `MakeMKVRunning.swift` — async scan and rip operations. Default no-op `scan()` extension provided.
+- `HandBrakeRunning.swift` — async encode operation.
+- `DiscEjecting.swift` — eject the optical disc.
+
+**UseCases/**
+- `RipUseCase.swift` — orchestrates the core rip flow: writes `.ripping` status, calls the runner, finds the output MKV, ejects the disc, adds the encode job to the queue, and resets status to `.idle` via `defer`. Accepts all dependencies as protocol types so it can be tested with stubs. `RipCommand` is presentation-only; all rip business logic lives here.
 
 **Services/**
 - `StatusManager.swift` — atomic read/write of `status.json`. Maintains history of completed jobs (last 20). Both the rip flow and worker update this file; it is written atomically using a temp file + rename to prevent corruption.
@@ -176,7 +202,7 @@ The heart of the application. Contains all business logic with zero UI dependenc
 - `TMDBClient.swift` — HTTP client for TMDB API v3. Performs multi-search (auto-detects movie vs TV), fetches season episode counts. Requires a TMDB API key in config. Gracefully no-ops if key is not set.
 
 **Ripping/**
-- `MakeMKVRunner.swift` — spawns `makemkvcon` as a child process, captures output via a pipe, and streams it line by line to the parser. Handles both the `info` (disc scan) and `mkv` (rip) modes.
+- `MakeMKVRunner.swift` — spawns `makemkvcon` as a child process, captures output via a pipe, and streams it line by line to the parser. Handles both the `info` (disc scan) and `mkv` (rip) modes. Conforms to `MakeMKVRunning`; exposes public `async throws` methods that bridge the blocking process calls via `DispatchQueue`. Returns `DiscScanResult`.
 - `MakeMKVParser.swift` — pure parsing logic with no I/O. Takes raw output lines from makemkvcon and produces structured data: `CINFO` → disc metadata, `TINFO` → title metadata, `MSG` → user-facing messages, `PRGV` → progress values. Fully unit tested.
 - `DiscEjector.swift` — wraps `drutil eject` with a retry loop (5 attempts, 2 second delay). Reports failure clearly if all attempts fail.
 
@@ -650,6 +676,7 @@ v1.0.0 ships when: rip, encode, worker, and menu bar app are all functional on m
 | 2026-03-21 | TMDB search cleanup — disc-specific terms such as `bluray`, `blu-ray`, `dvd`, `disc`, `disk`, `remux`, `uhd`, `hdr`, `4k` are stripped from the disc name before sending it to the TMDB search endpoint. Improves match accuracy for discs whose raw MakeMKV names include media format labels. |
 | 2026-03-22 | Audio language display — `SINFO:` lines from `makemkvcon -r info` are now parsed to extract audio track languages and codecs per title. The title selection table includes an Audio column showing all audio tracks (e.g. `English (DTS-HD MA), Japanese (DTS-HD MA)`). Lossless tracks (DTS-HD MA, TrueHD, FLAC, PCM, LPCM) are highlighted in green so the user can immediately identify lossless audio before selecting a title to rip. |
 | 2026-03-22 | Audio and subtitle track selection — two optional config flags: `select_audio_tracks` and `select_subtitle_tracks` (both default `false`). When enabled, the user is prompted after title selection to choose which audio/subtitle tracks to include. When disabled (default), all tracks are passed to HandBrakeCLI. This allows power users to trim unwanted languages while keeping the default experience simple. |
+| 2026-03-22 | Architecture refactor — added `Protocols/` layer (`QueueManaging`, `StatusManaging`, `NotificationServing`, `MakeMKVRunning`, `HandBrakeRunning`, `DiscEjecting`) and `UseCases/` layer (`RipUseCase`). All services and runners now conform to protocol abstractions. `EncodeWorker` is constructor-injected with no hidden dependencies. `RipCommand` is presentation-only. `DiscScanResult` promoted to a top-level model type. |
 
 ---
 
