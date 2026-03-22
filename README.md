@@ -25,10 +25,10 @@ Frostscribe wraps `makemkvcon` and `HandBrakeCLI` into a polished interactive CL
 ## Requirements
 
 - macOS 14 or later
-- [MakeMKV](https://makemkv.com) — `makemkvcon` must be in your `$PATH` or configured via `frostscribe init`
+- [MakeMKV](https://makemkv.com) — download and install from makemkv.com
 - [HandBrake](https://handbrake.fr) — `HandBrakeCLI` must be in your `$PATH` or configured via `frostscribe init`
 
-```
+```bash
 brew install handbrake
 ```
 
@@ -36,7 +36,14 @@ brew install handbrake
 
 ## Installation
 
-Build from source:
+**Homebrew (recommended):**
+
+```bash
+brew tap trevholliday/frostscribe
+brew install frostscribe
+```
+
+**Build from source:**
 
 ```bash
 git clone https://github.com/trevholliday/frostscribe
@@ -87,6 +94,10 @@ Frostscribe will:
 6. Eject the disc
 
 The background worker picks up the job and encodes it to your media library using VideoToolbox hardware encoding (H.265).
+
+### Menu bar app
+
+The **FrostscribeUI** menu bar app lives in your menu bar permanently. It shows rip and encode status at a glance, lets you open a full GUI rip flow window ("Rip Disc"), manage settings, and optionally enables Vigil Mode — automatic ripping when a disc is inserted.
 
 ### Check status
 
@@ -145,6 +156,8 @@ TV Shows/Breaking Bad/Season01/Breaking Bad S01E01.mkv
 | `makemkv_bin` | No | Full path to `makemkvcon` (searched in `$PATH` if empty) |
 | `handbrake_bin` | No | Full path to `HandBrakeCLI` (searched in `$PATH` if empty) |
 | `notifications_enabled` | No | Native macOS notifications on job completion (default: `true`) |
+| `vigil_mode` | No | Auto-rip when a disc is inserted — requires the menu bar app (default: `false`) |
+| `select_audio_tracks` | No | Prompt to choose which audio tracks to include before ripping (default: `false`) |
 
 ---
 

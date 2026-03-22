@@ -23,11 +23,11 @@
 10. [Worker Lifecycle](#worker-lifecycle)
 11. [Vigil Mode](#vigil-mode)
 12. [TMDB Integration](#tmdb-integration)
-12. [CLI Command Reference](#cli-command-reference)
-13. [Dependencies](#dependencies)
-14. [Build & Distribution](#build--distribution)
-15. [Versioning Strategy](#versioning-strategy)
-16. [Out of Scope for v1](#out-of-scope-for-v1)
+13. [CLI Command Reference](#cli-command-reference)
+14. [Dependencies](#dependencies)
+15. [Build & Distribution](#build--distribution)
+16. [Versioning Strategy](#versioning-strategy)
+17. [Out of Scope for v1](#out-of-scope-for-v1)
 
 ---
 
@@ -35,12 +35,11 @@
 
 Frostscribe is a native macOS application that acts as a digital librarian — taking physical disc media (Blu-ray, DVD) and permanently preserving it in a local media library. Like the monks of a scriptorium transcribing manuscripts from one medium to another, Frostscribe carefully identifies, rips, encodes, and catalogs each disc into a format that Jellyfin, Plex, or Kodi can immediately recognize and serve.
 
-The name comes from three ideas:
-- **Frost** — cold, permanent, preserved storage (Frostbyte)
-- **Scribe** — the monk who transcribes from one medium to another
-- **Frostscribe** — a tool that permanently transcribes your physical media into your digital cold storage
+The name is built from two ideas:
+- **Frost** — cold, permanent, preserved storage
+- **Scribe** — the act of transcribing from one medium to another
 
-By default, Frostscribe is an interactive tool designed for a person who is sitting at their homelab, swapping discs, and building their library intentionally. For advanced users who want fully automatic ripping, **Vigil Mode** can be enabled — see the Vigil Mode section.
+By default, Frostscribe is an interactive tool designed for a person who is sitting at their homelab, swapping discs, and building their library intentionally. For users who want fully automatic ripping, **Vigil Mode** can be enabled — see the Vigil Mode section.
 
 ---
 
@@ -63,7 +62,7 @@ By default, Frostscribe is an interactive tool designed for a person who is sitt
 │          ┌──────────────┼──────────────┐                    │
 │          ▼              ▼              ▼                    │
 │   frostscribe CLI   Menu Bar App   frostscribe worker        │
-│   (interactive)     (monitor)      (launchd agent)           │
+│   (interactive)     (monitor/rip)  (launchd agent)           │
 │          │              │              │                    │
 │          └──────────────┼──────────────┘                    │
 │                         ▼                                    │
@@ -86,14 +85,13 @@ By default, Frostscribe is an interactive tool designed for a person who is sitt
 
 ## Package Structure
 
-Frostscribe is organized as a Swift Package with multiple targets sharing a single core library.
+Frostscribe is organized as a Swift Package with multiple targets sharing a single core library. The SwiftUI menu bar app lives in a separate Xcode project at the repo root that references the package as a local SPM dependency.
 
 ```
 Frostscribe/
 ├── Package.swift
 ├── ARCHITECTURE.md
 ├── README.md
-├── .gitignore
 │
 ├── Sources/
 │   ├── FrostscribeCore/         ← shared business logic (no UI, no CLI)
@@ -130,9 +128,10 @@ Frostscribe/
 │   │   └── Output/
 │   │       └── PathBuilder.swift
 │   │
-│   ├── FrostscribeCLI/          ← command line tool
+│   ├── FrostscribeCLI/          ← interactive command line tool
 │   │   ├── main.swift
 │   │   ├── Commands/
+│   │   │   ├── InitCommand.swift
 │   │   │   ├── RipCommand.swift
 │   │   │   ├── StatusCommand.swift
 │   │   │   ├── QueueCommand.swift
@@ -142,7 +141,16 @@ Frostscribe/
 │   │       ├── ProgressBar.swift
 │   │       └── Prompt.swift
 │   │
-│   └── FrostscribeUI/           ← SwiftUI menu bar app (Xcode project)
+│   └── FrostscribeWorker/       ← launchd encode worker daemon
+│       └── main.swift
+│
+├── Tests/
+│   └── FrostscribeCoreTests/
+│       ├── MakeMKVParserTests.swift
+│       ├── PathBuilderTests.swift
+│       ├── QueueManagerTests.swift
+│       ├── RipUseCaseTests.swift
+│       └── EncoderPresetTests.swift
 │
 └── FrostscribeUI/               ← Xcode project (separate from SPM package)
     └── FrostscribeUI/
@@ -156,25 +164,28 @@ Frostscribe/
         │   └── MenuBarIcon.swift
         ├── ViewModels/
         │   ├── StatusViewModel.swift
-        │   └── QueueViewModel.swift
+        │   ├── QueueViewModel.swift
+        │   └── RipFlowViewModel.swift
         ├── Views/
         │   ├── StatusSectionView.swift
         │   ├── QueueSectionView.swift
         │   ├── QueueRowView.swift
-        │   └── SettingsView.swift
+        │   ├── SettingsView.swift
+        │   └── Rip/
+        │       ├── RipFlowView.swift
+        │       ├── RipIdleView.swift
+        │       ├── RipScanningView.swift
+        │       ├── TitleSelectionView.swift
+        │       ├── MediaTypeView.swift
+        │       ├── TMDBSearchView.swift
+        │       ├── TVEpisodeView.swift
+        │       ├── AudioTrackSelectionView.swift
+        │       ├── ConfirmationView.swift
+        │       ├── RippingProgressView.swift
+        │       └── RipCompleteView.swift
         └── Vigil/
             ├── VigilWatcher.swift
             └── VigilViewModel.swift
-│   │
-│   └── FrostscribeWorker/       ← launchd encode worker daemon
-│       └── main.swift
-│
-└── Tests/
-    └── FrostscribeCoreTests/
-        ├── MakeMKVParserTests.swift
-        ├── PathBuilderTests.swift
-        ├── QueueManagerTests.swift
-        └── RipUseCaseTests.swift
 ```
 
 ---
@@ -183,10 +194,10 @@ Frostscribe/
 
 ### FrostscribeCore
 
-The heart of the application. Contains all business logic with zero UI dependencies. Both the CLI, the menu bar app, and the worker import this package.
+The heart of the application. Contains all business logic with zero UI dependencies. The CLI, the menu bar app, and the worker all import this package.
 
 **Config/**
-- `Config.swift` — the main configuration struct. Loaded from and saved to `~/Library/Application Support/Frostscribe/config.json`. Contains all user settings. Provides sensible defaults so the tool works out of the box after setting required fields.
+- `Config.swift` — the main configuration struct. Loaded from and saved to `~/Library/Application Support/Frostscribe/config.json`. Provides sensible defaults so the tool works out of the box after setting required fields.
 - `MediaServer.swift` — enum defining supported media servers (`jellyfin`, `plex`, `kodi`) and their output path formatting rules.
 
 **Models/**
@@ -211,15 +222,15 @@ Protocol abstractions that decouple callers from concrete implementations. All s
 - `RipUseCase.swift` — orchestrates the core rip flow: writes `.ripping` status, calls the runner, finds the output MKV, ejects the disc, adds the encode job to the queue, and resets status to `.idle` via `defer`. Accepts all dependencies as protocol types so it can be tested with stubs. `RipCommand` is presentation-only; all rip business logic lives here.
 
 **Services/**
-- `StatusManager.swift` — atomic read/write of `status.json`. Maintains history of completed jobs (last 20). Both the rip flow and worker update this file; it is written atomically using a temp file + rename to prevent corruption.
+- `StatusManager.swift` — atomic read/write of `status.json`. Maintains history of completed jobs (last 20). Written atomically using a temp file + rename to prevent corruption.
 - `QueueManager.swift` — atomic read/write of `queue.json`. Provides methods to add jobs, update progress, mark complete, and read active jobs. Uses file locking to prevent the CLI and worker from writing simultaneously.
-- `NotificationService.swift` — sends macOS native notifications (via `UserNotifications` framework) when a rip or encode completes. Does not require Home Assistant or any external service.
-- `TMDBClient.swift` — HTTP client for TMDB API v3. Performs multi-search (auto-detects movie vs TV), fetches season episode counts. Requires a TMDB API key in config. Gracefully no-ops if key is not set.
+- `NotificationService.swift` — sends macOS native notifications (via `UserNotifications` framework) when a rip or encode completes. Requires no external service.
+- `TMDBClient.swift` — HTTP client for TMDB API v3. Performs multi-search (auto-detects movie vs TV), fetches season episode counts. Gracefully no-ops if a key is not configured.
 
 **Ripping/**
-- `MakeMKVRunner.swift` — spawns `makemkvcon` as a child process, captures output via a pipe, and streams it line by line to the parser. Handles both the `info` (disc scan) and `mkv` (rip) modes. Conforms to `MakeMKVRunning`; exposes public `async throws` methods that bridge the blocking process calls via `DispatchQueue`. Returns `DiscScanResult`.
+- `MakeMKVRunner.swift` — spawns `makemkvcon` as a child process, captures output via a pipe, and streams it line by line to the parser. Handles both the `info` (disc scan) and `mkv` (rip) modes. Conforms to `MakeMKVRunning`. Returns `DiscScanResult`.
 - `MakeMKVParser.swift` — pure parsing logic with no I/O. Takes raw output lines from makemkvcon and produces structured data: `CINFO` → disc metadata, `TINFO` → title metadata, `MSG` → user-facing messages, `PRGV` → progress values. Fully unit tested.
-- `DiscEjector.swift` — wraps `drutil eject` with a retry loop (5 attempts, 2 second delay). Reports failure clearly if all attempts fail.
+- `DiscEjector.swift` — wraps `drutil eject` with a retry loop (5 attempts, 2 second delay).
 
 **Encoding/**
 - `HandBrakeRunner.swift` — spawns `HandBrakeCLI` as a child process, streams progress output, and updates the queue file in real time. Uses VideoToolbox hardware encoding (vt_h265) on Apple Silicon and Intel Macs.
@@ -237,27 +248,33 @@ The interactive command line tool. Imports `FrostscribeCore` for all business lo
 **Entry point:** `main.swift` — uses `ArgumentParser` to dispatch subcommands.
 
 **Commands/**
-- `RipCommand.swift` — the primary interactive flow. Scans the disc, presents titles, queries TMDB, prompts user for confirmation, rips the selected title, and adds it to the encode queue.
-- `StatusCommand.swift` — reads `status.json` and `queue.json` and prints a formatted summary to the terminal. This replaces the `rip-status` Rust tool.
+- `InitCommand.swift` — first-time setup wizard. Detects HandBrakeCLI and MakeMKV at startup and offers to install HandBrakeCLI via Homebrew (streaming live output). MakeMKV must be downloaded manually from makemkv.com. Prompts for all config fields including notifications and audio track selection.
+- `RipCommand.swift` — the primary interactive rip flow. Scans the disc, presents titles, queries TMDB, prompts user for confirmation, rips the selected title, and adds it to the encode queue.
+- `StatusCommand.swift` — reads `status.json` and `queue.json` and prints a formatted summary.
 - `QueueCommand.swift` — displays the encode queue with progress bars.
 - `WorkerCommand.swift` — manages the launchd encode worker agent. Subcommands: `start`, `stop`, `restart`, `status`.
 
 **Display/**
 - `Colors.swift` — ANSI escape codes for terminal coloring. Detects color support and falls back gracefully.
 - `ProgressBar.swift` — renders an ASCII progress bar with spinner for rip and encode progress.
-- `Banners.swift` — ASCII art banners for the main screen and rip-again prompt.
+- `Prompt.swift` — ASCII art banners and interactive prompt helpers for the main screen and rip-again prompt.
 
 ---
 
 ### FrostscribeUI
 
-A macOS SwiftUI menu bar application packaged as a proper `.app` bundle via an Xcode project (at `FrostscribeUI/FrostscribeUI.xcodeproj`). The Xcode project references the repo root `Package.swift` as a local SPM dependency to import `FrostscribeCore`. Lives in the menu bar permanently, showing at a glance whether a rip or encode is in progress.
+A macOS SwiftUI menu bar application packaged as a proper `.app` bundle via an Xcode project at `FrostscribeUI/FrostscribeUI.xcodeproj`. The Xcode project references the repo root `Package.swift` as a local SPM dependency to import `FrostscribeCore`. Lives in the menu bar permanently, showing at a glance whether a rip or encode is in progress, and providing a full GUI rip flow for users who prefer not to use the CLI.
 
-**FrostscribeApp.swift** — `@main` struct. Owns `StatusViewModel`, `QueueViewModel`, and `VigilViewModel` as `@State` properties and injects them via `.environment()`. Starts polling and Vigil Mode watching on appear.
+**FrostscribeApp.swift** — `@main` struct. Owns `StatusViewModel`, `QueueViewModel`, and `VigilViewModel` as `@State` properties and injects them via `.environment()`. Defines the `MenuBarExtra`, the `Window("Rip Disc")` scene, and the `Settings` scene.
 
 **MenuBar/**
 - `MenuBarIcon.swift` — dynamic SF Symbol in the menu bar that reacts to ripper status: snowflake (idle), optical disc pulsing (ripping), film stack pulsing (encoding), exclamation triangle (error). Shows an eye indicator when Vigil Mode is active.
-- `MenuBarView.swift` — the popover that appears when the user clicks the icon. 320pt wide. Shows rip section, encode queue section, and a footer with a Settings button and version string.
+- `MenuBarView.swift` — the popover that appears when the user clicks the icon. Shows rip status, encode queue, and a footer with "Rip Disc", Settings, and version string.
+
+**ViewModels/**
+- `StatusViewModel.swift` — `@MainActor @Observable` class that polls `status.json` every 3 seconds.
+- `QueueViewModel.swift` — `@MainActor @Observable` class that polls `queue.json` every 3 seconds.
+- `RipFlowViewModel.swift` — `@MainActor @Observable` state machine that drives the GUI rip flow. `phase` enum covers: `idle`, `scanning`, `titleSelection`, `mediaType`, `tmdbSearch`, `tvEpisode`, `audioTrackSelection`, `confirmation`, `ripping`, `done`, `error`. Owns all async Tasks; `reset()` cancels them.
 
 **Views/**
 - `StatusSectionView.swift` — displays current rip job with a live progress bar when ripping, otherwise shows "No disc active".
@@ -265,13 +282,22 @@ A macOS SwiftUI menu bar application packaged as a proper `.app` bundle via an X
 - `QueueRowView.swift` — single queue row: status icon, title, status pill, and an inline progress view for encoding jobs.
 - `SettingsView.swift` — grouped `Form` for editing `config.json`. Fields for paths, media server, API keys, and option toggles (notifications, Vigil Mode, select audio tracks).
 
-**ViewModels/**
-- `StatusViewModel.swift` — `@MainActor @Observable` class that polls `status.json` every 3 seconds and publishes changes to the view.
-- `QueueViewModel.swift` — `@MainActor @Observable` class that polls `queue.json` every 3 seconds and publishes changes.
+**Views/Rip/** — stateless step views driven by `RipFlowViewModel.phase`:
+- `RipFlowView.swift` — coordinator. Switches on `vm.phase` and renders the correct step view. Toolbar Cancel button shown on all cancellable phases.
+- `RipIdleView.swift` — snowflake icon and "Scan Disc" button.
+- `RipScanningView.swift` — indeterminate spinner while `makemkvcon` runs.
+- `TitleSelectionView.swift` — list of disc titles with duration, chapters, size, and audio summary. Lossless tracks highlighted.
+- `MediaTypeView.swift` — two large tappable cards: Movie / TV Show.
+- `TMDBSearchView.swift` — pre-filled search field, results list, "Enter manually" fallback. Handles no-key state gracefully.
+- `TVEpisodeView.swift` — season and episode steppers.
+- `AudioTrackSelectionView.swift` — per-track toggles with language, codec, and lossless badge. Only shown when `select_audio_tracks` is enabled and the title has more than one track.
+- `ConfirmationView.swift` — read-only summary of title, output path, preset, and audio before committing.
+- `RippingProgressView.swift` — determinate progress bar tinted frostCyan, pulsing optical disc icon.
+- `RipCompleteView.swift` — done (teal checkmark, "Rip Another") or error (alert triangle, "Try Again").
 
 **Vigil/**
-- `VigilWatcher.swift` — wraps the DiskArbitration framework. Registers a `DADiskAppearedCallback` (file-level C function for Swift 6 compatibility) that detects optical disc insertion and posts a `Notification.Name.vigilDiscInserted` notification.
-- `VigilViewModel.swift` — `@MainActor @Observable` class that observes disc insertion notifications via an async sequence (`for await _ in NotificationCenter.default.notifications(named:)`), orchestrates the full auto-rip flow, and exposes a `phase` enum (`idle`, `scanning`, `ripping(progress:)`, `error`) for the UI.
+- `VigilWatcher.swift` — wraps the DiskArbitration framework. Registers a `DADiskAppearedCallback` that detects optical disc insertion and posts a `Notification.Name.vigilDiscInserted` notification.
+- `VigilViewModel.swift` — `@MainActor @Observable` class that observes disc insertion notifications, orchestrates the full auto-rip flow, and sends native notifications. TV discs send a notification and stop — episode selection requires running `frostscribe rip` interactively.
 
 **Design/**
 - `FrostTheme.swift` — SwiftUI color constants matching the CLI frost palette, plus shared spacing, corner radius, and popover width constants.
@@ -292,7 +318,7 @@ The worker is installed to `~/Library/LaunchAgents/com.frostscribe.worker.plist`
 
 **Location:** `~/Library/Application Support/Frostscribe/config.json`
 
-**Created:** automatically on first run of `frostscribe rip` or first launch of the menu bar app, via a setup wizard.
+**Created:** automatically on first run of `frostscribe init`.
 
 **Structure:**
 
@@ -320,13 +346,13 @@ The worker is installed to `~/Library/LaunchAgents/com.frostscribe.worker.plist`
 | `movies_dir` | Yes | Root directory for movie output |
 | `tv_dir` | Yes | Root directory for TV show output |
 | `temp_dir` | Yes | Staging area for raw ripped MKV files before encoding |
-| `tmdb_api_key` | No | TMDB API v4 Bearer token. Tool works without it but requires manual title entry |
+| `tmdb_api_key` | No | TMDB API v3 key. Tool works without it but requires manual title entry |
 | `makemkv_key` | No | MakeMKV registration key. Without it MakeMKV runs in trial mode (30 day limit) |
-| `makemkv_bin` | No | Full path to `makemkvcon`. If empty, searches `$PATH` |
+| `makemkv_bin` | No | Full path to `makemkvcon`. If empty, searches known paths then `$PATH` |
 | `handbrake_bin` | No | Full path to `HandBrakeCLI`. If empty, searches `$PATH` |
-| `notifications_enabled` | No | Whether to send native macOS notifications on job completion. Defaults to `true` |
-| `vigil_mode` | No | Enables automatic disc detection and ripping. Disabled by default. Requires the menu bar app to be running. |
-| `select_audio_tracks` | No | When `true`, the CLI prompts the user to choose which audio tracks to include before ripping. Disabled by default (all tracks passed through with standard AAC stereo + AC3 surround output). |
+| `notifications_enabled` | No | Send native macOS notifications on job completion. Defaults to `true` |
+| `vigil_mode` | No | Auto-rip when a disc is inserted. Requires the menu bar app. Defaults to `false` |
+| `select_audio_tracks` | No | Prompt the user to choose which audio tracks to include before ripping. Defaults to `false` |
 
 ---
 
@@ -424,7 +450,7 @@ Both files live at `~/Library/Application Support/Frostscribe/`.
 
 ### status.json
 
-Written by the rip flow. Read by the CLI status command, the menu bar app, and the web monitor (if used).
+Written by the rip flow. Read by the CLI status command and the menu bar app.
 
 ```json
 {
@@ -573,17 +599,15 @@ When Vigil Mode is enabled, the menu bar app uses the **DiskArbitration** framew
 2. TMDB lookup runs automatically using the disc name
 3. The top TMDB result is selected automatically
 4. The largest title on the disc is selected automatically
-5. Ripping begins immediately
-6. A native macOS notification is sent: "Ripping started — The Dark Knight (2008)"
-
-The user receives a notification when ripping completes and the job is added to the encode queue. No interaction required.
+5. **Movies:** ripping begins immediately. A native notification is sent when ripping starts and again when the encode job is added to the queue.
+6. **TV shows:** ripping does not start automatically. A notification is sent: "TV Disc Identified — run `frostscribe rip` to select the episode."
 
 ### Safety
 
 - Vigil Mode only activates when the menu bar app is running
 - A notification is always sent when a rip starts, so you are never surprised
-- TMDB lookup always runs in Vigil Mode — the top result is used automatically. Frostscribe will never rip a disc it cannot identify via TMDB
-- If TMDB returns no results, Vigil Mode falls back to interactive mode for that disc and sends a notification: "Unknown disc — manual entry required"
+- TMDB lookup always runs — the top result is used automatically. Frostscribe will never rip a disc it cannot identify via TMDB
+- If TMDB returns no results, Vigil Mode stops and sends a notification: "Unknown disc — manual entry required"
 - `frostscribe rip` always runs in interactive mode regardless of Vigil Mode setting
 
 ### Config
@@ -608,13 +632,14 @@ Frostscribe uses the TMDB API v3 to automatically identify discs and fill in tit
 
 **Behavior without a key:** TMDB lookup is skipped entirely. The user is prompted to enter title, year, and media type manually. The tool is fully functional without TMDB.
 
-**Behavior with a key:** Disc name is cleaned (underscores removed, year extracted) and sent to TMDB. Results are presented as a numbered list. User picks one or enters `0` to go manual. Empty input re-prompts.
+**Behavior with a key:** Disc name is cleaned (underscores removed, format labels stripped, year extracted) and sent to TMDB. Results are presented as a numbered list. User picks one or enters `0` to go manual.
 
 ---
 
 ## CLI Command Reference
 
 ```
+frostscribe init                 Run the first-time setup wizard
 frostscribe rip                  Start an interactive disc rip session
 frostscribe status               Show current rip and encode status
 frostscribe queue                Show the encode queue with progress
@@ -622,7 +647,6 @@ frostscribe worker start         Install and start the encode worker launchd age
 frostscribe worker stop          Stop and uninstall the encode worker
 frostscribe worker restart       Restart the encode worker
 frostscribe worker status        Show worker agent status and current job
-frostscribe init                 Run the first-time setup wizard
 frostscribe version              Print version information
 ```
 
@@ -635,9 +659,8 @@ frostscribe version              Print version information
 | Package | Purpose |
 |---|---|
 | `swift-argument-parser` | CLI subcommand parsing (Apple's official package) |
-| No others for core | Foundation, FileManager, Process, URLSession are all built into Swift/macOS |
 
-Frostscribe intentionally minimizes third-party dependencies. Everything needed — JSON encoding, file I/O, process spawning, HTTP requests, notifications — is available in Apple's frameworks.
+Frostscribe intentionally minimizes third-party dependencies. Everything else — JSON encoding, file I/O, process spawning, HTTP requests, notifications — is available in Apple's frameworks.
 
 ### External Tools (user must install)
 
@@ -667,16 +690,14 @@ swift build -c release
 
 ### Homebrew distribution
 
-A personal Homebrew tap at `github.com/trevholliday/homebrew-frostscribe` will host the formula. Users install with:
+A personal Homebrew tap at `github.com/trevholliday/homebrew-frostscribe` hosts the formula. Users install with:
 
 ```bash
 brew tap trevholliday/frostscribe
 brew install frostscribe
 ```
 
-The formula points at a GitHub release asset containing a pre-built universal binary (arm64 + x86_64).
-
-The worker binary is installed alongside the CLI. `frostscribe worker start` installs the launchd plist pointing at the installed binary path automatically.
+Releases are cut with `make release VERSION=x.y.z`. GitHub Actions builds arm64 and x86_64 binaries, creates a GitHub Release, and updates the tap formula automatically.
 
 ---
 
@@ -688,27 +709,11 @@ Frostscribe follows semantic versioning (`MAJOR.MINOR.PATCH`).
 - `MINOR` — new features, backwards compatible config
 - `MAJOR` — breaking config changes or major architectural shifts
 
-v1.0.0 ships when: rip, encode, worker, and menu bar app are all functional on macOS with Jellyfin, Plex, and Kodi output support.
-
----
-
-## Updates
-
-| Date | Description |
-|---|---|
-| 2026-03-21 | MakeMKV error handling — `MSG:` lines with error codes (4xxx range) are now tracked during ripping. If any critical errors are detected, the rip is marked as failed and the job is not added to the encode queue. Prevents corrupt or incomplete rips from silently entering the encode pipeline. |
-| 2026-03-21 | TMDB search cleanup — disc-specific terms such as `bluray`, `blu-ray`, `dvd`, `disc`, `disk`, `remux`, `uhd`, `hdr`, `4k` are stripped from the disc name before sending it to the TMDB search endpoint. Improves match accuracy for discs whose raw MakeMKV names include media format labels. |
-| 2026-03-22 | Audio language display — `SINFO:` lines from `makemkvcon -r info` are now parsed to extract audio track languages and codecs per title. The title selection table includes an Audio column showing all audio tracks (e.g. `English (DTS-HD MA), Japanese (DTS-HD MA)`). Lossless tracks (DTS-HD MA, TrueHD, FLAC, PCM, LPCM) are highlighted in green so the user can immediately identify lossless audio before selecting a title to rip. |
-| 2026-03-22 | Audio track selection — optional config flag `select_audio_tracks` (default `false`). When enabled, the user is prompted after title selection to choose which audio tracks to include by index (e.g. `1,3`). When disabled (default), all tracks are passed to HandBrakeCLI with the standard AAC stereo + AC3 surround dual-track output. Subtitle track selection remains out of scope for v1. |
-| 2026-03-22 | Architecture refactor — added `Protocols/` layer (`QueueManaging`, `StatusManaging`, `NotificationServing`, `MakeMKVRunning`, `HandBrakeRunning`, `DiscEjecting`) and `UseCases/` layer (`RipUseCase`). All services and runners now conform to protocol abstractions. `EncodeWorker` is constructor-injected with no hidden dependencies. `RipCommand` is presentation-only. `DiscScanResult` promoted to a top-level model type. |
-| 2026-03-22 | Vigil Mode — menu bar app watches for optical disc insertion via DiskArbitration. Movie discs are identified via TMDB and ripped automatically. TV discs trigger a notification asking the user to run `frostscribe rip` for interactive episode selection. If TMDB cannot identify a disc, a notification is sent and auto-rip is skipped. |
-| 2026-03-22 | InitCommand overhaul — setup wizard now detects HandBrakeCLI and MakeMKV at startup and offers to install missing tools via Homebrew (streaming brew output live). Falls back to manual path entry if Homebrew is unavailable. Adds prompts for `notifications_enabled` and `select_audio_tracks`. End-of-wizard message now includes `frostscribe worker start` instruction. |
-
 ---
 
 ## Out of Scope for v1
 
-The following are explicitly not being built in v1. This list exists so we do not accidentally scope-creep while building.
+The following are explicitly not being built in v1.
 
 - **Linux support** — no udev, no cross-platform PTY, no systemd
 - **Windows support**
