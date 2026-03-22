@@ -25,10 +25,12 @@ struct InitCommand: ParsableCommand {
             }
         }
 
+        // ── Media server ──────────────────────────────────────────────────────
         print()
         Colors.info("Which media server should output paths be formatted for?")
         let server = Prompt.pick("Media server", options: MediaServer.allCases, default: 0)
 
+        // ── Output paths ──────────────────────────────────────────────────────
         print()
         Colors.info("Where should ripped and encoded files be stored?")
         let moviesDir = Prompt.ask("Movies directory", default: expandingTilde("~/Movies"))
@@ -38,33 +40,59 @@ struct InitCommand: ParsableCommand {
             default: ConfigManager.appSupportURL.appending(path: "temp").path
         )
 
+        // ── API keys ──────────────────────────────────────────────────────────
         print()
         Colors.info("API keys (press Enter to skip and configure later).")
         let tmdbKey    = askOptional("TMDB API key")
         let makemkvKey = askOptional("MakeMKV beta key")
 
+        // ── Tool detection & installation ─────────────────────────────────────
         print()
-        Colors.info("Paths to required CLI tools.")
-        let makemkvBin   = Prompt.ask("makemkvcon path", default: detectBin("makemkvcon"))
-        let handbrakeBin = Prompt.ask("HandBrakeCLI path", default: detectBin("HandBrakeCLI"))
+        Colors.section("Tools")
+        print()
+        Colors.info("Checking for required tools…")
+        print()
+
+        let makemkvBin = resolveMakeMKV()
 
         print()
+
+        let handbrakeBin = resolveOrInstall(
+            displayName: "HandBrakeCLI",
+            binName: "HandBrakeCLI",
+            brewFormula: "handbrake",
+            postInstallPaths: [],
+            manualURL: "https://handbrake.fr/downloads2.php"
+        )
+
+        // ── Options ───────────────────────────────────────────────────────────
+        print()
+        Colors.section("Options")
+        print()
+
+        let notifications = Prompt.confirm("Enable macOS notifications?", default: true)
+        let selectAudio   = Prompt.confirm(
+            "Prompt to select audio tracks before each rip?",
+            default: false
+        )
         let vigil = Prompt.confirm(
-            "Enable Vigil Mode? (auto-rip when a disc is inserted)",
+            "Enable Vigil Mode? (auto-rip when a disc is inserted — macOS app only)",
             default: false
         )
 
+        // ── Save ──────────────────────────────────────────────────────────────
         let config = Config(
-            mediaServer: server,
-            moviesDir: moviesDir,
-            tvDir: tvDir,
-            tempDir: tempDir,
-            tmdbApiKey: tmdbKey,
-            makemkvKey: makemkvKey,
-            makemkvBin: makemkvBin,
-            handbrakeBin: handbrakeBin,
-            notificationsEnabled: false,
-            vigilMode: vigil
+            mediaServer:          server,
+            moviesDir:            moviesDir,
+            tvDir:                tvDir,
+            tempDir:              tempDir,
+            tmdbApiKey:           tmdbKey,
+            makemkvKey:           makemkvKey,
+            makemkvBin:           makemkvBin,
+            handbrakeBin:         handbrakeBin,
+            notificationsEnabled: notifications,
+            vigilMode:            vigil,
+            selectAudioTracks:    selectAudio
         )
 
         print()
@@ -73,27 +101,117 @@ struct InitCommand: ParsableCommand {
             try manager.createDirectories(for: config)
             Colors.success("Config saved to \(ConfigManager.appSupportURL.path)/config.json")
             print()
-            Colors.info("Run \(Colors.bold)frostscribe rip\(Colors.reset) to start ripping.")
+            Colors.info("Start the encode worker:  \(Colors.bold)frostscribe worker start\(Colors.reset)")
+            Colors.info("Then rip your first disc:  \(Colors.bold)frostscribe rip\(Colors.reset)")
+            print()
         } catch {
             Colors.error("Failed to save config: \(error.localizedDescription)")
             throw ExitCode.failure
         }
     }
 
+    // MARK: - Tool detection & installation
+
+    /// MakeMKV has no Homebrew formula — guide the user to download it directly.
+    private func resolveMakeMKV() -> String {
+        let knownPaths = [
+            "/Applications/MakeMKV.app/Contents/MacOS/makemkvcon",
+            "/opt/homebrew/bin/makemkvcon",
+            "/usr/local/bin/makemkvcon",
+        ]
+        if let found = knownPaths.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+            Colors.success("MakeMKV \(Colors.dim)→ \(found)\(Colors.reset)")
+            return found
+        }
+        Colors.info("MakeMKV not found.")
+        Colors.info("Download and install it from: \(Colors.dim)https://www.makemkv.com\(Colors.reset)")
+        Colors.info("Then open /Applications/MakeMKV.app once to activate your licence key.")
+        print()
+        return Prompt.ask("makemkvcon path", default: "/Applications/MakeMKV.app/Contents/MacOS/makemkvcon")
+    }
+
+    private func resolveOrInstall(
+        displayName: String,
+        binName: String,
+        brewFormula: String,
+        postInstallPaths: [String],
+        manualURL: String
+    ) -> String {
+        let candidates = [
+            "/opt/homebrew/bin/\(binName)",
+            "/usr/local/bin/\(binName)",
+        ] + postInstallPaths
+
+        if let existing = candidates.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+            Colors.success("\(displayName) \(Colors.dim)→ \(existing)\(Colors.reset)")
+            return existing
+        }
+
+        Colors.info("\(displayName) not found.")
+
+        if let brew = detectBrew() {
+            guard Prompt.confirm("Install \(displayName) via Homebrew?", default: true) else {
+                return Prompt.ask("\(displayName) path", default: binName)
+            }
+
+            print()
+            Colors.info("Running: \(Colors.dim)brew install \(brewFormula)\(Colors.reset)")
+            print()
+
+            let ok = runBrew(brew: brew, formula: brewFormula)
+            print()
+
+            if ok {
+                let postCandidates = postInstallPaths + [
+                    "/opt/homebrew/bin/\(binName)",
+                    "/usr/local/bin/\(binName)",
+                ]
+                if let installed = postCandidates.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+                    Colors.success("\(displayName) installed \(Colors.dim)→ \(installed)\(Colors.reset)")
+                    return installed
+                }
+                Colors.info("Installed, but path could not be detected — enter it below.")
+            } else {
+                Colors.error("Homebrew install failed. Enter the path manually or install from:")
+                Colors.info("  \(Colors.dim)\(manualURL)\(Colors.reset)")
+            }
+        } else {
+            Colors.error("Homebrew not found.")
+            Colors.info("Install Homebrew first: \(Colors.dim)https://brew.sh\(Colors.reset)")
+            Colors.info("Then run: \(Colors.dim)brew install \(brewFormula)\(Colors.reset)")
+            Colors.info("Or download from: \(Colors.dim)\(manualURL)\(Colors.reset)")
+            print()
+        }
+
+        return Prompt.ask("\(displayName) path", default: binName)
+    }
+
+    private func detectBrew() -> String? {
+        ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
+            .first { FileManager.default.fileExists(atPath: $0) }
+    }
+
+    @discardableResult
+    private func runBrew(brew: String, formula: String) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: brew)
+        process.arguments = ["install", formula]
+        do {
+            try process.run()
+        } catch {
+            Colors.error("Failed to launch brew: \(error.localizedDescription)")
+            return false
+        }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }
+
+    // MARK: - Helpers
+
     private func askOptional(_ label: String) -> String {
         print("  \(Colors.frostCyan)›\(Colors.reset) \(label) \(Colors.dim)(optional)\(Colors.reset): ", terminator: "")
         fflush(stdout)
         return (readLine(strippingNewline: true) ?? "").trimmingCharacters(in: .whitespaces)
-    }
-
-    private func detectBin(_ name: String) -> String {
-        let commonPaths = [
-            "/opt/homebrew/bin/\(name)",
-            "/usr/local/bin/\(name)",
-        ]
-        return commonPaths.first {
-            FileManager.default.fileExists(atPath: $0)
-        } ?? name
     }
 
     private func expandingTilde(_ path: String) -> String {

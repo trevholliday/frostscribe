@@ -92,12 +92,23 @@ final class VigilViewModel {
             return
         }
 
-        let (mediaTitle, year) = await lookupTitle(discName: scanResult.discName, config: config)
+        let (mediaTitle, year, mediaType) = await lookupTitle(discName: scanResult.discName, config: config)
         guard let mediaTitle else {
             await notifications.requestAuthorizationIfNeeded()
             notifications.send(
                 title: "Unknown Disc",
                 body: "Vigil Mode could not identify this disc. Run 'frostscribe rip' manually."
+            )
+            phase = .idle
+            return
+        }
+
+        // TV shows need interactive episode selection — hand off to the user
+        if mediaType == .tv {
+            await notifications.requestAuthorizationIfNeeded()
+            notifications.send(
+                title: "TV Disc Identified: \(mediaTitle)",
+                body: "Run 'frostscribe rip' to select episodes and start ripping."
             )
             phase = .idle
             return
@@ -155,19 +166,19 @@ final class VigilViewModel {
 
     // MARK: - TMDB
 
-    private func lookupTitle(discName: String?, config: Config) async -> (String?, String) {
+    private func lookupTitle(discName: String?, config: Config) async -> (String?, String, TMDBClient.MediaType?) {
         let currentYear = String(Calendar.current.component(.year, from: Date()))
         let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
-        guard tmdb.isConfigured, let name = discName else { return (nil, currentYear) }
+        guard tmdb.isConfigured, let name = discName else { return (nil, currentYear, nil) }
 
         let query = name
             .replacingOccurrences(of: "_", with: " ")
             .capitalized
         guard let results = try? await tmdb.searchMulti(query: query),
               let top = results.first else {
-            return (nil, currentYear)
+            return (nil, currentYear, nil)
         }
-        return (top.title, top.year.isEmpty ? currentYear : top.year)
+        return (top.title, top.year.isEmpty ? currentYear : top.year, top.mediaType)
     }
 
     private func resetAfterDelay() async {
