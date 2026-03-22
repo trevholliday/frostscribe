@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var handbrakeBin = ""
     @State private var notificationsEnabled = true
     @State private var vigilMode = false
+    @State private var selectAudioTracks = false
     @State private var saveError: String?
     @State private var savedConfirmation = false
 
@@ -112,6 +113,7 @@ struct SettingsView: View {
         handbrakeBin         = config.handbrakeBin
         notificationsEnabled = config.notificationsEnabled
         vigilMode            = config.vigilMode
+        selectAudioTracks    = config.selectAudioTracks
     }
 
     private func saveConfig() {
@@ -125,7 +127,8 @@ struct SettingsView: View {
             makemkvBin:           makemkvBin,
             handbrakeBin:         handbrakeBin,
             notificationsEnabled: notificationsEnabled,
-            vigilMode:            vigilMode
+            vigilMode:            vigilMode,
+            selectAudioTracks:    selectAudioTracks
         )
         do {
             try configManager.save(config)

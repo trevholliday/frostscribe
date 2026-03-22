@@ -21,12 +21,36 @@
 		F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B2C3D4E5F6A7B8C9D0E1F1 /* VigilWatcher.swift */; };
 		F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B2C3D4E5F6A7B8C9D0E1F2 /* VigilViewModel.swift */; };
 		H3B2C3D4E5F6A7B8C9D0E1F2 /* DiskArbitration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = H3B2C3D4E5F6A7B8C9D0E1F1 /* DiskArbitration.framework */; };
+		FA01C3D4E5F6A7B8C9D0E1F2 /* RipFlowViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */; };
+		FA02C3D4E5F6A7B8C9D0E1F2 /* RipFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA02C3D4E5F6A7B8C9D0E1F1 /* RipFlowView.swift */; };
+		FA03C3D4E5F6A7B8C9D0E1F2 /* RipIdleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA03C3D4E5F6A7B8C9D0E1F1 /* RipIdleView.swift */; };
+		FA04C3D4E5F6A7B8C9D0E1F2 /* RipScanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA04C3D4E5F6A7B8C9D0E1F1 /* RipScanningView.swift */; };
+		FA05C3D4E5F6A7B8C9D0E1F2 /* TitleSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA05C3D4E5F6A7B8C9D0E1F1 /* TitleSelectionView.swift */; };
+		FA06C3D4E5F6A7B8C9D0E1F2 /* MediaTypeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA06C3D4E5F6A7B8C9D0E1F1 /* MediaTypeView.swift */; };
+		FA07C3D4E5F6A7B8C9D0E1F2 /* TMDBSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA07C3D4E5F6A7B8C9D0E1F1 /* TMDBSearchView.swift */; };
+		FA08C3D4E5F6A7B8C9D0E1F2 /* TVEpisodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA08C3D4E5F6A7B8C9D0E1F1 /* TVEpisodeView.swift */; };
+		FA09C3D4E5F6A7B8C9D0E1F2 /* AudioTrackSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA09C3D4E5F6A7B8C9D0E1F1 /* AudioTrackSelectionView.swift */; };
+		FA10C3D4E5F6A7B8C9D0E1F2 /* ConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA10C3D4E5F6A7B8C9D0E1F1 /* ConfirmationView.swift */; };
+		FA11C3D4E5F6A7B8C9D0E1F2 /* RippingProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA11C3D4E5F6A7B8C9D0E1F1 /* RippingProgressView.swift */; };
+		FA12C3D4E5F6A7B8C9D0E1F2 /* RipCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA12C3D4E5F6A7B8C9D0E1F1 /* RipCompleteView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		C1B2C3D4E5F6A7B8C9D0E1F4 /* FrostscribeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostscribeApp.swift; sourceTree = "<group>"; };
 		F3B2C3D4E5F6A7B8C9D0E1F1 /* VigilWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VigilWatcher.swift; sourceTree = "<group>"; };
 		F3B2C3D4E5F6A7B8C9D0E1F2 /* VigilViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VigilViewModel.swift; sourceTree = "<group>"; };
+		FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipFlowViewModel.swift; sourceTree = "<group>"; };
+		FA02C3D4E5F6A7B8C9D0E1F1 /* RipFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipFlowView.swift; sourceTree = "<group>"; };
+		FA03C3D4E5F6A7B8C9D0E1F1 /* RipIdleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipIdleView.swift; sourceTree = "<group>"; };
+		FA04C3D4E5F6A7B8C9D0E1F1 /* RipScanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipScanningView.swift; sourceTree = "<group>"; };
+		FA05C3D4E5F6A7B8C9D0E1F1 /* TitleSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleSelectionView.swift; sourceTree = "<group>"; };
+		FA06C3D4E5F6A7B8C9D0E1F1 /* MediaTypeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaTypeView.swift; sourceTree = "<group>"; };
+		FA07C3D4E5F6A7B8C9D0E1F1 /* TMDBSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBSearchView.swift; sourceTree = "<group>"; };
+		FA08C3D4E5F6A7B8C9D0E1F1 /* TVEpisodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVEpisodeView.swift; sourceTree = "<group>"; };
+		FA09C3D4E5F6A7B8C9D0E1F1 /* AudioTrackSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackSelectionView.swift; sourceTree = "<group>"; };
+		FA10C3D4E5F6A7B8C9D0E1F1 /* ConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationView.swift; sourceTree = "<group>"; };
+		FA11C3D4E5F6A7B8C9D0E1F1 /* RippingProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippingProgressView.swift; sourceTree = "<group>"; };
+		FA12C3D4E5F6A7B8C9D0E1F1 /* RipCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipCompleteView.swift; sourceTree = "<group>"; };
 		H3B2C3D4E5F6A7B8C9D0E1F1 /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = System/Library/Frameworks/DiskArbitration.framework; sourceTree = SDKROOT; };
 		C1B2C3D4E5F6A7B8C9D0E1F5 /* FrostTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostTheme.swift; sourceTree = "<group>"; };
 		C1B2C3D4E5F6A7B8C9D0E1F6 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -127,6 +151,7 @@
 			children = (
 				C1B2C3D4E5F6A7B8C9D0E1F8 /* StatusViewModel.swift */,
 				C1B2C3D4E5F6A7B8C9D0E1F9 /* QueueViewModel.swift */,
+				FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -138,8 +163,27 @@
 				D1B2C3D4E5F6A7B8C9D0E1F3 /* QueueSectionView.swift */,
 				D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */,
 				D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */,
+				FA00C3D4E5F6A7B8C9D0E1F1 /* Rip */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		FA00C3D4E5F6A7B8C9D0E1F1 /* Rip */ = {
+			isa = PBXGroup;
+			children = (
+				FA02C3D4E5F6A7B8C9D0E1F1 /* RipFlowView.swift */,
+				FA03C3D4E5F6A7B8C9D0E1F1 /* RipIdleView.swift */,
+				FA04C3D4E5F6A7B8C9D0E1F1 /* RipScanningView.swift */,
+				FA05C3D4E5F6A7B8C9D0E1F1 /* TitleSelectionView.swift */,
+				FA06C3D4E5F6A7B8C9D0E1F1 /* MediaTypeView.swift */,
+				FA07C3D4E5F6A7B8C9D0E1F1 /* TMDBSearchView.swift */,
+				FA08C3D4E5F6A7B8C9D0E1F1 /* TVEpisodeView.swift */,
+				FA09C3D4E5F6A7B8C9D0E1F1 /* AudioTrackSelectionView.swift */,
+				FA10C3D4E5F6A7B8C9D0E1F1 /* ConfirmationView.swift */,
+				FA11C3D4E5F6A7B8C9D0E1F1 /* RippingProgressView.swift */,
+				FA12C3D4E5F6A7B8C9D0E1F1 /* RipCompleteView.swift */,
+			);
+			path = Rip;
 			sourceTree = "<group>";
 		};
 		A2B2C3D4E5F6A7B8C9D0E1F2 /* Packages */ = {
@@ -235,6 +279,18 @@
 				E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */,
+				FA01C3D4E5F6A7B8C9D0E1F2 /* RipFlowViewModel.swift in Sources */,
+				FA02C3D4E5F6A7B8C9D0E1F2 /* RipFlowView.swift in Sources */,
+				FA03C3D4E5F6A7B8C9D0E1F2 /* RipIdleView.swift in Sources */,
+				FA04C3D4E5F6A7B8C9D0E1F2 /* RipScanningView.swift in Sources */,
+				FA05C3D4E5F6A7B8C9D0E1F2 /* TitleSelectionView.swift in Sources */,
+				FA06C3D4E5F6A7B8C9D0E1F2 /* MediaTypeView.swift in Sources */,
+				FA07C3D4E5F6A7B8C9D0E1F2 /* TMDBSearchView.swift in Sources */,
+				FA08C3D4E5F6A7B8C9D0E1F2 /* TVEpisodeView.swift in Sources */,
+				FA09C3D4E5F6A7B8C9D0E1F2 /* AudioTrackSelectionView.swift in Sources */,
+				FA10C3D4E5F6A7B8C9D0E1F2 /* ConfirmationView.swift in Sources */,
+				FA11C3D4E5F6A7B8C9D0E1F2 /* RippingProgressView.swift in Sources */,
+				FA12C3D4E5F6A7B8C9D0E1F2 /* RipCompleteView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

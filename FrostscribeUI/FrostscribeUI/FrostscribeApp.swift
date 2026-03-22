@@ -28,6 +28,11 @@ struct FrostscribeApp: App {
         }
         .menuBarExtraStyle(.window)
 
+        Window("Rip Disc", id: "rip-flow") {
+            RipFlowView()
+        }
+        .windowResizability(.contentSize)
+
         Settings {
             SettingsView()
         }

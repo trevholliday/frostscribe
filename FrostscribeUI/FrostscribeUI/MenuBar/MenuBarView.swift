@@ -6,6 +6,7 @@ struct MenuBarView: View {
     @Environment(QueueViewModel.self) private var queueVM
     @Environment(VigilViewModel.self) private var vigilVM
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,6 +61,15 @@ struct MenuBarView: View {
     private var footerRow: some View {
         HStack {
             Button {
+                openWindow(id: "rip-flow")
+            } label: {
+                Label("Rip Disc", systemImage: "opticaldisc")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(FrostTheme.frostCyan)
+            Spacer()
+            Button {
                 openSettings()
             } label: {
                 Label("Settings", systemImage: "gear")
@@ -68,7 +78,7 @@ struct MenuBarView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             Spacer()
-            Text("v0.1.0")
+            Text("v1.0.0")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
