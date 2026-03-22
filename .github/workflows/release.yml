@@ -1,0 +1,128 @@
+# Triggered by a version tag: git tag v1.0.0 && git push origin v1.0.0
+#
+# What it does:
+#   1. Builds frostscribe + frostscribe-worker on arm64 (macos-14) and x86_64 (macos-13)
+#   2. Packs each into a .tar.gz and computes its SHA256
+#   3. Creates a GitHub Release and attaches both tarballs
+#   4. Clones the homebrew-frostscribe tap repo, updates frostscribe.rb with the new
+#      version + SHA256s, commits, and pushes
+#
+# Required secret:
+#   TAP_REPO_TOKEN — a GitHub PAT with contents:write on trevholliday/homebrew-frostscribe
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+jobs:
+
+  # ── Build arm64 ────────────────────────────────────────────────────────────
+  build-arm64:
+    name: Build (arm64)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release binaries
+        run: swift build -c release
+
+      - name: Pack tarball
+        run: |
+          mkdir staging
+          cp .build/release/frostscribe .build/release/frostscribe-worker staging/
+          tar -czf frostscribe-arm64.tar.gz -C staging frostscribe frostscribe-worker
+          shasum -a 256 frostscribe-arm64.tar.gz | awk '{print $1}' > sha256-arm64.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arm64
+          path: |
+            frostscribe-arm64.tar.gz
+            sha256-arm64.txt
+
+  # ── Build x86_64 ───────────────────────────────────────────────────────────
+  build-x86_64:
+    name: Build (x86_64)
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release binaries
+        run: swift build -c release
+
+      - name: Pack tarball
+        run: |
+          mkdir staging
+          cp .build/release/frostscribe .build/release/frostscribe-worker staging/
+          tar -czf frostscribe-x86_64.tar.gz -C staging frostscribe frostscribe-worker
+          shasum -a 256 frostscribe-x86_64.tar.gz | awk '{print $1}' > sha256-x86_64.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x86_64
+          path: |
+            frostscribe-x86_64.tar.gz
+            sha256-x86_64.txt
+
+  # ── Create release & update tap ────────────────────────────────────────────
+  release:
+    name: Release & update tap
+    needs: [build-arm64, build-x86_64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: arm64
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64
+          path: dist
+
+      - name: Read version and SHA256s
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+          echo "SHA256_ARM64=$(cat dist/sha256-arm64.txt)" >> $GITHUB_ENV
+          echo "SHA256_X86=$(cat dist/sha256-x86_64.txt)" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/frostscribe-arm64.tar.gz
+            dist/frostscribe-x86_64.tar.gz
+          generate_release_notes: true
+
+      - name: Update Homebrew tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
+        run: |
+          git clone \
+            https://x-access-token:${TAP_TOKEN}@github.com/trevholliday/homebrew-frostscribe.git \
+            tap
+
+          # Build the updated formula from the template in this repo,
+          # substituting version and SHA256 placeholders.
+          sed \
+            -e "s/version \".*\"/version \"${VERSION}\"/" \
+            -e "s|releases/download/v[^/]*/frostscribe-arm64|releases/download/v${VERSION}/frostscribe-arm64|" \
+            -e "s|releases/download/v[^/]*/frostscribe-x86_64|releases/download/v${VERSION}/frostscribe-x86_64|" \
+            -e "s/# sha256 \"<arm64-sha256>\"/sha256 \"${SHA256_ARM64}\"/" \
+            -e "s/# sha256 \"<x86_64-sha256>\"/sha256 \"${SHA256_X86}\"/" \
+            homebrew/frostscribe.rb > tap/frostscribe.rb
+
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frostscribe.rb
+          git diff --cached --quiet || git commit -m "frostscribe ${VERSION}"
+          git push

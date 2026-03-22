@@ -104,7 +104,8 @@ Frostscribe/
 │   │   │   ├── RipJob.swift
 │   │   │   ├── EncodeJob.swift
 │   │   │   ├── DiscTitle.swift
-│   │   │   └── DiscScanResult.swift
+│   │   │   ├── DiscScanResult.swift
+│   │   │   └── AudioTrack.swift
 │   │   ├── Protocols/
 │   │   │   ├── QueueManaging.swift
 │   │   │   ├── StatusManaging.swift
@@ -139,18 +140,31 @@ Frostscribe/
 │   │   └── Display/
 │   │       ├── Colors.swift
 │   │       ├── ProgressBar.swift
-│   │       └── Banners.swift
+│   │       └── Prompt.swift
 │   │
-│   ├── FrostscribeUI/           ← SwiftUI menu bar app
-│   │   ├── FrostscribeApp.swift
-│   │   ├── MenuBarView.swift
-│   │   ├── Views/
-│   │   │   ├── StatusView.swift
-│   │   │   ├── QueueView.swift
-│   │   │   └── SettingsView.swift
-│   │   └── ViewModels/
-│   │       ├── StatusViewModel.swift
-│   │       └── QueueViewModel.swift
+│   └── FrostscribeUI/           ← SwiftUI menu bar app (Xcode project)
+│
+└── FrostscribeUI/               ← Xcode project (separate from SPM package)
+    └── FrostscribeUI/
+        ├── FrostscribeApp.swift
+        ├── Info.plist
+        ├── FrostscribeUI.entitlements
+        ├── Design/
+        │   └── FrostTheme.swift
+        ├── MenuBar/
+        │   ├── MenuBarView.swift
+        │   └── MenuBarIcon.swift
+        ├── ViewModels/
+        │   ├── StatusViewModel.swift
+        │   └── QueueViewModel.swift
+        ├── Views/
+        │   ├── StatusSectionView.swift
+        │   ├── QueueSectionView.swift
+        │   ├── QueueRowView.swift
+        │   └── SettingsView.swift
+        └── Vigil/
+            ├── VigilWatcher.swift
+            └── VigilViewModel.swift
 │   │
 │   └── FrostscribeWorker/       ← launchd encode worker daemon
 │       └── main.swift
@@ -178,8 +192,9 @@ The heart of the application. Contains all business logic with zero UI dependenc
 **Models/**
 - `RipJob.swift` — represents an active or completed rip operation. Written to `status.json` during ripping.
 - `EncodeJob.swift` — represents a single entry in the encode queue (`queue.json`). Has states: `pending`, `encoding`, `done`, `error`.
-- `DiscTitle.swift` — represents a single title found on a disc during the MakeMKV scan phase. Contains title number, duration, chapter count, file size, and filename.
+- `DiscTitle.swift` — represents a single title found on a disc during the MakeMKV scan phase. Contains title number, duration, chapter count, file size, filename, and a list of `AudioTrack` values.
 - `DiscScanResult.swift` — top-level value type returned by a disc scan: title list, disc name, disc type.
+- `AudioTrack.swift` — represents a single audio track on a title. Contains language, codec, and an `isLossless` flag derived from codec name (DTS-HD MA, TrueHD, FLAC, PCM, LPCM).
 
 **Protocols/**
 
@@ -236,24 +251,30 @@ The interactive command line tool. Imports `FrostscribeCore` for all business lo
 
 ### FrostscribeUI
 
-A macOS SwiftUI menu bar application. Lives in the menu bar permanently, showing at a glance whether a rip or encode is in progress.
+A macOS SwiftUI menu bar application packaged as a proper `.app` bundle via an Xcode project (at `FrostscribeUI/FrostscribeUI.xcodeproj`). The Xcode project references the repo root `Package.swift` as a local SPM dependency to import `FrostscribeCore`. Lives in the menu bar permanently, showing at a glance whether a rip or encode is in progress.
 
-**FrostscribeApp.swift** — app entry point. `@main` struct. Configures the menu bar extra using `MenuBarExtra`. Polls `status.json` and `queue.json` on a timer (every 3 seconds) and updates the UI.
+**FrostscribeApp.swift** — `@main` struct. Owns `StatusViewModel`, `QueueViewModel`, and `VigilViewModel` as `@State` properties and injects them via `.environment()`. Starts polling and Vigil Mode watching on appear.
 
-**MenuBarView.swift** — the popover that appears when the user clicks the menu bar icon. Shows:
-- Current rip status and progress
-- Current encode status and progress
-- Number of jobs in queue
-- Quick links to open settings
+**MenuBar/**
+- `MenuBarIcon.swift` — dynamic SF Symbol in the menu bar that reacts to ripper status: snowflake (idle), optical disc pulsing (ripping), film stack pulsing (encoding), exclamation triangle (error). Shows an eye indicator when Vigil Mode is active.
+- `MenuBarView.swift` — the popover that appears when the user clicks the icon. 320pt wide. Shows rip section, encode queue section, and a footer with a Settings button and version string.
 
 **Views/**
-- `StatusView.swift` — displays current rip job with progress bar
-- `QueueView.swift` — displays encode queue with per-job progress
-- `SettingsView.swift` — form for editing `config.json`. Fields for: output directory, TMDB API key, media server selection, MakeMKV key, HandBrake bin path.
+- `StatusSectionView.swift` — displays current rip job with a live progress bar when ripping, otherwise shows "No disc active".
+- `QueueSectionView.swift` — displays the encode queue list with an active count badge.
+- `QueueRowView.swift` — single queue row: status icon, title, status pill, and an inline progress view for encoding jobs.
+- `SettingsView.swift` — grouped `Form` for editing `config.json`. Fields for paths, media server, API keys, and option toggles (notifications, Vigil Mode, select audio tracks).
 
 **ViewModels/**
-- `StatusViewModel.swift` — `@Observable` class that reads `status.json` on a timer and publishes changes to the view.
-- `QueueViewModel.swift` — `@Observable` class that reads `queue.json` on a timer and publishes changes.
+- `StatusViewModel.swift` — `@MainActor @Observable` class that polls `status.json` every 3 seconds and publishes changes to the view.
+- `QueueViewModel.swift` — `@MainActor @Observable` class that polls `queue.json` every 3 seconds and publishes changes.
+
+**Vigil/**
+- `VigilWatcher.swift` — wraps the DiskArbitration framework. Registers a `DADiskAppearedCallback` (file-level C function for Swift 6 compatibility) that detects optical disc insertion and posts a `Notification.Name.vigilDiscInserted` notification.
+- `VigilViewModel.swift` — `@MainActor @Observable` class that observes disc insertion notifications via an async sequence (`for await _ in NotificationCenter.default.notifications(named:)`), orchestrates the full auto-rip flow, and exposes a `phase` enum (`idle`, `scanning`, `ripping(progress:)`, `error`) for the UI.
+
+**Design/**
+- `FrostTheme.swift` — SwiftUI color constants matching the CLI frost palette, plus shared spacing, corner radius, and popover width constants.
 
 ---
 
@@ -285,7 +306,9 @@ The worker is installed to `~/Library/LaunchAgents/com.frostscribe.worker.plist`
   "makemkv_key": "",
   "makemkv_bin": "",
   "handbrake_bin": "",
-  "notifications_enabled": true
+  "notifications_enabled": true,
+  "vigil_mode": false,
+  "select_audio_tracks": false
 }
 ```
 
@@ -303,6 +326,7 @@ The worker is installed to `~/Library/LaunchAgents/com.frostscribe.worker.plist`
 | `handbrake_bin` | No | Full path to `HandBrakeCLI`. If empty, searches `$PATH` |
 | `notifications_enabled` | No | Whether to send native macOS notifications on job completion. Defaults to `true` |
 | `vigil_mode` | No | Enables automatic disc detection and ripping. Disabled by default. Requires the menu bar app to be running. |
+| `select_audio_tracks` | No | When `true`, the CLI prompts the user to choose which audio tracks to include before ripping. Disabled by default (all tracks passed through with standard AAC stereo + AC3 surround output). |
 
 ---
 
@@ -677,6 +701,8 @@ v1.0.0 ships when: rip, encode, worker, and menu bar app are all functional on m
 | 2026-03-22 | Audio language display — `SINFO:` lines from `makemkvcon -r info` are now parsed to extract audio track languages and codecs per title. The title selection table includes an Audio column showing all audio tracks (e.g. `English (DTS-HD MA), Japanese (DTS-HD MA)`). Lossless tracks (DTS-HD MA, TrueHD, FLAC, PCM, LPCM) are highlighted in green so the user can immediately identify lossless audio before selecting a title to rip. |
 | 2026-03-22 | Audio track selection — optional config flag `select_audio_tracks` (default `false`). When enabled, the user is prompted after title selection to choose which audio tracks to include by index (e.g. `1,3`). When disabled (default), all tracks are passed to HandBrakeCLI with the standard AAC stereo + AC3 surround dual-track output. Subtitle track selection remains out of scope for v1. |
 | 2026-03-22 | Architecture refactor — added `Protocols/` layer (`QueueManaging`, `StatusManaging`, `NotificationServing`, `MakeMKVRunning`, `HandBrakeRunning`, `DiscEjecting`) and `UseCases/` layer (`RipUseCase`). All services and runners now conform to protocol abstractions. `EncodeWorker` is constructor-injected with no hidden dependencies. `RipCommand` is presentation-only. `DiscScanResult` promoted to a top-level model type. |
+| 2026-03-22 | Vigil Mode — menu bar app watches for optical disc insertion via DiskArbitration. Movie discs are identified via TMDB and ripped automatically. TV discs trigger a notification asking the user to run `frostscribe rip` for interactive episode selection. If TMDB cannot identify a disc, a notification is sent and auto-rip is skipped. |
+| 2026-03-22 | InitCommand overhaul — setup wizard now detects HandBrakeCLI and MakeMKV at startup and offers to install missing tools via Homebrew (streaming brew output live). Falls back to manual path entry if Homebrew is unavailable. Adds prompts for `notifications_enabled` and `select_audio_tracks`. End-of-wizard message now includes `frostscribe worker start` instruction. |
 
 ---
 
@@ -687,11 +713,9 @@ The following are explicitly not being built in v1. This list exists so we do no
 - **Linux support** — no udev, no cross-platform PTY, no systemd
 - **Windows support**
 - **Multiple simultaneous encode workers**
-- **Automatic disc detection** — no udev equivalent, insert disc and run `frostscribe rip`
 - **Multiple optical drives** — single drive only, though queue design does not prevent adding this later
 - **Web UI** — the menu bar app replaces this need
 - **AMD GPU hardware encoding** — HandBrakeCLI does not support VAAPI; software x265 fallback only for non-Apple hardware
 - **Audio ripping (CDs)** — video discs only
 - **ISO backup mode** — MKV output only
 - **Subtitle track selection** — subtitles are excluded in v1 (can be added via HandBrake preset later)
-- **Homebrew tap** — manual install only until v1.0.0 is stable
