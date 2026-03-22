@@ -140,4 +140,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a full breakdown of the package struc
 
 ## License
 
-MIT
+[MIT](LICENSE) © 2026 trevholliday
