@@ -53,6 +53,12 @@ public final class RipUseCase: Sendable {
             onProgress: onProgress
         )
 
+        // Write 100% before defer transitions to idle so history captures completion
+        var completedJob = ripJob
+        completedJob.progress = "100%"
+        try? status.write(status: .ripping, job: completedJob)
+        onProgress(100)
+
         let mkv = try findMKV(in: tempDir)
         ejector.eject()
         return mkv
