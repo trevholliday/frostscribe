@@ -15,7 +15,8 @@ struct RipFlowView: View {
             }
             progressBar
         }
-        .frame(width: 640, height: 460)
+        .frame(minWidth: 640, idealWidth: 960, maxWidth: .infinity,
+               minHeight: 460, idealHeight: 680, maxHeight: .infinity)
         .toolbar {
             if vm.isShowingSettings {
                 ToolbarItem(placement: .confirmationAction) {

@@ -34,7 +34,6 @@ struct FrostscribeApp: App {
         Window("Rip Disc", id: "rip-flow") {
             RipFlowView()
         }
-        .windowResizability(.contentSize)
 
         Settings {
             SettingsView()

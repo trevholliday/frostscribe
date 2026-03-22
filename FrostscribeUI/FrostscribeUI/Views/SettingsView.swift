@@ -72,10 +72,15 @@ struct SettingsView: View {
 
     private func textRow(_ label: String, hint: String,
                          value: Binding<String>, saved: String) -> some View {
-        LabeledContent(label) {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack(spacing: 6) {
                 TextField(hint, text: value)
                     .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 saveButtonIfDirty(value.wrappedValue != saved)
             }
         }
@@ -83,10 +88,15 @@ struct SettingsView: View {
 
     private func secureRow(_ label: String, hint: String,
                             value: Binding<String>, saved: String) -> some View {
-        LabeledContent(label) {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack(spacing: 6) {
                 SecureField(hint, text: value)
                     .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 saveButtonIfDirty(value.wrappedValue != saved)
             }
         }
