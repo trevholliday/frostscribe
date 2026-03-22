@@ -1,0 +1,178 @@
+import Foundation
+import FrostscribeCore
+
+@MainActor
+@Observable
+final class VigilViewModel {
+
+    // MARK: - State
+
+    enum Phase: Equatable {
+        case idle
+        case scanning
+        case ripping(progress: Int)
+        case error(String)
+
+        static func == (lhs: Phase, rhs: Phase) -> Bool {
+            switch (lhs, rhs) {
+            case (.idle, .idle), (.scanning, .scanning): return true
+            case (.ripping(let a), .ripping(let b)): return a == b
+            case (.error(let a), .error(let b)):     return a == b
+            default: return false
+            }
+        }
+    }
+
+    private(set) var phase: Phase = .idle
+    private(set) var currentTitle: String = ""
+    var isWatching: Bool { watcher != nil }
+
+    // MARK: - Private
+
+    private var watcher: VigilWatcher?
+    private var observerTask: Task<Void, Never>?
+    private var ripTask: Task<Void, Never>?
+
+    // MARK: - Lifecycle
+
+    func startWatchingIfEnabled() {
+        let config = (try? ConfigManager().load()) ?? Config()
+        guard config.vigilMode else { return }
+
+        let w = VigilWatcher()
+        observerTask = Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: .vigilDiscInserted) {
+                await self?.discInserted()
+            }
+        }
+        w.start()
+        watcher = w
+    }
+
+    func stopWatching() {
+        watcher?.stop()
+        watcher = nil
+        observerTask?.cancel()
+        observerTask = nil
+        ripTask?.cancel()
+        ripTask = nil
+    }
+
+    // MARK: - Disc handling
+
+    private func discInserted() {
+        guard phase == .idle else { return }
+        ripTask = Task { await autoRip() }
+    }
+
+    private func autoRip() async {
+        let config: Config
+        do { config = try ConfigManager().load() }
+        catch {
+            phase = .error("Config missing — run frostscribe init")
+            await resetAfterDelay()
+            return
+        }
+
+        phase = .scanning
+
+        let runner = MakeMKVRunner(binPath: config.makemkvBin)
+        let notifications = NotificationService.shared
+
+        let scanResult: DiscScanResult
+        do { scanResult = try await runner.scan() }
+        catch {
+            // Not a supported disc — ignore silently
+            phase = .idle
+            return
+        }
+
+        guard let largestTitle = scanResult.titles.max(by: { $0.sizeBytes < $1.sizeBytes }) else {
+            phase = .idle
+            return
+        }
+
+        let (mediaTitle, year) = await lookupTitle(discName: scanResult.discName, config: config)
+        guard let mediaTitle else {
+            await notifications.requestAuthorizationIfNeeded()
+            notifications.send(
+                title: "Unknown Disc",
+                body: "Vigil Mode could not identify this disc. Run 'frostscribe rip' manually."
+            )
+            phase = .idle
+            return
+        }
+
+        currentTitle = mediaTitle
+
+        let outputURL = PathBuilder.moviePath(
+            title: mediaTitle,
+            year: year,
+            baseDir: URL(fileURLWithPath: config.moviesDir),
+            mediaServer: config.mediaServer
+        )
+
+        let ripInput = RipInput(
+            titleNumber: largestTitle.number,
+            baseTemp: URL(fileURLWithPath: config.tempDir),
+            outputURL: outputURL,
+            preset: EncoderPreset.preset(for: scanResult.discType),
+            jobLabel: mediaTitle,
+            mediaType: .movie,
+            title: mediaTitle,
+            episode: nil
+        )
+
+        await notifications.requestAuthorizationIfNeeded()
+        notifications.send(title: "Ripping Started", body: mediaTitle)
+
+        let useCase = RipUseCase(
+            runner: runner,
+            queue: QueueManager(appSupportURL: ConfigManager.appSupportURL),
+            status: StatusManager(appSupportURL: ConfigManager.appSupportURL),
+            ejector: DiscEjector()
+        )
+
+        phase = .ripping(progress: 0)
+
+        do {
+            try await useCase.execute(ripInput) { [weak self] pct in
+                Task { @MainActor [weak self] in
+                    self?.phase = .ripping(progress: pct)
+                }
+            }
+            notifications.send(title: "Rip Complete", body: "\(mediaTitle) — added to encode queue")
+        } catch {
+            notifications.send(title: "Rip Failed", body: mediaTitle)
+            phase = .error(error.localizedDescription)
+            await resetAfterDelay()
+            return
+        }
+
+        phase = .idle
+        currentTitle = ""
+    }
+
+    // MARK: - TMDB
+
+    private func lookupTitle(discName: String?, config: Config) async -> (String?, String) {
+        let currentYear = String(Calendar.current.component(.year, from: Date()))
+        let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
+        guard tmdb.isConfigured, let name = discName else { return (nil, currentYear) }
+
+        let query = name
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+        guard let results = try? await tmdb.searchMulti(query: query),
+              let top = results.first else {
+            return (nil, currentYear)
+        }
+        return (top.title, top.year.isEmpty ? currentYear : top.year)
+    }
+
+    private func resetAfterDelay() async {
+        try? await Task.sleep(for: .seconds(8))
+        phase = .idle
+        currentTitle = ""
+    }
+}

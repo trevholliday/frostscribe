@@ -2,7 +2,9 @@
 .build/
 .swiftpm/
 *.xcodeproj/
+!FrostscribeUI/FrostscribeUI.xcodeproj/
 *.xcworkspace/
+!FrostscribeUI/FrostscribeUI.xcodeproj/project.xcworkspace/
 xcuserdata/
 DerivedData/
 *.moved-aside

@@ -9,18 +9,21 @@ struct FrostscribeApp: App {
     @State private var queueVM = QueueViewModel(
         queueManager: QueueManager(appSupportURL: ConfigManager.appSupportURL)
     )
+    @State private var vigilVM = VigilViewModel()
 
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
                 .environment(statusVM)
                 .environment(queueVM)
+                .environment(vigilVM)
         } label: {
             // onAppear fires at launch so the icon reflects real state before the popover opens
             MenuBarIcon(status: statusVM.file.status)
                 .onAppear {
                     statusVM.startPolling()
                     queueVM.startPolling()
+                    vigilVM.startWatchingIfEnabled()
                 }
         }
         .menuBarExtraStyle(.window)

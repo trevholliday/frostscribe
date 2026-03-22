@@ -4,6 +4,7 @@ import FrostscribeCore
 struct MenuBarView: View {
     @Environment(StatusViewModel.self) private var statusVM
     @Environment(QueueViewModel.self) private var queueVM
+    @Environment(VigilViewModel.self) private var vigilVM
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -29,6 +30,12 @@ struct MenuBarView: View {
                 .foregroundStyle(FrostTheme.frostCyan)
             Text("Frostscribe")
                 .bold()
+            if vigilVM.isWatching {
+                Image(systemName: "eye")
+                    .font(.caption2)
+                    .foregroundStyle(FrostTheme.glacier)
+                    .help("Vigil Mode active — watching for disc insertion")
+            }
             Spacer()
             statusBadge
         }
