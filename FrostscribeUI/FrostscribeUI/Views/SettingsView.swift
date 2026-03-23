@@ -36,9 +36,11 @@ struct SettingsView: View {
 
             Section("Options") {
                 Toggle("Enable notifications", isOn: $config.notificationsEnabled)
+                    .tint(FrostTheme.frostCyan)
                     .onChange(of: config.notificationsEnabled) { save() }
                 vigilModeToggle
                 Toggle("Select audio tracks before ripping", isOn: $config.selectAudioTracks)
+                    .tint(FrostTheme.frostCyan)
                     .onChange(of: config.selectAudioTracks) { save() }
             }
 
@@ -84,6 +86,7 @@ struct SettingsView: View {
                     }
                 }
             ))
+            .tint(FrostTheme.frostCyan)
             Text(config.vigilMode
                  ? "You are present — ripping is guided and interactive."
                  : "AutoScribe active — discs are ripped automatically without prompting.")
