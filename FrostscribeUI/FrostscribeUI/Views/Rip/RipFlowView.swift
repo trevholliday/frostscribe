@@ -23,6 +23,7 @@ struct RipFlowView: View {
         .onAppear {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
+            NSApp.windows.first(where: { $0.title == "Frostscribe" })?.makeKeyAndOrderFront(nil)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
             guard let window = notification.object as? NSWindow, window.title == "Frostscribe" else { return }

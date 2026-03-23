@@ -74,7 +74,7 @@ struct LeftPanelView: View {
             .padding(.horizontal, FrostTheme.paddingS)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                isActive ? FrostTheme.deepBlue : Color.clear,
+                isActive ? FrostTheme.deepBlue.opacity(0.5) : Color.clear,
                 in: RoundedRectangle(cornerRadius: 6)
             )
         }
