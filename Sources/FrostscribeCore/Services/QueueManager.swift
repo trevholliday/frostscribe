@@ -30,7 +30,8 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
         preset: String,
         title: String,
         episode: String? = nil,
-        audioTracks: [Int]? = nil
+        audioTracks: [Int]? = nil,
+        quality: Int
     ) throws {
         try lock.withLock {
             var jobs = (try? _read()) ?? []
@@ -40,14 +41,15 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
                 input: input.path,
                 output: output.path,
                 preset: preset,
-                audioTracks: audioTracks
+                audioTracks: audioTracks,
+                quality: quality
             )
             jobs.append(job)
             try _write(jobs)
         }
     }
 
-    public func updateProgress(id: UUID, progress: String) throws {
+    public func updateProgress(id: String, progress: String) throws {
         try lock.withLock {
             var jobs = try _read()
             guard let index = jobs.firstIndex(where: { $0.id == id }) else { return }
@@ -57,7 +59,7 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
     }
 
     public func updateStatus(
-        id: UUID,
+        id: String,
         status: EncodeJob.Status,
         progress: String? = nil,
         completedAt: Date? = nil

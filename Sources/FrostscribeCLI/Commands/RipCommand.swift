@@ -99,7 +99,8 @@ struct RipCommand: AsyncParsableCommand {
             preset: EncoderPreset.preset(for: scanResult.discType),
             title: title,
             episode: episodeLabel,
-            selectedAudioTracks: selectedAudioTracks
+            selectedAudioTracks: selectedAudioTracks,
+            quality: EncoderPreset.quality(for: scanResult.discType, config: config)
         )
 
         let ripUseCase = RipUseCase(runner: runner, status: statusManager, ejector: ejector)

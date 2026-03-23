@@ -6,19 +6,22 @@ public struct EncodeInput: Sendable {
     public let title: String
     public let episode: String?
     public let selectedAudioTracks: [Int]?
+    public let quality: Int
 
     public init(
         outputURL: URL,
         preset: String,
         title: String,
         episode: String? = nil,
-        selectedAudioTracks: [Int]? = nil
+        selectedAudioTracks: [Int]? = nil,
+        quality: Int
     ) {
         self.outputURL = outputURL
         self.preset = preset
         self.title = title
         self.episode = episode
         self.selectedAudioTracks = selectedAudioTracks
+        self.quality = quality
     }
 }
 
@@ -37,7 +40,8 @@ public final class EncodeUseCase: Sendable {
             preset: input.preset,
             title: input.title,
             episode: input.episode,
-            audioTracks: input.selectedAudioTracks
+            audioTracks: input.selectedAudioTracks,
+            quality: input.quality
         )
     }
 }

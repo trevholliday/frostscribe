@@ -34,6 +34,27 @@ struct SettingsView: View {
                 secureRow("TMDB API key", hint: "optional", value: $config.tmdbApiKey,  saved: savedConfig.tmdbApiKey)
             }
 
+            Section("Encode Quality") {
+                Picker("DVD", selection: $config.qualityDVD) {
+                    ForEach(EncodeQuality.allCases, id: \.self) { q in
+                        Text(q.displayName).tag(q)
+                    }
+                }
+                .onChange(of: config.qualityDVD) { save() }
+                Picker("Blu-ray", selection: $config.qualityBluray) {
+                    ForEach(EncodeQuality.allCases, id: \.self) { q in
+                        Text(q.displayName).tag(q)
+                    }
+                }
+                .onChange(of: config.qualityBluray) { save() }
+                Picker("UHD", selection: $config.qualityUHD) {
+                    ForEach(EncodeQuality.allCases, id: \.self) { q in
+                        Text(q.displayName).tag(q)
+                    }
+                }
+                .onChange(of: config.qualityUHD) { save() }
+            }
+
             Section("Options") {
                 Toggle("Enable notifications", isOn: $config.notificationsEnabled)
                     .tint(FrostTheme.frostCyan)

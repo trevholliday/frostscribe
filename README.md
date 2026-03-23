@@ -14,6 +14,8 @@
 </pre>
 </p>
 
+> **Work in progress.** Frostscribe is under active development and may be unstable until v1.0.0 is released. Expect rough edges.
+
 # Frostscribe
 
 A native macOS tool for ripping and preserving physical disc media to a local [Jellyfin](https://jellyfin.org), [Plex](https://plex.tv), or [Kodi](https://kodi.tv) library.

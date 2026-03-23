@@ -220,7 +220,8 @@ final class RipFlowViewModel {
             preset: EncoderPreset.preset(for: scanResult.discType),
             title: title,
             episode: episodeLabel,
-            selectedAudioTracks: selectedTracks
+            selectedAudioTracks: selectedTracks,
+            quality: EncoderPreset.quality(for: scanResult.discType, config: config)
         )
         confirmedEncodeInput = encodeInput
         phase = .confirmation(ripInput, encodeInput)

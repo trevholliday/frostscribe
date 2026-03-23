@@ -139,7 +139,8 @@ final class VigilViewModel {
         let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
-            title: mediaTitle
+            title: mediaTitle,
+            quality: EncoderPreset.quality(for: scanResult.discType, config: config)
         )
 
         await notifications.requestAuthorizationIfNeeded()

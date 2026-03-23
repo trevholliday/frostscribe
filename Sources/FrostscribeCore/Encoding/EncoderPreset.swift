@@ -9,14 +9,22 @@ public enum EncoderPreset {
         }
     }
 
-    public static func arguments(input: String, output: String, preset: String, audioTracks: [Int]? = nil) -> [String] {
+    public static func quality(for discType: DiscType, config: Config) -> Int {
+        switch discType {
+        case .uhd:            return config.qualityUHD.rawValue
+        case .bluray:         return config.qualityBluray.rawValue
+        case .dvd, .unknown:  return config.qualityDVD.rawValue
+        }
+    }
+
+    public static func arguments(input: String, output: String, preset: String, audioTracks: [Int]?, quality: Int) -> [String] {
         let audio = audioArgs(tracks: audioTracks)
         return [
             "-i", input,
             "-o", output,
             "--preset", preset,
             "--encoder", "vt_h265",
-            "--quality", "80",
+            "--quality", String(quality),
             "--encoder-level", "auto",
             "--subtitle", "none",
         ] + audio

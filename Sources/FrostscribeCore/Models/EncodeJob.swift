@@ -8,18 +8,45 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         case error
     }
 
-    public var id: UUID
+    public var id: String
     public var title: String
     public var episode: String?
     public var input: String
     public var output: String
     public var preset: String
     public var audioTracks: [Int]?
+    public var quality: Int
     public var status: Status
     public var progress: String
     public var addedAt: Date
     public var startedAt: Date?
     public var completedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, episode, input, output, preset, status, progress
+        case audioTracks = "audio_tracks"
+        case quality
+        case addedAt = "added_at"
+        case startedAt = "started_at"
+        case completedAt = "completed_at"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        episode = try c.decodeIfPresent(String.self, forKey: .episode)
+        input = try c.decode(String.self, forKey: .input)
+        output = try c.decode(String.self, forKey: .output)
+        preset = try c.decode(String.self, forKey: .preset)
+        audioTracks = try c.decodeIfPresent([Int].self, forKey: .audioTracks)
+        quality = (try? c.decodeIfPresent(Int.self, forKey: .quality)) ?? 70
+        status = (try? c.decode(Status.self, forKey: .status)) ?? .pending
+        progress = (try? c.decode(String.self, forKey: .progress)) ?? "—"
+        addedAt = (try? c.decodeIfPresent(Date.self, forKey: .addedAt)) ?? .now
+        startedAt = try c.decodeIfPresent(Date.self, forKey: .startedAt)
+        completedAt = try c.decodeIfPresent(Date.self, forKey: .completedAt)
+    }
 
     public var label: String {
         if let episode { return "\(title) — \(episode)" }
@@ -31,13 +58,14 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
     }
 
     public init(
-        id: UUID = UUID(),
+        id: String = UUID().uuidString,
         title: String,
         episode: String? = nil,
         input: String,
         output: String,
         preset: String,
         audioTracks: [Int]? = nil,
+        quality: Int,
         status: Status = .pending,
         progress: String = "—",
         addedAt: Date = .now,
@@ -51,6 +79,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         self.output = output
         self.preset = preset
         self.audioTracks = audioTracks
+        self.quality = quality
         self.status = status
         self.progress = progress
         self.addedAt = addedAt

@@ -12,6 +12,9 @@ public struct Config: Codable, Sendable {
     /// When false, AutoScribe is active — the app auto-rips any inserted disc without user input.
     public var vigilMode: Bool
     public var selectAudioTracks: Bool
+    public var qualityDVD: EncodeQuality
+    public var qualityBluray: EncodeQuality
+    public var qualityUHD: EncodeQuality
 
     public init(
         mediaServer: MediaServer = .jellyfin,
@@ -24,7 +27,10 @@ public struct Config: Codable, Sendable {
         handbrakeBin: String = "",
         notificationsEnabled: Bool = true,
         vigilMode: Bool = true,
-        selectAudioTracks: Bool = false
+        selectAudioTracks: Bool = false,
+        qualityDVD: EncodeQuality = .q80,
+        qualityBluray: EncodeQuality = .q70,
+        qualityUHD: EncodeQuality = .q70
     ) {
         self.mediaServer = mediaServer
         self.moviesDir = moviesDir
@@ -37,5 +43,8 @@ public struct Config: Codable, Sendable {
         self.notificationsEnabled = notificationsEnabled
         self.vigilMode = vigilMode
         self.selectAudioTracks = selectAudioTracks
+        self.qualityDVD = qualityDVD
+        self.qualityBluray = qualityBluray
+        self.qualityUHD = qualityUHD
     }
 }
