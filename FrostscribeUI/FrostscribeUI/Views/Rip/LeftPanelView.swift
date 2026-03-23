@@ -43,22 +43,12 @@ struct LeftPanelView: View {
 
     private var navPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Image(systemName: "snowflake")
-                    .foregroundStyle(FrostTheme.teal)
-                Text("Frostscribe")
-                    .font(.headline)
-            }
-            .padding(FrostTheme.paddingM)
-
-            Divider()
-
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(Self.sections, id: \.section) { item in
                     sectionTab(label: item.label, icon: item.icon, section: item.section)
                 }
             }
-            .padding(.horizontal, FrostTheme.paddingS)
+            .padding(FrostTheme.paddingS)
             .padding(.top, FrostTheme.paddingM)
 
             Spacer()
@@ -79,12 +69,12 @@ struct LeftPanelView: View {
                 Text(label)
                     .font(.subheadline)
             }
-            .foregroundStyle(isActive ? Color.primary : Color.primary.opacity(0.45))
+            .foregroundStyle(isActive ? FrostTheme.teal : Color.primary.opacity(0.45))
             .padding(.vertical, 6)
             .padding(.horizontal, FrostTheme.paddingS)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                isActive ? Color.primary.opacity(0.08) : Color.clear,
+                isActive ? FrostTheme.deepBlue : Color.clear,
                 in: RoundedRectangle(cornerRadius: 6)
             )
         }

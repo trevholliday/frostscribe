@@ -6,6 +6,7 @@ enum FrostTheme {
     static let frostCyan = Color(.sRGB, red: 0,    green: 0.85, blue: 1,   opacity: 1)
     static let glacier   = Color(.sRGB, red: 0.4,  green: 0.7,  blue: 1,   opacity: 1)
     static let teal      = Color(.sRGB, red: 0,    green: 0.5,  blue: 0.5, opacity: 1)
+    static let deepBlue  = Color(.sRGB, red: 0.05, green: 0.15, blue: 0.3, opacity: 1)
     static let alert     = Color(.sRGB, red: 1,    green: 0.3,  blue: 0.3, opacity: 1)
 
     // Layout

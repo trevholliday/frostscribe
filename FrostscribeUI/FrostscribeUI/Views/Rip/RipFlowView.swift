@@ -20,8 +20,12 @@ struct RipFlowView: View {
         }
         .frame(minWidth: 640, idealWidth: 960, maxWidth: .infinity,
                minHeight: 460, idealHeight: 680, maxHeight: .infinity)
+        .onAppear {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
-            guard let window = notification.object as? NSWindow, window.title == "Rip Disc" else { return }
+            guard let window = notification.object as? NSWindow, window.title == "Frostscribe" else { return }
             NSApp.setActivationPolicy(.accessory)
         }
         .toolbar {

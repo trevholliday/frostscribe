@@ -29,7 +29,7 @@ struct FrostscribeApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("Rip Disc", id: "rip-flow") {
+        Window("Frostscribe", id: "rip-flow") {
             RipFlowView()
                 .environment(statusVM)
                 .environment(queueVM)
