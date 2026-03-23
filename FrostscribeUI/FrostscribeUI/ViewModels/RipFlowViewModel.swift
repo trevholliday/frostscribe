@@ -37,7 +37,7 @@ final class RipFlowViewModel {
 
     var canCancel: Bool {
         switch phase {
-        case .ripping, .done: return false
+        case .idle, .ripping, .done, .error: return false
         default: return true
         }
     }

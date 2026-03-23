@@ -27,7 +27,7 @@ struct RipFlowView: View {
                 }
             } else if vm.canCancel {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { vm.reset() }
+                    Button("Cancel", role: .destructive) { vm.reset() }
                 }
             }
         }
