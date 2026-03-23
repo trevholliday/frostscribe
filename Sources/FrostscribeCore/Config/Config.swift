@@ -8,6 +8,8 @@ public struct Config: Codable, Sendable {
     public var makemkvBin: String
     public var handbrakeBin: String
     public var notificationsEnabled: Bool
+    /// When true, the user is present — the app guides ripping interactively (Vigil Mode).
+    /// When false, AutoScribe is active — the app auto-rips any inserted disc without user input.
     public var vigilMode: Bool
     public var selectAudioTracks: Bool
 
@@ -21,7 +23,7 @@ public struct Config: Codable, Sendable {
         makemkvBin: String = "",
         handbrakeBin: String = "",
         notificationsEnabled: Bool = true,
-        vigilMode: Bool = false,
+        vigilMode: Bool = true,
         selectAudioTracks: Bool = false
     ) {
         self.mediaServer = mediaServer

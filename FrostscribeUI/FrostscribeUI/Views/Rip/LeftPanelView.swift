@@ -3,26 +3,18 @@ import FrostscribeCore
 
 struct LeftPanelView: View {
     let vm: RipFlowViewModel
+    @Environment(NavigationCoordinator.self) private var navCoordinator
 
-    private static let flowSteps: [(label: String, icon: String)] = [
-        ("Scan Disc",    "opticaldisc"),
-        ("Select Title", "list.bullet"),
-        ("Media Type",   "film"),
-        ("Identify",     "sparkle.magnifyingglass"),
-        ("Confirm",      "checkmark.circle"),
+    private static let sections: [(label: String, icon: String, section: AppSection)] = [
+        ("Rip",          "opticaldisc",            .rip),
+        ("Rip Job",      "waveform",               .ripJob),
+        ("Encode Queue", "list.bullet",             .encodeQueue),
+        ("History",      "clock.arrow.trianglehead.counterclockwise.rotate.90", .history),
+        ("Logs",         "doc.text",               .logs),
     ]
 
-    private var stepIndex: Int {
-        switch vm.phase {
-        case .idle, .scanning:                               return 0
-        case .titleSelection:                                return 1
-        case .mediaType:                                     return 2
-        case .tmdbSearch, .tvEpisode, .audioTrackSelection:  return 3
-        case .confirmation, .ripping, .done, .error:         return 4
-        }
-    }
-
     private var showPoster: Bool {
+        guard navCoordinator.selectedSection == .rip else { return false }
         switch vm.phase {
         case .ripping, .done: return true
         default: return false
@@ -34,10 +26,9 @@ struct LeftPanelView: View {
             if showPoster {
                 posterPanel
             } else {
-                stepPanel
+                navPanel
             }
 
-            // Settings button always visible when on poster panel
             if showPoster {
                 settingsButton
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
@@ -48,9 +39,9 @@ struct LeftPanelView: View {
         .background(Color(nsColor: .controlBackgroundColor))
     }
 
-    // MARK: - Step panel
+    // MARK: - Nav panel
 
-    private var stepPanel: some View {
+    private var navPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "snowflake")
@@ -63,18 +54,44 @@ struct LeftPanelView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 2) {
-                ForEach(Array(Self.flowSteps.enumerated()), id: \.offset) { index, step in
-                    stepRow(index: index, label: step.label, icon: step.icon)
+                ForEach(Self.sections, id: \.section) { item in
+                    sectionTab(label: item.label, icon: item.icon, section: item.section)
                 }
             }
-            .padding(.horizontal, FrostTheme.paddingM)
-            .padding(.top, FrostTheme.paddingL)
+            .padding(.horizontal, FrostTheme.paddingS)
+            .padding(.top, FrostTheme.paddingM)
 
             Spacer()
 
             settingsButton
         }
     }
+
+    private func sectionTab(label: String, icon: String, section: AppSection) -> some View {
+        let isActive = navCoordinator.selectedSection == section
+        return Button {
+            navCoordinator.selectedSection = section
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 18)
+                Text(label)
+                    .font(.subheadline)
+            }
+            .foregroundStyle(isActive ? Color.primary : Color.primary.opacity(0.45))
+            .padding(.vertical, 6)
+            .padding(.horizontal, FrostTheme.paddingS)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isActive ? Color.primary.opacity(0.08) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 6)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Settings button
 
     private var settingsButton: some View {
         Button {
@@ -91,29 +108,6 @@ struct LeftPanelView: View {
         .buttonStyle(.plain)
         .disabled(!vm.canShowSettings)
         .padding(FrostTheme.paddingM)
-    }
-
-    private func stepRow(index: Int, label: String, icon: String) -> some View {
-        let isActive = index == stepIndex
-        let isDone   = index < stepIndex
-
-        return HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(isActive ? FrostTheme.teal : (isDone ? FrostTheme.teal.opacity(0.25) : Color.clear))
-                    .frame(width: 26, height: 26)
-                Circle()
-                    .strokeBorder(isDone || isActive ? Color.clear : Color.primary.opacity(0.15), lineWidth: 1)
-                    .frame(width: 26, height: 26)
-                Image(systemName: isDone ? "checkmark" : icon)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(isActive ? .white : (isDone ? FrostTheme.teal : Color.primary.opacity(0.3)))
-            }
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(isActive ? Color.primary : (isDone ? Color.secondary : Color.primary.opacity(0.35)))
-        }
-        .padding(.vertical, 5)
     }
 
     // MARK: - Poster panel

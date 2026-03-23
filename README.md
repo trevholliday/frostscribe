@@ -97,7 +97,9 @@ The background worker picks up the job and encodes it to your media library usin
 
 ### Menu bar app
 
-The **FrostscribeUI** menu bar app lives in your menu bar permanently. It shows rip and encode status at a glance, lets you open a full GUI rip flow window ("Rip Disc"), manage settings, and optionally enables Vigil Mode — automatic ripping when a disc is inserted.
+The **FrostscribeUI** menu bar app lives in your menu bar permanently. It shows rip and encode status at a glance, lets you open a full GUI rip flow window ("Rip Disc"), and manage settings.
+
+**Vigil Mode** (default: on) means you are present — ripping is guided and interactive. Disabling Vigil Mode activates **AutoScribe**, which automatically rips any inserted disc without prompting. AutoScribe requires confirmation to enable in Settings.
 
 ### Check status
 
@@ -156,7 +158,7 @@ TV Shows/Breaking Bad/Season01/Breaking Bad S01E01.mkv
 | `makemkv_bin` | No | Full path to `makemkvcon` (searched in `$PATH` if empty) |
 | `handbrake_bin` | No | Full path to `HandBrakeCLI` (searched in `$PATH` if empty) |
 | `notifications_enabled` | No | Native macOS notifications on job completion (default: `true`) |
-| `vigil_mode` | No | Auto-rip when a disc is inserted — requires the menu bar app (default: `false`) |
+| `vigil_mode` | No | `true` = Vigil Mode (interactive, user-guided — default). `false` = AutoScribe (auto-rips inserted discs without prompting) |
 | `select_audio_tracks` | No | Prompt to choose which audio tracks to include before ripping (default: `false`) |
 
 ---

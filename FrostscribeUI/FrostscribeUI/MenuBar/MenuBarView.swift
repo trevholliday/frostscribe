@@ -5,6 +5,7 @@ struct MenuBarView: View {
     @Environment(StatusViewModel.self) private var statusVM
     @Environment(QueueViewModel.self) private var queueVM
     @Environment(VigilViewModel.self) private var vigilVM
+    @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -13,15 +14,26 @@ struct MenuBarView: View {
             Divider()
             StatusSectionView()
                 .padding(FrostTheme.paddingM)
+                .contentShape(Rectangle())
+                .onTapGesture { openSection(.ripJob) }
             Divider()
             QueueSectionView()
                 .padding(FrostTheme.paddingM)
+                .contentShape(Rectangle())
+                .onTapGesture { openSection(.encodeQueue) }
             Divider()
             footerRow
             Divider()
             quitRow
         }
         .frame(width: FrostTheme.popoverWidth)
+    }
+
+    // MARK: - Navigation
+
+    private func openSection(_ section: AppSection) {
+        navCoordinator.selectedSection = .some(section)
+        openWindow(id: "rip-flow")
     }
 
     // MARK: - Header
@@ -61,18 +73,14 @@ struct MenuBarView: View {
 
     private var footerRow: some View {
         HStack {
-            Button {
-                openWindow(id: "rip-flow")
-            } label: {
+            Button { openSection(AppSection.rip) } label: {
                 Label("Rip Disc", systemImage: "opticaldisc")
                     .font(.caption)
             }
             .buttonStyle(.plain)
             .foregroundStyle(FrostTheme.teal)
             Spacer()
-            Button {
-                openWindow(id: "rip-flow")
-            } label: {
+            Button { openSection(AppSection.rip) } label: {
                 Label("Settings", systemImage: "gear")
                     .font(.caption)
             }

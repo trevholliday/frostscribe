@@ -3,6 +3,9 @@ import FrostscribeCore
 
 struct RipFlowView: View {
     @State private var vm = RipFlowViewModel()
+    @Environment(NavigationCoordinator.self) private var navCoordinator
+    @Environment(StatusViewModel.self) private var statusVM
+    @Environment(QueueViewModel.self) private var queueVM
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,6 +41,14 @@ struct RipFlowView: View {
             NavigationStack {
                 SettingsView()
             }
+        } else if navCoordinator.selectedSection == .ripJob {
+            statusDetail
+        } else if navCoordinator.selectedSection == .encodeQueue {
+            queueDetail
+        } else if navCoordinator.selectedSection == .history {
+            historyDetail
+        } else if navCoordinator.selectedSection == .logs {
+            logsDetail
         } else { switch vm.phase {
         case .idle:
             RipIdleView(vm: vm)
@@ -67,6 +78,183 @@ struct RipFlowView: View {
         case .error(let message):
             RipCompleteView(vm: vm, title: "Rip Failed", isError: true, message: message)
         } }
+    }
+
+    // MARK: - Status detail
+
+    private var statusDetail: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
+                Text("Rip Status")
+                    .font(.title3).bold()
+
+                if statusVM.file.status == .ripping, let job = statusVM.file.currentJob {
+                    VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
+                        statusRow("Title", job.title)
+                        statusRow("Progress", job.progress)
+                        if let item = job.currentItem {
+                            statusRow("Current", item)
+                        }
+                        ProgressView(value: job.progress.progressFraction)
+                            .tint(FrostTheme.frostCyan)
+                    }
+                    .padding(FrostTheme.paddingM)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+                } else {
+                    Text("No rip in progress.")
+                        .foregroundStyle(.secondary)
+                }
+
+                if !statusVM.file.history.isEmpty {
+                    Text("Recent History")
+                        .font(.headline)
+                    VStack(alignment: .leading, spacing: FrostTheme.paddingS) {
+                        ForEach(Array(statusVM.file.history.prefix(10).enumerated()), id: \.offset) { _, entry in
+                            HStack(alignment: .top) {
+                                Text(entry.title)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(entry.startedAt, style: .date)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 3)
+                            Divider()
+                        }
+                    }
+                }
+            }
+            .padding(FrostTheme.paddingL)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func statusRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(width: 60, alignment: .leading)
+            Text(value)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+    }
+
+    // MARK: - Queue detail
+
+    private var queueDetail: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
+                HStack {
+                    Text("Encode Queue")
+                        .font(.title3).bold()
+                    Spacer()
+                    if queueVM.activeCount > 0 {
+                        Text("\(queueVM.activeCount) active")
+                            .font(.caption)
+                            .foregroundStyle(FrostTheme.teal)
+                    }
+                }
+
+                if queueVM.jobs.isEmpty {
+                    Text("Queue is empty.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(queueVM.jobs) { job in
+                            HStack(alignment: .top, spacing: FrostTheme.paddingM) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(job.title)
+                                        .font(.subheadline)
+                                        .bold()
+                                        .lineLimit(1)
+                                    if let ep = job.episode {
+                                        Text(ep)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Text(URL(fileURLWithPath: job.output).lastPathComponent)
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                                Spacer()
+                                Text(job.status.rawValue.capitalized)
+                                    .font(.caption)
+                                    .foregroundStyle(
+                                        job.status == .encoding ? FrostTheme.teal :
+                                        job.status == .done ? Color.secondary : Color.secondary
+                                    )
+                            }
+                            .padding(.vertical, FrostTheme.paddingS)
+                            Divider()
+                        }
+                    }
+                }
+            }
+            .padding(FrostTheme.paddingL)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - History detail
+
+    private var historyDetail: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
+                Text("History")
+                    .font(.title3).bold()
+
+                if statusVM.file.history.isEmpty {
+                    Text("No history yet.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(statusVM.file.history.enumerated()), id: \.offset) { _, entry in
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(entry.title)
+                                        .font(.subheadline)
+                                        .bold()
+                                        .lineLimit(1)
+                                    Text(entry.type.rawValue.capitalized)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(entry.startedAt, style: .date)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, FrostTheme.paddingS)
+                            Divider()
+                        }
+                    }
+                }
+            }
+            .padding(FrostTheme.paddingL)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Logs detail
+
+    private var logsDetail: some View {
+        VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
+            Text("Logs")
+                .font(.title3).bold()
+                .padding(.horizontal, FrostTheme.paddingL)
+                .padding(.top, FrostTheme.paddingL)
+            Text("Log output coming soon.")
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, FrostTheme.paddingL)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Ripping detail

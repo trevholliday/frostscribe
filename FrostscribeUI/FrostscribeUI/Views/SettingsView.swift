@@ -6,6 +6,7 @@ struct SettingsView: View {
     @State private var savedConfig = Config()
     @State private var saveError: String?
     @State private var savedConfirmation = false
+    @State private var showAutoScribeConfirm = false
 
     private let configManager = ConfigManager()
 
@@ -36,8 +37,7 @@ struct SettingsView: View {
             Section("Options") {
                 Toggle("Enable notifications", isOn: $config.notificationsEnabled)
                     .onChange(of: config.notificationsEnabled) { save() }
-                Toggle("Vigil Mode — auto-rip when disc inserted", isOn: $config.vigilMode)
-                    .onChange(of: config.vigilMode) { save() }
+                vigilModeToggle
                 Toggle("Select audio tracks before ripping", isOn: $config.selectAudioTracks)
                     .onChange(of: config.selectAudioTracks) { save() }
             }
@@ -66,6 +66,43 @@ struct SettingsView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: savedConfirmation)
         .onAppear(perform: loadConfig)
+    }
+
+    // MARK: - Vigil / AutoScribe toggle
+
+    private var vigilModeToggle: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Vigil Mode", isOn: Binding(
+                get: { config.vigilMode },
+                set: { newValue in
+                    if !newValue {
+                        // Turning off Vigil = enabling AutoScribe — requires confirmation
+                        showAutoScribeConfirm = true
+                    } else {
+                        config.vigilMode = true
+                        save()
+                    }
+                }
+            ))
+            Text(config.vigilMode
+                 ? "You are present — ripping is guided and interactive."
+                 : "AutoScribe active — discs are ripped automatically without prompting.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .confirmationDialog(
+            "Enable AutoScribe?",
+            isPresented: $showAutoScribeConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Enable AutoScribe", role: .destructive) {
+                config.vigilMode = false
+                save()
+            }
+            Button("Keep Vigil Mode", role: .cancel) { }
+        } message: {
+            Text("AutoScribe will automatically rip any disc inserted into the drive without asking you first. Make sure you only insert discs you own.")
+        }
     }
 
     // MARK: - Row helpers

@@ -37,7 +37,8 @@ final class VigilViewModel {
 
     func startWatchingIfEnabled() {
         let config = (try? ConfigManager().load()) ?? Config()
-        guard config.vigilMode else { return }
+        // vigilMode=true means user is present (guided/interactive). AutoScribe runs only when vigilMode=false.
+        guard !config.vigilMode else { return }
 
         let w = VigilWatcher()
         observerTask = Task { [weak self] in
@@ -62,6 +63,9 @@ final class VigilViewModel {
 
     private func discInserted() {
         guard phase == .idle else { return }
+        // Don't start a new rip if one is already running (e.g. via CLI or a previous vigil trigger)
+        let status = try? StatusManager(appSupportURL: ConfigManager.appSupportURL).read()
+        guard status?.status != .ripping else { return }
         ripTask = Task { await autoRip() }
     }
 

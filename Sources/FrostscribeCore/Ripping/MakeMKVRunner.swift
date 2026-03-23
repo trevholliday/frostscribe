@@ -119,14 +119,21 @@ public final class MakeMKVRunner: MakeMKVRunning {
 
         let titles: [DiscTitle] = titleData.compactMap { num, attrs in
             guard let sizeStr = attrs[11], let sizeBytes = Int(sizeStr) else { return nil }
-            let audioTracks = buildAudioTracks(from: streamData[num] ?? [:])
+            let streams = streamData[num] ?? [:]
+            let audioTracks = buildAudioTracks(from: streams)
+            let videoResolution = buildVideoResolution(from: streams)
+            let subtitleCount = streams.values.filter { $0[1]?.hasPrefix("S_") == true }.count
+            let orderWeight = Int(attrs[33] ?? "0") ?? 0
             return DiscTitle(
                 number: num,
                 name: attrs[27] ?? "title_\(num)",
                 duration: attrs[9] ?? "?",
                 chapters: attrs[8] ?? "?",
                 sizeBytes: sizeBytes,
-                audioTracks: audioTracks
+                audioTracks: audioTracks,
+                videoResolution: videoResolution,
+                subtitleCount: subtitleCount,
+                orderWeight: orderWeight
             )
         }.sorted { $0.number < $1.number }
 
@@ -138,8 +145,27 @@ public final class MakeMKVRunner: MakeMKVRunning {
             guard let typeVal = attrs[1], typeVal.hasPrefix("A_") else { return nil }
             let codec = attrs[2] ?? String(typeVal.dropFirst(2))
             let language = attrs[14] ?? attrs[13] ?? "Unknown"
-            return AudioTrack(language: language, codec: codec)
+            // Attr 40 = AP_ItemAttribute_AudioChannelLayoutName ("7.1", "5.1", "2.0", etc.)
+            // Fall back to parsing it from the codec string if not present.
+            let channels = attrs[40] ?? channelsFromCodec(attrs[2] ?? "")
+            return AudioTrack(language: language, codec: codec, channels: channels)
         }
+    }
+
+    /// Extracts a channel layout string from codec descriptions like "DTS-HD MA 7.1".
+    private func channelsFromCodec(_ codec: String) -> String? {
+        let patterns = ["7.1", "5.1", "4.0", "2.0", "1.0", "6.1", "7.0", "5.0"]
+        return patterns.first { codec.contains($0) }
+    }
+
+    private func buildVideoResolution(from streams: [Int: [Int: String]]) -> String? {
+        // Attr 19 = AP_ItemAttribute_VideoSize ("1920x1080", "3840x2160", etc.)
+        // Take the first video stream's resolution.
+        for (_, attrs) in streams.sorted(by: { $0.key < $1.key }) {
+            guard let typeVal = attrs[1], typeVal.hasPrefix("V_") else { continue }
+            if let res = attrs[19], !res.isEmpty { return res }
+        }
+        return nil
     }
 
     private func resolvedBinPath() -> String {

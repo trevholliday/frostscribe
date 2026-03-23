@@ -10,6 +10,7 @@ struct FrostscribeApp: App {
         queueManager: QueueManager(appSupportURL: ConfigManager.appSupportURL)
     )
     @State private var vigilVM = VigilViewModel()
+    @State private var navCoordinator = NavigationCoordinator()
 
     @Environment(\.openWindow) private var openWindow
 
@@ -19,6 +20,7 @@ struct FrostscribeApp: App {
                 .environment(statusVM)
                 .environment(queueVM)
                 .environment(vigilVM)
+                .environment(navCoordinator)
         } label: {
             // onAppear fires at launch so the icon reflects real state before the popover opens
             MenuBarIcon(status: statusVM.file.status)
@@ -33,6 +35,9 @@ struct FrostscribeApp: App {
 
         Window("Rip Disc", id: "rip-flow") {
             RipFlowView()
+                .environment(statusVM)
+                .environment(queueVM)
+                .environment(navCoordinator)
         }
 
         Settings {

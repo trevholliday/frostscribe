@@ -75,7 +75,7 @@ struct AudioTrackSelectionView: View {
                                             .foregroundStyle(FrostTheme.teal)
                                     }
                                 }
-                                Text("\(track.language) · \(track.codec)")
+                                Text(track.summary)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
