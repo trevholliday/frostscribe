@@ -12,8 +12,6 @@ struct FrostscribeApp: App {
     @State private var vigilVM = VigilViewModel()
     @State private var navCoordinator = NavigationCoordinator()
 
-    @Environment(\.openWindow) private var openWindow
-
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
@@ -22,13 +20,11 @@ struct FrostscribeApp: App {
                 .environment(vigilVM)
                 .environment(navCoordinator)
         } label: {
-            // onAppear fires at launch so the icon reflects real state before the popover opens
             MenuBarIcon(status: statusVM.file.status)
                 .onAppear {
                     statusVM.startPolling()
                     queueVM.startPolling()
                     vigilVM.startWatchingIfEnabled()
-                    openWindow(id: "rip-flow")
                 }
         }
         .menuBarExtraStyle(.window)
@@ -39,9 +35,6 @@ struct FrostscribeApp: App {
                 .environment(queueVM)
                 .environment(navCoordinator)
         }
-
-        Settings {
-            SettingsView()
-        }
+        .windowResizability(.contentMinSize)
     }
 }

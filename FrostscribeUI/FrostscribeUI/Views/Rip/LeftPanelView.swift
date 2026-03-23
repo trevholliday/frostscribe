@@ -94,8 +94,9 @@ struct LeftPanelView: View {
     // MARK: - Settings button
 
     private var settingsButton: some View {
-        Button {
-            vm.toggleSettings()
+        let isActive = navCoordinator.selectedSection == .settings
+        return Button {
+            navCoordinator.selectedSection = isActive ? .rip : .settings
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "gear")
@@ -103,10 +104,10 @@ struct LeftPanelView: View {
                 Text("Settings")
                     .font(.caption)
             }
-            .foregroundStyle(vm.isShowingSettings ? FrostTheme.teal : Color.secondary)
+            .foregroundStyle(isActive ? FrostTheme.teal : Color.secondary)
         }
         .buttonStyle(.plain)
-        .disabled(!vm.canShowSettings)
+        .disabled(vm.isRipping)
         .padding(FrostTheme.paddingM)
     }
 

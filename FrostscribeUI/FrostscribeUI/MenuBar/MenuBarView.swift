@@ -82,7 +82,7 @@ struct MenuBarView: View {
             .buttonStyle(.plain)
             .foregroundStyle(FrostTheme.teal)
             Spacer()
-            Button { openSection(AppSection.rip) } label: {
+            Button { openSection(AppSection.settings) } label: {
                 Label("Settings", systemImage: "gear")
                     .font(.caption)
             }

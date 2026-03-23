@@ -20,13 +20,14 @@ struct RipFlowView: View {
         }
         .frame(minWidth: 640, idealWidth: 960, maxWidth: .infinity,
                minHeight: 460, idealHeight: 680, maxHeight: .infinity)
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
+            guard let window = notification.object as? NSWindow, window.title == "Rip Disc" else { return }
             NSApp.setActivationPolicy(.accessory)
         }
         .toolbar {
-            if vm.isShowingSettings {
+            if navCoordinator.selectedSection == .settings {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { vm.hideSettings() }
+                    Button("Done") { navCoordinator.selectedSection = .rip }
                 }
             } else if vm.canCancel {
                 ToolbarItem(placement: .cancellationAction) {
@@ -40,7 +41,7 @@ struct RipFlowView: View {
 
     @ViewBuilder
     private var rightContent: some View {
-        if vm.isShowingSettings {
+        if navCoordinator.selectedSection == .settings {
             NavigationStack {
                 SettingsView()
             }

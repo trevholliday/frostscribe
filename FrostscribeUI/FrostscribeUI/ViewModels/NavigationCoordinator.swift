@@ -1,11 +1,12 @@
 import Foundation
 
-enum AppSection: Hashable, CaseIterable {
+enum AppSection: Hashable {
     case rip
     case ripJob
     case encodeQueue
     case history
     case logs
+    case settings
 
     var label: String {
         switch self {
@@ -14,6 +15,7 @@ enum AppSection: Hashable, CaseIterable {
         case .encodeQueue: return "Encode Queue"
         case .history:     return "History"
         case .logs:        return "Logs"
+        case .settings:    return "Settings"
         }
     }
 
@@ -24,6 +26,7 @@ enum AppSection: Hashable, CaseIterable {
         case .encodeQueue: return "list.bullet"
         case .history:     return "clock.arrow.trianglehead.counterclockwise.rotate.90"
         case .logs:        return "doc.text"
+        case .settings:    return "gear"
         }
     }
 }
