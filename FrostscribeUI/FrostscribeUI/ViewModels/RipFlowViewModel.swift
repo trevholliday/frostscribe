@@ -34,6 +34,16 @@ final class RipFlowViewModel {
     private(set) var confirmedYear: String?
     private(set) var confirmedEncodeInput: EncodeInput?
 
+    // Rip estimation
+    private(set) var ripEstimate: RipEstimate?
+
+    var estimatedSecondsRemaining: Double? {
+        guard let estimate = ripEstimate,
+              case .ripping(_, let progress) = phase,
+              progress > 0, progress < 100 else { return nil }
+        return estimate.seconds * (1.0 - Double(progress) / 100.0)
+    }
+
     var canCancel: Bool {
         switch phase {
         case .idle, .ripping, .done, .error: return false
@@ -192,11 +202,18 @@ final class RipFlowViewModel {
         }
 
         let jobLabel = [title, episodeLabel].compactMap { $0 }.joined(separator: " — ")
+        let store = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
+        ripEstimate = RipEstimator(store: store).estimate(
+            discType: scanResult.discType,
+            sizeBytes: chosenTitle.sizeBytes
+        )
         let ripInput = RipInput(
             titleNumber: chosenTitle.number,
             baseTemp: URL(fileURLWithPath: config.tempDir),
             mediaType: mediaType,
-            jobLabel: jobLabel
+            jobLabel: jobLabel,
+            discType: scanResult.discType,
+            titleSizeBytes: chosenTitle.sizeBytes
         )
         let encodeInput = EncodeInput(
             outputURL: outputURL,
@@ -221,7 +238,8 @@ final class RipFlowViewModel {
         let ripUseCase = RipUseCase(
             runner: MakeMKVRunner(binPath: config.makemkvBin),
             status: StatusManager(appSupportURL: ConfigManager.appSupportURL),
-            ejector: DiscEjector()
+            ejector: DiscEjector(),
+            historyStore: RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
         )
         let encodeUseCase = EncodeUseCase(
             queue: QueueManager(appSupportURL: ConfigManager.appSupportURL)
@@ -259,6 +277,7 @@ final class RipFlowViewModel {
         confirmedTitle = nil
         confirmedYear = nil
         confirmedEncodeInput = nil
+        ripEstimate = nil
         phase = .idle
     }
 }

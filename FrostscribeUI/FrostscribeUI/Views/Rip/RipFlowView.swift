@@ -213,7 +213,8 @@ struct RipFlowView: View {
     // MARK: - History detail
 
     private var historyDetail: some View {
-        ScrollView {
+        let ripRecords = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL).load()
+        return ScrollView {
             VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
                 Text("History")
                     .font(.title3).bold()
@@ -224,15 +225,41 @@ struct RipFlowView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(statusVM.file.history.enumerated()), id: \.offset) { _, entry in
+                            let record = ripRecords.first {
+                                $0.jobLabel == entry.title &&
+                                abs($0.timestamp.timeIntervalSince(entry.startedAt)) < 300
+                            }
                             HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(entry.title)
                                         .font(.subheadline)
                                         .bold()
                                         .lineLimit(1)
-                                    Text(entry.type.rawValue.capitalized)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 6) {
+                                        Text(entry.type.rawValue.capitalized)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        if let r = record {
+                                            Text("·")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                            Text(r.discType.displayName)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            Text("·")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                            Text(formatBytes(r.titleSizeBytes))
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            Text("·")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                            Text(formatDuration(r.ripDurationSeconds))
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
                                 }
                                 Spacer()
                                 Text(entry.startedAt, style: .date)
@@ -244,10 +271,56 @@ struct RipFlowView: View {
                         }
                     }
                 }
+
+                // Rip rate stats (requires at least one record)
+                if !ripRecords.isEmpty {
+                    ripRateStats(records: ripRecords)
+                }
             }
             .padding(FrostTheme.paddingL)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func ripRateStats(records: [RipRecord]) -> some View {
+        let rows: [(type: DiscType, avgMBps: Double, count: Int)] = DiscType.allCases
+            .filter { $0 != .unknown }
+            .compactMap { type in
+                let r = records.filter { $0.discType == type && $0.success && $0.ripDurationSeconds > 0 }
+                guard !r.isEmpty else { return nil }
+                let avg = r.map { Double($0.titleSizeBytes) / $0.ripDurationSeconds / (1024 * 1024) }.reduce(0, +) / Double(r.count)
+                return (type, avg, r.count)
+            }
+        return VStack(alignment: .leading, spacing: FrostTheme.paddingS) {
+            Text("Rip Rates")
+                .font(.subheadline).bold()
+            ForEach(rows, id: \.type) { row in
+                HStack {
+                    Text(row.type.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 60, alignment: .leading)
+                    Text(String(format: "%.1f MB/s", row.avgMBps))
+                        .font(.caption.monospaced())
+                        .foregroundStyle(FrostTheme.teal)
+                    Text("(\(row.count) rip\(row.count == 1 ? "" : "s"))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .padding(FrostTheme.paddingM)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+    }
+
+    private func formatBytes(_ bytes: Int) -> String {
+        let gb = Double(bytes) / 1_073_741_824
+        return gb >= 1 ? String(format: "%.1f GB", gb) : String(format: "%.0f MB", gb * 1024)
+    }
+
+    private func formatDuration(_ seconds: Double) -> String {
+        let mins = Int(seconds / 60)
+        return mins < 1 ? "<1 min" : "\(mins) min"
     }
 
     // MARK: - Logs detail
@@ -292,6 +365,11 @@ struct RipFlowView: View {
             Text("\(progress)% complete")
                 .font(.headline)
                 .foregroundStyle(FrostTheme.teal)
+            if let remaining = vm.estimatedSecondsRemaining {
+                Text("~\(Int(remaining / 60) + 1) min remaining")
+                    .font(.caption)
+                    .foregroundStyle(FrostTheme.glacier)
+            }
             Text("Encoding will begin automatically when complete.")
                 .font(.caption)
                 .foregroundStyle(.secondary)

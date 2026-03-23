@@ -25,12 +25,18 @@ let package = Package(
             url: "https://github.com/apple/swift-argument-parser",
             from: "1.3.0"
         ),
+        .package(
+            url: "https://github.com/groue/GRDB.swift",
+            from: "6.0.0"
+        ),
     ],
     targets: [
         // Core library — shared business logic
         .target(
             name: "FrostscribeCore",
-            dependencies: [],
+            dependencies: [
+                .product(name: "GRDB", package: "GRDB.swift"),
+            ],
             path: "Sources/FrostscribeCore"
         ),
 

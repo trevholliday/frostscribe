@@ -100,11 +100,11 @@ public final class MakeMKVRunner: MakeMKVRunning {
         var titleData: [Int: [Int: String]] = [:]
         var streamData: [Int: [Int: [Int: String]]] = [:]
         var discName: String?
-        var discType: String?
+        var discTypeString: String?
 
         for line in lines {
             switch MakeMKVParser.parse(line) {
-            case .discType(let t): discType = t
+            case .discType(let t): discTypeString = t
             case .discName(let n): discName = n
             case .titleInfo(let num, let attr, let value):
                 if titleData[num] == nil { titleData[num] = [:] }
@@ -137,6 +137,7 @@ public final class MakeMKVRunner: MakeMKVRunning {
             )
         }.sorted { $0.number < $1.number }
 
+        let discType = discTypeString.map { DiscType(makeMKVString: $0) } ?? .unknown
         return DiscScanResult(titles: titles, discName: discName, discType: discType)
     }
 

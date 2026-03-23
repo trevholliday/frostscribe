@@ -103,7 +103,9 @@ Frostscribe/
 │   │   │   ├── EncodeJob.swift
 │   │   │   ├── DiscTitle.swift
 │   │   │   ├── DiscScanResult.swift
-│   │   │   └── AudioTrack.swift
+│   │   │   ├── AudioTrack.swift
+│   │   │   ├── DiscType.swift
+│   │   │   └── RipRecord.swift
 │   │   ├── Protocols/
 │   │   │   ├── QueueManaging.swift
 │   │   │   ├── StatusManaging.swift
@@ -117,7 +119,9 @@ Frostscribe/
 │   │   │   ├── StatusManager.swift
 │   │   │   ├── QueueManager.swift
 │   │   │   ├── NotificationService.swift
-│   │   │   └── TMDBClient.swift
+│   │   │   ├── TMDBClient.swift
+│   │   │   ├── RipHistoryStore.swift
+│   │   │   └── RipEstimator.swift
 │   │   ├── Ripping/
 │   │   │   ├── MakeMKVRunner.swift
 │   │   │   ├── MakeMKVParser.swift
@@ -203,9 +207,11 @@ The heart of the application. Contains all business logic with zero UI dependenc
 **Models/**
 - `RipJob.swift` — represents an active or completed rip operation. Written to `status.json` during ripping.
 - `EncodeJob.swift` — represents a single entry in the encode queue (`queue.json`). Has states: `pending`, `encoding`, `done`, `error`.
-- `DiscTitle.swift` — represents a single title found on a disc during the MakeMKV scan phase. Contains title number, duration, chapter count, file size, filename, and a list of `AudioTrack` values.
+- `DiscTitle.swift` — represents a single title found on a disc during the MakeMKV scan phase. Contains title number, duration, chapter count, file size, filename, video resolution, subtitle count, order weight, and a list of `AudioTrack` values.
 - `DiscScanResult.swift` — top-level value type returned by a disc scan: title list, disc name, disc type.
-- `AudioTrack.swift` — represents a single audio track on a title. Contains language, codec, and an `isLossless` flag derived from codec name (DTS-HD MA, TrueHD, FLAC, PCM, LPCM).
+- `AudioTrack.swift` — represents a single audio track on a title. Contains language, codec, channel layout, and an `isLossless` flag derived from codec name (DTS-HD MA, TrueHD, FLAC, PCM, LPCM).
+- `DiscType.swift` — enum (`dvd`, `bluray`, `uhd`, `unknown`) parsed from the raw MakeMKV `CINFO:1` string. Used for encoder preset selection and rip history estimation.
+- `RipRecord.swift` — Codable struct persisted to `riphistory.db`. Captures disc type, title size in bytes, rip duration in seconds, job label, success flag, and timestamp. Powers the rip time estimator.
 
 **Protocols/**
 
@@ -226,10 +232,13 @@ Protocol abstractions that decouple callers from concrete implementations. All s
 - `QueueManager.swift` — atomic read/write of `queue.json`. Provides methods to add jobs, update progress, mark complete, and read active jobs. Uses file locking to prevent the CLI and worker from writing simultaneously.
 - `NotificationService.swift` — sends macOS native notifications (via `UserNotifications` framework) when a rip or encode completes. Requires no external service.
 - `TMDBClient.swift` — HTTP client for TMDB API v3. Performs multi-search (auto-detects movie vs TV), fetches season episode counts. Gracefully no-ops if a key is not configured.
+- `RipHistoryStore.swift` — SQLite-backed store (via GRDB) for `RipRecord` entries. Database lives at `riphistory.db` in app support. Runs schema migrations on first open. Provides insert and size-range query methods used by the estimator. Gracefully degrades to no-op if the database cannot be opened.
+- `RipEstimator.swift` — estimates rip time for a given disc type and title size by averaging the MB/s rate from past records within ±25% of the target size. Falls back to empirical defaults (DVD ~9 MB/s, Blu-ray ~18 MB/s, UHD ~30 MB/s) when fewer than 2 matching records exist. Returns a `RipEstimate` with a `confidence` field (`.measured(sampleCount:)` or `.fallback`).
 
 **Ripping/**
 - `MakeMKVRunner.swift` — spawns `makemkvcon` as a child process, captures output via a pipe, and streams it line by line to the parser. Handles both the `info` (disc scan) and `mkv` (rip) modes. Conforms to `MakeMKVRunning`. Returns `DiscScanResult`.
 - `MakeMKVParser.swift` — pure parsing logic with no I/O. Takes raw output lines from makemkvcon and produces structured data: `CINFO` → disc metadata, `TINFO` → title metadata, `MSG` → user-facing messages, `PRGV` → progress values. Fully unit tested.
+  - **MSG error handling:** `MSG` codes in the 4xxx range are errors, but not all are fatal. Codes where the message text contains `"attempting to work around"` (e.g. MSG:4004 — corrupt sector recovered) are warnings that MakeMKV handled internally — the rip can continue and succeed. Only 4xxx messages that do **not** contain `"attempting to work around"` should be treated as fatal and abort the rip.
 - `DiscEjector.swift` — wraps `drutil eject` with a retry loop (5 attempts, 2 second delay).
 
 **Encoding/**
@@ -274,7 +283,8 @@ A macOS SwiftUI menu bar application packaged as a proper `.app` bundle via an X
 **ViewModels/**
 - `StatusViewModel.swift` — `@MainActor @Observable` class that polls `status.json` every 3 seconds.
 - `QueueViewModel.swift` — `@MainActor @Observable` class that polls `queue.json` every 3 seconds.
-- `RipFlowViewModel.swift` — `@MainActor @Observable` state machine that drives the GUI rip flow. `phase` enum covers: `idle`, `scanning`, `titleSelection`, `mediaType`, `tmdbSearch`, `tvEpisode`, `audioTrackSelection`, `confirmation`, `ripping`, `done`, `error`. Owns all async Tasks; `reset()` cancels them.
+- `RipFlowViewModel.swift` — `@MainActor @Observable` state machine that drives the GUI rip flow. `phase` enum covers: `idle`, `scanning`, `titleSelection`, `mediaType`, `tmdbSearch`, `tvEpisode`, `audioTrackSelection`, `confirmation`, `ripping`, `done`, `error`. Owns all async Tasks; `reset()` cancels them. Computes `ripEstimate` (via `RipEstimator`) when entering the confirmation phase and exposes `estimatedSecondsRemaining` during ripping.
+- `NavigationCoordinator.swift` — `@MainActor @Observable` class shared between the menu bar popover and the main window. Holds `selectedSection: AppSection?` which drives which panel is visible. `AppSection` covers `rip`, `ripJob`, `encodeQueue`, `history`, `logs`, `settings`.
 
 **Views/**
 - `StatusSectionView.swift` — displays current rip job with a live progress bar when ripping, otherwise shows "No disc active".
@@ -351,7 +361,7 @@ The worker is installed to `~/Library/LaunchAgents/com.frostscribe.worker.plist`
 | `makemkv_bin` | No | Full path to `makemkvcon`. If empty, searches known paths then `$PATH` |
 | `handbrake_bin` | No | Full path to `HandBrakeCLI`. If empty, searches `$PATH` |
 | `notifications_enabled` | No | Send native macOS notifications on job completion. Defaults to `true` |
-| `vigil_mode` | No | Auto-rip when a disc is inserted. Requires the menu bar app. Defaults to `false` |
+| `vigil_mode` | No | `true` = Vigil Mode (interactive, default). `false` = AutoScribe (auto-rips inserted discs without prompting) |
 | `select_audio_tracks` | No | Prompt the user to choose which audio tracks to include before ripping. Defaults to `false` |
 
 ---
@@ -446,7 +456,7 @@ Loop continues
 
 ## State Files
 
-Both files live at `~/Library/Application Support/Frostscribe/`.
+All state files live at `~/Library/Application Support/Frostscribe/`.
 
 ### status.json
 
@@ -500,7 +510,25 @@ Written by the rip flow (adds jobs) and the worker (updates progress/status).
 }
 ```
 
-Both files are written atomically: data is written to a `.tmp` file first, then renamed to the final path. `rename()` is atomic on the same filesystem volume, preventing corrupt reads if the process is killed mid-write.
+The JSON files are written atomically: data is written to a `.tmp` file first, then renamed to the final path. `rename()` is atomic on the same filesystem volume, preventing corrupt reads if the process is killed mid-write.
+
+### riphistory.db
+
+SQLite database written by `RipHistoryStore` via GRDB. Created automatically on first rip. Schema is managed by GRDB's `DatabaseMigrator` — migrations run on app launch and are idempotent.
+
+**Table: `rip_records`**
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | TEXT (UUID) | Primary key |
+| `timestamp` | DATETIME | When the rip completed |
+| `disc_type` | TEXT | `dvd`, `bluray`, `uhd`, or `unknown` |
+| `title_size_bytes` | INTEGER | Raw MKV size of the ripped title |
+| `rip_duration_seconds` | REAL | Wall-clock time from rip start to MKV found |
+| `job_label` | TEXT | Human-readable title (e.g. "The Dark Knight (2008)") |
+| `success` | BOOLEAN | 1 if rip completed successfully |
+
+Indexed on `(disc_type, title_size_bytes)` for fast estimator queries.
 
 ---
 
@@ -587,13 +615,13 @@ Because the worker is a launchd agent, even if the process leaks or hangs, `fros
 
 ## Vigil Mode
 
-Vigil Mode is an opt-in autonomous ripping mode. It is **disabled by default**. Users must explicitly enable it in config or via `frostscribe init`.
+**Vigil Mode** is the default interactive mode — the user is present, guiding each rip. Disabling Vigil Mode activates **AutoScribe**, the autonomous ripping mode. AutoScribe requires explicit confirmation to enable (destructive action prompt in Settings).
 
 Named after the monastic practice of keeping vigil — the monk who watches through the night and acts when needed, without being summoned.
 
 ### How it works
 
-When Vigil Mode is enabled, the menu bar app uses the **DiskArbitration** framework to listen for optical disc insertion events. When a disc is detected:
+When AutoScribe is active (Vigil Mode off), the menu bar app uses the **DiskArbitration** framework to listen for optical disc insertion events. When a disc is detected:
 
 1. Frostscribe scans the disc via `makemkvcon -r info disc:0`
 2. TMDB lookup runs automatically using the disc name
@@ -604,7 +632,7 @@ When Vigil Mode is enabled, the menu bar app uses the **DiskArbitration** framew
 
 ### Safety
 
-- Vigil Mode only activates when the menu bar app is running
+- AutoScribe only activates when the menu bar app is running
 - A notification is always sent when a rip starts, so you are never surprised
 - TMDB lookup always runs — the top result is used automatically. Frostscribe will never rip a disc it cannot identify via TMDB
 - If TMDB returns no results, Vigil Mode stops and sends a notification: "Unknown disc — manual entry required"
@@ -614,11 +642,14 @@ When Vigil Mode is enabled, the menu bar app uses the **DiskArbitration** framew
 
 ```json
 {
-  "vigil_mode": false
+  "vigil_mode": true
 }
 ```
 
-Enabled via `frostscribe init` or by editing config directly. Can also be toggled from the Settings view in the menu bar app.
+`true` = Vigil Mode (default) — user is present, ripping is interactive.
+`false` = AutoScribe — discs are ripped automatically without prompting.
+
+Toggled from the Settings view in the menu bar app. Disabling Vigil Mode (enabling AutoScribe) requires a confirmation dialog.
 
 ---
 
@@ -659,8 +690,7 @@ frostscribe version              Print version information
 | Package | Purpose |
 |---|---|
 | `swift-argument-parser` | CLI subcommand parsing (Apple's official package) |
-
-Frostscribe intentionally minimizes third-party dependencies. Everything else — JSON encoding, file I/O, process spawning, HTTP requests, notifications — is available in Apple's frameworks.
+| `GRDB.swift` | SQLite wrapper for `RipHistoryStore` — type-safe queries, migrations, `Sendable` `DatabaseQueue` |
 
 ### External Tools (user must install)
 

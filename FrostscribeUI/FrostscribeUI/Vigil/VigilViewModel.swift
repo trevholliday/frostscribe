@@ -131,7 +131,9 @@ final class VigilViewModel {
             titleNumber: largestTitle.number,
             baseTemp: URL(fileURLWithPath: config.tempDir),
             mediaType: .movie,
-            jobLabel: mediaTitle
+            jobLabel: mediaTitle,
+            discType: scanResult.discType,
+            titleSizeBytes: largestTitle.sizeBytes
         )
 
         let encodeInput = EncodeInput(
@@ -146,7 +148,8 @@ final class VigilViewModel {
         let ripUseCase = RipUseCase(
             runner: runner,
             status: StatusManager(appSupportURL: ConfigManager.appSupportURL),
-            ejector: DiscEjector()
+            ejector: DiscEjector(),
+            historyStore: RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
         )
 
         let encodeUseCase = EncodeUseCase(

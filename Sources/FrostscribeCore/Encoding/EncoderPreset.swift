@@ -2,9 +2,11 @@ public enum EncoderPreset {
     public static let bluray = "H.265 MKV 2160p60 4K"
     public static let dvd    = "H.265 MKV 1080p30"
 
-    public static func preset(for discType: String?) -> String {
-        guard let discType else { return dvd }
-        return discType.lowercased().contains("blu") ? bluray : dvd
+    public static func preset(for discType: DiscType) -> String {
+        switch discType {
+        case .uhd, .bluray: return bluray
+        case .dvd, .unknown: return dvd
+        }
     }
 
     public static func arguments(input: String, output: String, preset: String, audioTracks: [Int]? = nil) -> [String] {

@@ -23,6 +23,9 @@ struct ConfirmationView: View {
                 }
                 infoRow(label: "Preset", value: encodeInput.preset)
                 infoRow(label: "Audio", value: audioSummary)
+                if let estimate = vm.ripEstimate {
+                    infoRow(label: "Est. Time", value: estimate.formattedMinutes + estimateQualifier(estimate))
+                }
                 Divider().padding(.vertical, FrostTheme.paddingS)
                 pathRow
             }
@@ -38,6 +41,11 @@ struct ConfirmationView: View {
             Spacer()
         }
         .padding(FrostTheme.paddingL)
+    }
+
+    private func estimateQualifier(_ estimate: RipEstimate) -> String {
+        if case .measured(let n) = estimate.confidence { return " (\(n) rips)" }
+        return " (est.)"
     }
 
     private var audioSummary: String {
