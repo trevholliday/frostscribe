@@ -20,6 +20,9 @@ struct RipFlowView: View {
         }
         .frame(minWidth: 640, idealWidth: 960, maxWidth: .infinity,
                minHeight: 460, idealHeight: 680, maxHeight: .infinity)
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in
+            NSApp.setActivationPolicy(.accessory)
+        }
         .toolbar {
             if vm.isShowingSettings {
                 ToolbarItem(placement: .confirmationAction) {

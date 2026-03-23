@@ -33,6 +33,7 @@ struct MenuBarView: View {
 
     private func openSection(_ section: AppSection) {
         navCoordinator.selectedSection = .some(section)
+        NSApp.setActivationPolicy(.regular)
         openWindow(id: "rip-flow")
         NSApp.activate(ignoringOtherApps: true)
     }
