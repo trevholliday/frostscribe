@@ -32,19 +32,31 @@ struct StatusSectionView: View {
                 .bold()
                 .lineLimit(1)
 
-            ProgressView(value: job.progress.progressFraction)
-                .tint(FrostTheme.frostCyan)
-
-            HStack {
-                Text(job.progress)
-                    .font(.caption)
-                    .foregroundStyle(FrostTheme.teal)
-                Spacer()
-                if let item = job.currentItem {
-                    Text(item)
+            // MakeMKV scan phase: progress is 0% with no currentItem
+            if job.progress == "0%" && job.currentItem == nil {
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 12, height: 12)
+                    Text("Scanning disc…")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                }
+            } else {
+                ProgressView(value: job.progress.progressFraction)
+                    .tint(FrostTheme.frostCyan)
+
+                HStack {
+                    Text(job.progress)
+                        .font(.caption)
+                        .foregroundStyle(FrostTheme.teal)
+                    Spacer()
+                    if let item = job.currentItem {
+                        Text(item)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
         }

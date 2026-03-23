@@ -22,6 +22,7 @@ public enum Colors {
     public static func success(_ msg: String) { print("\(teal)  ✔\(reset) \(bold)\(msg)\(reset)") }
     public static func error(_ msg: String)   { print("\(alert)  ✘\(reset) \(alert)\(msg)\(reset)") }
     public static func section(_ msg: String) { print("\n\(bold)\(glacier)  ══ \(msg) ══\(reset)") }
+    public static func verbose(_ msg: String) { print("\(dim)  · \(msg)\(reset)") }
 
     public static func banner() {
         print("""

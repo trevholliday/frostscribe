@@ -26,6 +26,9 @@ struct WorkerStart: ParsableCommand {
         abstract: "Install and start the encode worker."
     )
 
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
+
     func run() throws {
         let binPath = resolveWorkerBin()
         let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path
@@ -37,6 +40,12 @@ struct WorkerStart: ParsableCommand {
 
         let plist = buildPlist(binPath: binPath, logPath: logPath)
         try plist.write(to: plistURL, atomically: true, encoding: .utf8)
+
+        if verbose {
+            Colors.verbose("Plist: \(plistURL.path)")
+            Colors.verbose("Worker bin: \(binPath)")
+            Colors.verbose("Running: launchctl bootstrap gui/\(getuid()) \(plistURL.path)")
+        }
 
         let result = launchctl("bootstrap", "gui/\(getuid())", plistURL.path)
         if result == 0 {
@@ -55,7 +64,14 @@ struct WorkerStop: ParsableCommand {
         abstract: "Stop and remove the encode worker agent."
     )
 
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
+
     func run() throws {
+        if verbose {
+            Colors.verbose("Running: launchctl bootout gui/\(getuid())/\(label)")
+        }
+
         let result = launchctl("bootout", "gui/\(getuid())/\(label)")
         try? FileManager.default.removeItem(at: plistURL)
 
@@ -74,9 +90,14 @@ struct WorkerRestart: ParsableCommand {
         abstract: "Restart the encode worker."
     )
 
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
+
     func run() throws {
+        if verbose { Colors.verbose("Running: launchctl bootout gui/\(getuid())/\(label)") }
         _ = launchctl("bootout", "gui/\(getuid())/\(label)")
         Thread.sleep(forTimeInterval: 1)
+        if verbose { Colors.verbose("Running: launchctl bootstrap gui/\(getuid()) \(plistURL.path)") }
         let result = launchctl("bootstrap", "gui/\(getuid())", plistURL.path)
 
         if result == 0 {
@@ -94,10 +115,14 @@ struct WorkerStatus: ParsableCommand {
         abstract: "Show whether the worker is running."
     )
 
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
+
     func run() throws {
         Colors.section("Worker Status")
         print()
 
+        if verbose { Colors.verbose("Running: launchctl print gui/\(getuid())/\(label)") }
         let running = launchctl("print", "gui/\(getuid())/\(label)") == 0
         let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path
 

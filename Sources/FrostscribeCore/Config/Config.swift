@@ -1,4 +1,4 @@
-public struct Config: Codable, Sendable {
+public struct Config: Sendable {
     public var mediaServer: MediaServer
     public var moviesDir: String
     public var tvDir: String
@@ -46,5 +46,31 @@ public struct Config: Codable, Sendable {
         self.qualityDVD = qualityDVD
         self.qualityBluray = qualityBluray
         self.qualityUHD = qualityUHD
+    }
+}
+
+extension Config: Codable {
+    enum CodingKeys: String, CodingKey {
+        case mediaServer, moviesDir, tvDir, tempDir, tmdbApiKey, makemkvKey,
+             makemkvBin, handbrakeBin, notificationsEnabled, vigilMode,
+             selectAudioTracks, qualityDVD, qualityBluray, qualityUHD
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mediaServer          = (try? c.decode(MediaServer.self,    forKey: .mediaServer))      ?? .jellyfin
+        moviesDir            = (try? c.decode(String.self,         forKey: .moviesDir))         ?? ""
+        tvDir                = (try? c.decode(String.self,         forKey: .tvDir))             ?? ""
+        tempDir              = (try? c.decode(String.self,         forKey: .tempDir))           ?? ""
+        tmdbApiKey           = (try? c.decode(String.self,         forKey: .tmdbApiKey))        ?? ""
+        makemkvKey           = (try? c.decode(String.self,         forKey: .makemkvKey))        ?? ""
+        makemkvBin           = (try? c.decode(String.self,         forKey: .makemkvBin))        ?? ""
+        handbrakeBin         = (try? c.decode(String.self,         forKey: .handbrakeBin))      ?? ""
+        notificationsEnabled = (try? c.decode(Bool.self,           forKey: .notificationsEnabled)) ?? true
+        vigilMode            = (try? c.decode(Bool.self,           forKey: .vigilMode))         ?? true
+        selectAudioTracks    = (try? c.decode(Bool.self,           forKey: .selectAudioTracks)) ?? false
+        qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .q80
+        qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .q70
+        qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .q70
     }
 }

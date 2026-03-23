@@ -61,13 +61,26 @@ struct MenuBarView: View {
             Circle()
                 .fill(badgeColor)
                 .frame(width: 7, height: 7)
-            Text(statusVM.file.status.rawValue)
+            Text(badgeLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
 
-    private var badgeColor: Color { statusVM.file.status.color }
+    /// When the ripper is idle but the encode worker has active jobs, show "encoding".
+    private var badgeLabel: String {
+        if statusVM.file.status == .idle && queueVM.activeCount > 0 {
+            return "encoding"
+        }
+        return statusVM.file.status.rawValue
+    }
+
+    private var badgeColor: Color {
+        if statusVM.file.status == .idle && queueVM.activeCount > 0 {
+            return FrostTheme.glacier
+        }
+        return statusVM.file.status.color
+    }
 
     // MARK: - Footer
 

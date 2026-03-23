@@ -31,7 +31,7 @@ final class StatusViewModel {
         pollTask = nil
     }
 
-    private func refresh() {
+    func refresh() {
         file = (try? statusManager.read()) ?? StatusManager.StatusFile(
             status: .idle, updatedAt: .now, currentJob: nil, history: []
         )

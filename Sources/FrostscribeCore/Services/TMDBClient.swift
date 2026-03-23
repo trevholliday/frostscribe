@@ -35,10 +35,11 @@ public final class TMDBClient: Sendable {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let response = try JSONDecoder().decode(MultiSearchResponse.self, from: data)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return [] }
+        guard let decoded = try? JSONDecoder().decode(MultiSearchResponse.self, from: data) else { return [] }
 
-        return response.results
+        return decoded.results
             .filter { $0.mediaType == "movie" || $0.mediaType == "tv" }
             .prefix(5)
             .compactMap { result -> SearchResult? in

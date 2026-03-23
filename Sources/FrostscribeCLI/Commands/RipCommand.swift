@@ -8,12 +8,25 @@ struct RipCommand: AsyncParsableCommand {
         abstract: "Start an interactive disc ripping session."
     )
 
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
+
     func run() async throws {
         let config: Config
         do { config = try ConfigManager().load() }
         catch FrostscribeError.configNotFound {
             Colors.error("Not configured — run 'frostscribe init' first.")
             throw ExitCode.failure
+        }
+
+        if verbose {
+            Colors.verbose("Config: \(ConfigManager.appSupportURL.path)/config.json")
+            Colors.verbose("makemkvcon   → \(config.makemkvBin)")
+            Colors.verbose("HandBrakeCLI → \(config.handbrakeBin)")
+            Colors.verbose("Temp dir     → \(config.tempDir)")
+            Colors.verbose("Movies dir   → \(config.moviesDir)")
+            Colors.verbose("TV dir       → \(config.tvDir)")
+            print()
         }
 
         Colors.banner()
@@ -34,14 +47,15 @@ struct RipCommand: AsyncParsableCommand {
             throw ExitCode.failure
         }
 
-        printTitles(scanResult.titles)
-        let chosen = pickTitle(from: scanResult.titles)
+        if verbose {
+            Colors.verbose("Disc type: \(scanResult.discType.displayName)")
+            if let name = scanResult.discName { Colors.verbose("Disc name: \(name)") }
+            Colors.verbose("Titles found: \(scanResult.titles.count)")
+        }
 
+        // Identify media before presenting titles
         print()
-        let isTV = Prompt.pick("Media type", options: ["Movie", "TV Show"]) == "TV Show"
-
-        print()
-        let (title, year, _) = try await lookupMedia(discName: scanResult.discName, isTV: isTV, config: config)
+        let (title, year, isTV, _) = try await lookupMedia(discName: scanResult.discName, config: config)
 
         var episodeLabel: String? = nil
         var season = 1
@@ -52,6 +66,22 @@ struct RipCommand: AsyncParsableCommand {
             season  = Int(Prompt.ask("Season number", default: "1")) ?? 1
             episode = Int(Prompt.ask("Starting episode number", default: "1")) ?? 1
             episodeLabel = String(format: "S%02dE%02d", season, episode)
+        }
+
+        print()
+        printTitles(scanResult.titles)
+        let chosen = pickTitle(from: scanResult.titles)
+
+        if verbose {
+            print()
+            Colors.verbose("Title #\(chosen.number): \(chosen.name)")
+            Colors.verbose("  Duration: \(chosen.duration)  Size: \(chosen.sizeFormatted)  Chapters: \(chosen.chapters)")
+            if let res = chosen.videoResolution { Colors.verbose("  Resolution: \(res)") }
+            Colors.verbose("  Subtitles: \(chosen.subtitleCount)")
+            for track in chosen.audioTracks {
+                let lossless = track.isLossless ? " [lossless]" : ""
+                Colors.verbose("  Audio: \(track.language) (\(track.codec))\(lossless)")
+            }
         }
 
         let outputURL = buildOutputURL(
@@ -103,15 +133,36 @@ struct RipCommand: AsyncParsableCommand {
             quality: EncoderPreset.quality(for: scanResult.discType, config: config)
         )
 
+        if verbose {
+            Colors.verbose("Preset:  \(encodeInput.preset)")
+            Colors.verbose("Quality: \(encodeInput.quality)")
+            if let tracks = encodeInput.selectedAudioTracks {
+                Colors.verbose("Audio tracks: \(tracks.map(String.init).joined(separator: ", "))")
+            } else {
+                Colors.verbose("Audio tracks: all (default)")
+            }
+        }
+
         let ripUseCase = RipUseCase(runner: runner, status: statusManager, ejector: ejector)
         let encodeUseCase = EncodeUseCase(queue: queueManager)
 
         print()
-        let startTime = Date()
-        let mkvURL = try await ripUseCase.execute(ripInput) { pct in
-            let tick = Int(Date().timeIntervalSince(startTime) * 10)
-            ProgressBar.printRip(percent: pct, message: chosen.name, tick: tick)
+        let ripState = RipProgressState()
+        let spinnerTask = Task {
+            var tick = 0
+            while !Task.isCancelled {
+                ProgressBar.printRip(percent: ripState.pct, message: ripState.msg, tick: tick)
+                tick += 1
+                try? await Task.sleep(nanoseconds: 45_000_000)
+            }
         }
+        let mkvURL = try await ripUseCase.execute(
+            ripInput,
+            onMessage: { msg in ripState.msg = msg },
+            onProgress: { pct in ripState.pct = pct }
+        )
+        spinnerTask.cancel()
+        if verbose { Colors.verbose("MKV: \(mkvURL.path)") }
         try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
 
         print("\r  \(Colors.teal)✔\(Colors.reset) \(Colors.bold)Rip complete.\(Colors.reset)                                        ")
@@ -144,25 +195,52 @@ struct RipCommand: AsyncParsableCommand {
     // MARK: - Title selection
 
     private func printTitles(_ titles: [DiscTitle]) {
-        let rule = "\(Colors.dim)\(String(repeating: "─", count: 72))\(Colors.reset)"
+        let maxBytes = titles.map(\.sizeBytes).max() ?? 0
+        let rule = "\(Colors.dim)\(String(repeating: "─", count: 80))\(Colors.reset)"
+
+        print()
+        let header = "# ".padding(toLength: 5, withPad: " ", startingAt: 0)
+            + "Duration".padding(toLength: 12, withPad: " ", startingAt: 0)
+            + " " + "Description".padding(toLength: 28, withPad: " ", startingAt: 0)
+            + " " + "Audio".padding(toLength: 26, withPad: " ", startingAt: 0)
+            + " Title"
+        print("  \(Colors.bold)\(Colors.iceWhite)\(header)\(Colors.reset)")
         print("  \(rule)")
+
         for t in titles {
-            let num  = "[\(t.number)]".padding(toLength: 5, withPad: " ", startingAt: 0)
-            let name = t.name.prefix(24).padding(toLength: 24, withPad: " ", startingAt: 0)
-            let audio = formatAudio(t.audioTracks)
-            print("  \(Colors.glacier)\(num)\(Colors.reset) \(name)  \(Colors.dim)\(t.duration)  \(t.chapters)ch  \(t.sizeFormatted)\(Colors.reset)  \(audio)")
+            let isMain = t.sizeBytes == maxBytes
+            let numStr = "\(t.number)".padding(toLength: 5, withPad: " ", startingAt: 0)
+            let dur    = t.duration.padding(toLength: 12, withPad: " ", startingAt: 0)
+            let desc   = "\(t.chapters)ch, \(t.sizeFormatted)"
+            let audioLines = formatAudioLines(t.audioTracks)
+            let firstAudio = audioLines.first ?? "\(Colors.dim)—\(Colors.reset)"
+
+            if isMain {
+                let descStyled = "\(Colors.dim)\(t.chapters)ch, \(Colors.reset)\(Colors.teal)\(t.sizeFormatted)\(Colors.reset)"
+                let descPad = String(repeating: " ", count: max(0, 28 - desc.count))
+                print("  \(Colors.iceWhite)\(numStr)\(Colors.reset)\(Colors.iceWhite)\(dur)\(Colors.reset) \(descStyled)\(descPad) \(firstAudio) \(Colors.iceWhite)\(t.name)\(Colors.reset)")
+            } else {
+                let descPad = String(repeating: " ", count: max(0, 28 - desc.count))
+                print("  \(Colors.dim)\(numStr)\(Colors.iceWhite)\(dur)\(Colors.reset) \(Colors.dim)\(desc)\(descPad)\(Colors.reset) \(firstAudio) \(Colors.dim)\(t.name)\(Colors.reset)")
+            }
+
+            for extraAudio in audioLines.dropFirst() {
+                print("  \(String(repeating: " ", count: 47))\(extraAudio)")
+            }
         }
+
         print("  \(rule)")
     }
 
-    private func formatAudio(_ tracks: [AudioTrack]) -> String {
-        guard !tracks.isEmpty else { return "\(Colors.dim)No audio\(Colors.reset)" }
+    private func formatAudioLines(_ tracks: [AudioTrack]) -> [String] {
+        guard !tracks.isEmpty else { return ["\(Colors.dim)—\(Colors.reset)"] }
         return tracks.map { track in
             let label = "\(track.language) (\(track.codec))"
+            let padded = label.padding(toLength: 26, withPad: " ", startingAt: 0)
             return track.isLossless
-                ? "\(Colors.teal)\(label)\(Colors.reset)"
-                : "\(Colors.dim)\(label)\(Colors.reset)"
-        }.joined(separator: ", ")
+                ? "\(Colors.teal)\(padded)\(Colors.reset)"
+                : "\(Colors.dim)\(padded)\(Colors.reset)"
+        }
     }
 
     private func pickTitle(from titles: [DiscTitle]) -> DiscTitle {
@@ -180,53 +258,51 @@ struct RipCommand: AsyncParsableCommand {
 
     private func lookupMedia(
         discName: String?,
-        isTV: Bool,
         config: Config
-    ) async throws -> (title: String, year: String, tmdbId: Int?) {
+    ) async throws -> (title: String, year: String, isTV: Bool, tmdbId: Int?) {
         let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
-        guard tmdb.isConfigured else { return manualEntry() }
 
-        let defaultQuery = discName.map {
-            cleanForTMDB($0.replacingOccurrences(of: "_", with: " ").capitalized)
-        }
+        if tmdb.isConfigured, let discName = discName {
+            let query = cleanForTMDB(discName.replacingOccurrences(of: "_", with: " ").capitalized)
+            Colors.info("Searching TMDB: \(Colors.bold)\(query)\(Colors.reset)")
 
-        let query = Prompt.ask("Search TMDB", default: defaultQuery ?? "")
-        Colors.info("Searching…")
+            let results = try await tmdb.searchMulti(query: query)
 
-        let all = try await tmdb.searchMulti(query: query)
+            if !results.isEmpty {
+                print()
+                for (i, r) in results.enumerated() {
+                    let type = r.mediaType == .tv ? "TV" : "Movie"
+                    print("  \(Colors.dim)[\(i + 1)]\(Colors.reset) \(r.title) \(Colors.dim)(\(r.year)) [\(type)]\(Colors.reset)")
+                }
+                print("  \(Colors.dim)[0] Enter manually\(Colors.reset)")
+                print()
 
-        if all.isEmpty {
-            Colors.info("No results found.")
-            return manualEntry()
-        }
-
-        let results = all.filter { isTV ? $0.mediaType == .tv : $0.mediaType == .movie }
-        let list    = results.isEmpty ? all : results
-
-        print()
-        for (i, r) in list.enumerated() {
-            let type = r.mediaType == .tv ? "TV" : "Movie"
-            print("  \(Colors.dim)[\(i + 1)]\(Colors.reset) \(r.title) \(Colors.dim)(\(r.year)) [\(type)]\(Colors.reset)")
-        }
-        print("  \(Colors.dim)[\(list.count + 1)] None of these — enter manually\(Colors.reset)")
-        print()
-
-        while true {
-            let input = Prompt.ask("Pick a result", default: "1")
-            guard let n = Int(input) else { continue }
-            if n == list.count + 1 { return manualEntry() }
-            if n >= 1, n <= list.count {
-                let r = list[n - 1]
-                return (r.title, r.year, r.id)
+                while true {
+                    let input = Prompt.ask("Pick [0-\(results.count)]")
+                    guard let n = Int(input) else {
+                        Colors.error("Enter a number between 0 and \(results.count).")
+                        continue
+                    }
+                    if n == 0 { break }
+                    if n >= 1, n <= results.count {
+                        let r = results[n - 1]
+                        return (r.title, r.year, r.mediaType == .tv, r.id)
+                    }
+                    Colors.error("Enter a number between 0 and \(results.count).")
+                }
+            } else {
+                Colors.info("No results found.")
             }
-            Colors.error("Enter a number between 1 and \(list.count + 1).")
         }
+
+        return manualEntry()
     }
 
-    private func manualEntry() -> (title: String, year: String, tmdbId: Int?) {
+    private func manualEntry() -> (title: String, year: String, isTV: Bool, tmdbId: Int?) {
+        let isTV = Prompt.pick("Media type", options: ["Movie", "TV Show"]) == "TV Show"
         let title = Prompt.ask("Title")
         let year  = Prompt.ask("Year", default: String(Calendar.current.component(.year, from: Date())))
-        return (title, year, nil)
+        return (title, year, isTV, nil)
     }
 
     private func cleanForTMDB(_ name: String) -> String {
@@ -237,6 +313,8 @@ struct RipCommand: AsyncParsableCommand {
     }
 
     // MARK: - Output path
+
+
 
     private func buildOutputURL(
         title: String, year: String, season: Int, episode: Int,
@@ -256,4 +334,12 @@ struct RipCommand: AsyncParsableCommand {
             )
         }
     }
+}
+
+// Shared mutable state between the 45ms spinner task and the rip callbacks.
+// Slight data races on these two Ints are intentional and harmless — worst
+// case the spinner renders a stale percent for one frame.
+private final class RipProgressState: @unchecked Sendable {
+    var pct: Int = 0
+    var msg: String = "Starting…"
 }

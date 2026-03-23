@@ -19,6 +19,7 @@
 		E1B2C3D4E5F6A7B8C9D0E1F8 /* QueueRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */; };
 		E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */; };
 		F1B2C3D4E5F6A7B8C9D0E1F3 /* FrostscribeCore in Frameworks */ = {isa = PBXBuildFile; productRef = F1B2C3D4E5F6A7B8C9D0E1F5 /* FrostscribeCore */; };
+		AW01C3D4E5F6A7B8C9D0E1F2 /* AppSupportWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AW01C3D4E5F6A7B8C9D0E1F1 /* AppSupportWatcher.swift */; };
 		F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B2C3D4E5F6A7B8C9D0E1F1 /* VigilWatcher.swift */; };
 		F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B2C3D4E5F6A7B8C9D0E1F2 /* VigilViewModel.swift */; };
 		H3B2C3D4E5F6A7B8C9D0E1F2 /* DiskArbitration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = H3B2C3D4E5F6A7B8C9D0E1F1 /* DiskArbitration.framework */; };
@@ -40,6 +41,7 @@
 
 /* Begin PBXFileReference section */
 		C1B2C3D4E5F6A7B8C9D0E1F4 /* FrostscribeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostscribeApp.swift; sourceTree = "<group>"; };
+		AW01C3D4E5F6A7B8C9D0E1F1 /* AppSupportWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSupportWatcher.swift; sourceTree = "<group>"; };
 		F3B2C3D4E5F6A7B8C9D0E1F1 /* VigilWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VigilWatcher.swift; sourceTree = "<group>"; };
 		F3B2C3D4E5F6A7B8C9D0E1F2 /* VigilViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VigilViewModel.swift; sourceTree = "<group>"; };
 		FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipFlowViewModel.swift; sourceTree = "<group>"; };
@@ -122,9 +124,18 @@
 				A1B2C3D4E5F6A7B8C9D0E1F7 /* MenuBar */,
 				A1B2C3D4E5F6A7B8C9D0E1F8 /* ViewModels */,
 				A1B2C3D4E5F6A7B8C9D0E1F9 /* Views */,
+				AW01C3D4E5F6A7B8C9D0E1F3 /* FileWatcher */,
 				A4B2C3D4E5F6A7B8C9D0E1F2 /* Vigil */,
 			);
 			path = FrostscribeUI;
+			sourceTree = "<group>";
+		};
+		AW01C3D4E5F6A7B8C9D0E1F3 /* FileWatcher */ = {
+			isa = PBXGroup;
+			children = (
+				AW01C3D4E5F6A7B8C9D0E1F1 /* AppSupportWatcher.swift */,
+			);
+			path = FileWatcher;
 			sourceTree = "<group>";
 		};
 		A4B2C3D4E5F6A7B8C9D0E1F2 /* Vigil */ = {
@@ -287,6 +298,7 @@
 				E1B2C3D4E5F6A7B8C9D0E1F7 /* QueueSectionView.swift in Sources */,
 				E1B2C3D4E5F6A7B8C9D0E1F8 /* QueueRowView.swift in Sources */,
 				E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */,
+				AW01C3D4E5F6A7B8C9D0E1F2 /* AppSupportWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */,
 				FA01C3D4E5F6A7B8C9D0E1F2 /* RipFlowViewModel.swift in Sources */,

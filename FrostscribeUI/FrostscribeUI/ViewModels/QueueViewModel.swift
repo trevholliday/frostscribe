@@ -31,7 +31,7 @@ final class QueueViewModel {
         pollTask = nil
     }
 
-    private func refresh() {
+    func refresh() {
         jobs = (try? queueManager.read()) ?? []
     }
 }

@@ -11,6 +11,7 @@ struct FrostscribeApp: App {
     )
     @State private var vigilVM = VigilViewModel()
     @State private var navCoordinator = NavigationCoordinator()
+    @State private var watcher = AppSupportWatcher()
 
     var body: some Scene {
         MenuBarExtra {
@@ -25,6 +26,9 @@ struct FrostscribeApp: App {
                     statusVM.startPolling()
                     queueVM.startPolling()
                     vigilVM.startWatchingIfEnabled()
+                    watcher.onStatusChange = { statusVM.refresh() }
+                    watcher.onQueueChange  = { queueVM.refresh() }
+                    watcher.start()
                 }
         }
         .menuBarExtraStyle(.window)

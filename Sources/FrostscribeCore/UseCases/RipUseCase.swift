@@ -46,6 +46,7 @@ public final class RipUseCase: Sendable {
     /// Rips the selected title to a temp directory, ejects the disc, and returns the raw MKV URL.
     public func execute(
         _ input: RipInput,
+        onMessage: @escaping @Sendable (String) -> Void = { _ in },
         onProgress: @escaping @Sendable (Int) -> Void
     ) async throws -> URL {
         let startDate = Date.now
@@ -59,7 +60,7 @@ public final class RipUseCase: Sendable {
         try await runner.rip(
             titleNumber: input.titleNumber,
             to: tempDir,
-            onMessage: { _ in },
+            onMessage: onMessage,
             onProgress: onProgress
         )
 

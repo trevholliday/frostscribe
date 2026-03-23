@@ -50,6 +50,8 @@ public final class MakeMKVRunner: MakeMKVRunning {
                 case .progress(_, let total, let max) where max > 0:
                     let pct = min(Int(Double(total) / Double(max) * 100), 99)
                     onProgress(pct)
+                case .progressTitle(let msg):
+                    onMessage(msg)
                 case .message(let msg):
                     onMessage(msg)
                 default:

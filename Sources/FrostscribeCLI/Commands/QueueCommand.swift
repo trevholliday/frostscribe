@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 import FrostscribeCore
 
 struct QueueCommand: ParsableCommand {
@@ -6,6 +7,9 @@ struct QueueCommand: ParsableCommand {
         commandName: "queue",
         abstract: "Show the encode queue."
     )
+
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
 
     func run() throws {
         let manager = QueueManager(appSupportURL: ConfigManager.appSupportURL)
@@ -28,6 +32,10 @@ struct QueueCommand: ParsableCommand {
             return
         }
 
+        let fmt = DateFormatter()
+        fmt.dateStyle = .short
+        fmt.timeStyle = .short
+
         for (i, job) in jobs.enumerated() {
             let index    = "\(Colors.dim)[\(i + 1)]\(Colors.reset)"
             let icon     = statusIcon(job.status)
@@ -35,6 +43,18 @@ struct QueueCommand: ParsableCommand {
             let status   = statusLabel(job.status)
             let progress = job.status == .encoding ? "  \(Colors.frostCyan)\(job.progress)\(Colors.reset)" : ""
             print("  \(index) \(icon) \(title) \(status)\(progress)")
+            if verbose {
+                Colors.verbose("Input:   \(job.input)")
+                Colors.verbose("Output:  \(job.output)")
+                Colors.verbose("Preset:  \(job.preset)  Quality: \(job.quality)")
+                if let tracks = job.audioTracks {
+                    Colors.verbose("Audio:   tracks \(tracks.map(String.init).joined(separator: ", "))")
+                }
+                Colors.verbose("Added:   \(fmt.string(from: job.addedAt))")
+                if let s = job.startedAt   { Colors.verbose("Started: \(fmt.string(from: s))") }
+                if let c = job.completedAt { Colors.verbose("Done:    \(fmt.string(from: c))") }
+                print()
+            }
         }
 
         print()

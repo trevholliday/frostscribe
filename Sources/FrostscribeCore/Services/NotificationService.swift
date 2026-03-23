@@ -5,11 +5,13 @@ public final class NotificationService: NotificationServing, Sendable {
     public static let shared = NotificationService()
 
     public func requestAuthorizationIfNeeded() async {
+        guard Bundle.main.bundleIdentifier != nil else { return }
         _ = try? await UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound])
     }
 
     public func send(title: String, body: String) {
+        guard Bundle.main.bundleIdentifier != nil else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body

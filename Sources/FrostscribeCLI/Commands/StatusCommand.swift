@@ -7,6 +7,9 @@ struct StatusCommand: ParsableCommand {
         abstract: "Show the current ripper status."
     )
 
+    @Flag(name: .shortAndLong, help: "Show detailed output.")
+    var verbose = false
+
     func run() throws {
         let manager = StatusManager(appSupportURL: ConfigManager.appSupportURL)
 
@@ -21,6 +24,10 @@ struct StatusCommand: ParsableCommand {
         Colors.banner()
         Colors.section("Status")
         print()
+
+        if verbose {
+            Colors.verbose("App Support: \(ConfigManager.appSupportURL.path)")
+        }
 
         let statusLabel: String
         switch file.status {
@@ -44,8 +51,13 @@ struct StatusCommand: ParsableCommand {
         if !file.history.isEmpty {
             print()
             print("  \(Colors.dim)Recent\(Colors.reset)")
-            for job in file.history.prefix(5) {
-                print("  \(Colors.dim)  · \(job.title)\(Colors.reset)")
+            let historyItems = verbose ? file.history : Array(file.history.prefix(5))
+            for job in historyItems {
+                if verbose {
+                    print("  \(Colors.dim)  · \(job.title) [\(job.type.rawValue)] — \(job.phase.rawValue)\(Colors.reset)")
+                } else {
+                    print("  \(Colors.dim)  · \(job.title)\(Colors.reset)")
+                }
             }
         }
 
