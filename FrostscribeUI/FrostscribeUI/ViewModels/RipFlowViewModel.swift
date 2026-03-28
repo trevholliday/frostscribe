@@ -10,10 +10,9 @@ final class RipFlowViewModel {
     enum Phase {
         case idle
         case scanning
-        case titleSelection(DiscScanResult)
-        case mediaType(DiscTitle, DiscScanResult)
-        case tmdbSearch(DiscTitle, DiscScanResult, isTV: Bool)
-        case tvEpisode(DiscTitle, DiscScanResult, title: String, year: String)
+        case identify(DiscScanResult)                         // TMDB search + media type selection
+        case tvEpisode(DiscScanResult, title: String, year: String)
+        case titleSelection(DiscScanResult, title: String, year: String, isTV: Bool, season: Int, episode: Int)
         case audioTrackSelection(DiscTitle, DiscScanResult, title: String, year: String,
                                  isTV: Bool, season: Int, episode: Int)
         case confirmation(RipInput, EncodeInput)
@@ -28,11 +27,17 @@ final class RipFlowViewModel {
     private(set) var tmdbResults: [TMDBClient.SearchResult] = []
     private(set) var isSearching = false
 
-    // Persisted across phases for the left panel
+    // Persisted across phases for the left panel / carousel
     private(set) var posterURL: URL?
+    private(set) var backdropURLs: [URL] = []
     private(set) var confirmedTitle: String?
     private(set) var confirmedYear: String?
     private(set) var confirmedEncodeInput: EncodeInput?
+    private(set) var mediaDetails: MediaDetails?
+
+    var carouselURLs: [URL] {
+        backdropURLs.isEmpty ? [posterURL].compactMap { $0 } : backdropURLs
+    }
 
     // Rip estimation
     private(set) var ripEstimate: RipEstimate?
@@ -84,33 +89,19 @@ final class RipFlowViewModel {
                 phase = .error("No titles found. Is a disc inserted?")
                 return
             }
-            phase = .titleSelection(result)
+            phase = .identify(result)
         } catch {
             phase = .error("Scan failed: \(error.localizedDescription)")
         }
     }
 
-    // MARK: - Step transitions
+    // MARK: - Identify / TMDB
 
-    func selectTitle(_ title: DiscTitle, from scanResult: DiscScanResult) {
-        phase = .mediaType(title, scanResult)
+    func searchTMDB(query: String, scanResult: DiscScanResult, isTV: Bool) {
+        triggerSearch(query: query, scanResult: scanResult, isTV: isTV)
     }
 
-    func selectMediaType(isTV: Bool, chosenTitle: DiscTitle, scanResult: DiscScanResult) {
-        phase = .tmdbSearch(chosenTitle, scanResult, isTV: isTV)
-
-        // Auto-search if TMDB is configured and we have a disc name to start with
-        if let name = scanResult.discName, !name.isEmpty, isTMDBConfigured {
-            let query = name.replacingOccurrences(of: "_", with: " ").capitalized
-            triggerSearch(query: query, chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
-        }
-    }
-
-    func searchTMDB(query: String, chosenTitle: DiscTitle, scanResult: DiscScanResult, isTV: Bool) {
-        triggerSearch(query: query, chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
-    }
-
-    private func triggerSearch(query: String, chosenTitle: DiscTitle, scanResult: DiscScanResult, isTV: Bool) {
+    private func triggerSearch(query: String, scanResult: DiscScanResult, isTV: Bool) {
         guard let config = storedConfig, !config.tmdbApiKey.isEmpty else { return }
         searchTask?.cancel()
         isSearching = true
@@ -125,36 +116,71 @@ final class RipFlowViewModel {
         }
     }
 
-    func confirmTMDB(result: TMDBClient.SearchResult, chosenTitle: DiscTitle,
-                     scanResult: DiscScanResult, isTV: Bool) {
+    func confirmTMDB(result: TMDBClient.SearchResult, scanResult: DiscScanResult, isTV: Bool) {
         posterURL = result.posterURL
-        advance(title: result.title, year: result.year,
-                chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
+        if let config = storedConfig {
+            Task {
+                let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
+                async let backdropFetch = tmdb.backdrops(id: result.id, mediaType: result.mediaType)
+                async let detailsFetch  = tmdb.details(id: result.id, mediaType: result.mediaType)
+                let urls = (try? await backdropFetch) ?? []
+                backdropURLs = urls.isEmpty ? [result.backdropURL].compactMap { $0 } : urls
+                mediaDetails = try? await detailsFetch
+            }
+        }
+        advance(title: result.title, year: result.year, scanResult: scanResult, isTV: isTV)
     }
 
-    func enterManually(title: String, year: String, chosenTitle: DiscTitle,
-                       scanResult: DiscScanResult, isTV: Bool) {
-        advance(title: title, year: year,
-                chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
+    func enterManually(title: String, year: String, scanResult: DiscScanResult, isTV: Bool) {
+        // Attempt a background TMDB lookup to fetch images even for manual entries
+        if let config = storedConfig, !config.tmdbApiKey.isEmpty {
+            Task {
+                let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
+                let query = year.isEmpty ? title : "\(title) \(year)"
+                if let results = try? await tmdb.searchMulti(query: query),
+                   let best = results.first {
+                    posterURL = best.posterURL
+                    async let backdropFetch = tmdb.backdrops(id: best.id, mediaType: best.mediaType)
+                    async let detailsFetch  = tmdb.details(id: best.id, mediaType: best.mediaType)
+                    let urls = (try? await backdropFetch) ?? []
+                    backdropURLs = urls.isEmpty ? [best.backdropURL].compactMap { $0 } : urls
+                    mediaDetails = try? await detailsFetch
+                }
+            }
+        }
+        advance(title: title, year: year, scanResult: scanResult, isTV: isTV)
     }
 
-    private func advance(title: String, year: String, chosenTitle: DiscTitle,
-                         scanResult: DiscScanResult, isTV: Bool) {
+    private func advance(title: String, year: String, scanResult: DiscScanResult, isTV: Bool) {
         confirmedTitle = title
         confirmedYear = year
         if isTV {
-            phase = .tvEpisode(chosenTitle, scanResult, title: title, year: year)
+            phase = .tvEpisode(scanResult, title: title, year: year)
         } else {
-            advanceToAudioOrConfirmation(chosenTitle: chosenTitle, scanResult: scanResult,
-                                         title: title, year: year, isTV: false, season: 1, episode: 1)
+            phase = .titleSelection(scanResult, title: title, year: year,
+                                    isTV: false, season: 1, episode: 1)
         }
     }
 
-    func setEpisode(season: Int, episode: Int, chosenTitle: DiscTitle,
-                    scanResult: DiscScanResult, title: String, year: String) {
-        advanceToAudioOrConfirmation(chosenTitle: chosenTitle, scanResult: scanResult,
-                                     title: title, year: year, isTV: true, season: season, episode: episode)
+    // MARK: - TV episode
+
+    func setEpisode(season: Int, episode: Int, scanResult: DiscScanResult,
+                    title: String, year: String) {
+        phase = .titleSelection(scanResult, title: title, year: year,
+                                isTV: true, season: season, episode: episode)
     }
+
+    // MARK: - Title selection
+
+    func selectTitle(_ discTitle: DiscTitle, scanResult: DiscScanResult,
+                     mediaTitle: String, year: String,
+                     isTV: Bool, season: Int, episode: Int) {
+        advanceToAudioOrConfirmation(chosenTitle: discTitle, scanResult: scanResult,
+                                     title: mediaTitle, year: year,
+                                     isTV: isTV, season: season, episode: episode)
+    }
+
+    // MARK: - Audio tracks
 
     private func advanceToAudioOrConfirmation(chosenTitle: DiscTitle, scanResult: DiscScanResult,
                                                title: String, year: String, isTV: Bool,
@@ -227,38 +253,72 @@ final class RipFlowViewModel {
         phase = .confirmation(ripInput, encodeInput)
     }
 
-    // MARK: - Execute rip
+    // MARK: - Enqueue rip (handed off to background worker)
 
     func confirm(_ ripInput: RipInput, _ encodeInput: EncodeInput) {
-        let config = storedConfig ?? Config()
+        let job = RipQueueJob(
+            titleNumber: ripInput.titleNumber,
+            baseTempPath: ripInput.baseTemp.path,
+            mediaType: ripInput.mediaType.rawValue,
+            jobLabel: ripInput.jobLabel,
+            discType: ripInput.discType.rawValue,
+            titleSizeBytes: ripInput.titleSizeBytes,
+            outputPath: encodeInput.outputURL.path,
+            preset: encodeInput.preset,
+            encodeTitle: encodeInput.title,
+            episode: encodeInput.episode,
+            audioTracks: encodeInput.selectedAudioTracks,
+            quality: encodeInput.quality
+        )
+
+        let ripQueue = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
+        do {
+            try ripQueue.add(job)
+        } catch {
+            phase = .error("Failed to queue rip: \(error.localizedDescription)")
+            return
+        }
+
         phase = .ripping(title: ripInput.jobLabel, progress: 0)
-        ripTask = Task { await executeRip(ripInput, encode: encodeInput, config: config) }
+        let jobId = job.id
+        let title = ripInput.jobLabel
+        ripTask = Task { await pollRip(jobId: jobId, title: title) }
     }
 
-    private func executeRip(_ ripInput: RipInput, encode encodeInput: EncodeInput, config: Config) async {
-        let ripUseCase = RipUseCase(
-            runner: MakeMKVRunner(binPath: config.makemkvBin),
-            status: StatusManager(appSupportURL: ConfigManager.appSupportURL),
-            ejector: DiscEjector(),
-            historyStore: RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
-        )
-        let encodeUseCase = EncodeUseCase(
-            queue: QueueManager(appSupportURL: ConfigManager.appSupportURL)
-        )
+    private func pollRip(jobId: String, title: String) async {
+        let ripQueue  = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
+        let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
 
-        do {
-            let mkvURL = try await ripUseCase.execute(ripInput) { [weak self] pct in
-                Task { @MainActor [weak self] in
-                    self?.phase = .ripping(title: ripInput.jobLabel, progress: pct)
+        while !Task.isCancelled {
+            // Reflect live progress from the status file (written by worker's RipUseCase)
+            if let file = try? statusMgr.read(),
+               file.status == .ripping,
+               let currentJob = file.currentJob {
+                let pct = Int(currentJob.progress.replacingOccurrences(of: "%", with: "")) ?? 0
+                phase = .ripping(title: title, progress: pct)
+            }
+
+            // Check rip queue for terminal state
+            if let jobs = try? ripQueue.read() {
+                if let job = jobs.first(where: { $0.id == jobId }) {
+                    switch job.status {
+                    case .done:
+                        phase = .done(title: title)
+                        return
+                    case .error:
+                        phase = .error(job.errorMessage ?? "Rip failed")
+                        return
+                    default:
+                        break
+                    }
+                } else {
+                    // Job was removed (e.g. queue cleared) — reset to idle
+                    phase = .idle
+                    return
                 }
             }
-            try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
-            HookRunner(command: config.eventHook).fire(
-                event: "rip_complete", title: "Rip Complete", body: "\(ripInput.jobLabel) added to encode queue"
-            )
-            phase = .done(title: ripInput.jobLabel)
-        } catch {
-            phase = .error(error.localizedDescription)
+
+            try? await Task.sleep(for: .seconds(2))
         }
     }
 
@@ -273,6 +333,8 @@ final class RipFlowViewModel {
         tmdbResults = []
         isSearching = false
         posterURL = nil
+        backdropURLs = []
+        mediaDetails = nil
         confirmedTitle = nil
         confirmedYear = nil
         confirmedEncodeInput = nil

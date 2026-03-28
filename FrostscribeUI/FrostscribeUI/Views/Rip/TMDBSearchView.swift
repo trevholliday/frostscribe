@@ -3,20 +3,17 @@ import FrostscribeCore
 
 struct TMDBSearchView: View {
     let vm: RipFlowViewModel
-    let chosenTitle: DiscTitle
     let scanResult: DiscScanResult
-    let isTV: Bool
 
+    @State private var isTV = false
     @State private var query: String
     @State private var showManualEntry = false
     @State private var manualTitle = ""
     @State private var manualYear = String(Calendar.current.component(.year, from: Date()))
 
-    init(vm: RipFlowViewModel, chosenTitle: DiscTitle, scanResult: DiscScanResult, isTV: Bool) {
+    init(vm: RipFlowViewModel, scanResult: DiscScanResult) {
         self.vm = vm
-        self.chosenTitle = chosenTitle
         self.scanResult = scanResult
-        self.isTV = isTV
         let q = scanResult.discName.map {
             $0.replacingOccurrences(of: "_", with: " ").capitalized
         } ?? ""
@@ -25,13 +22,22 @@ struct TMDBSearchView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search bar
-            HStack(spacing: FrostTheme.spacing) {
-                TextField("Search TMDB…", text: $query)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { search() }
-                Button("Search", action: search)
-                    .buttonStyle(.frostPrimary)
+            // Media type + search bar
+            VStack(spacing: FrostTheme.spacing) {
+                Picker("Media Type", selection: $isTV) {
+                    Text("Movie").tag(false)
+                    Text("TV Show").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: isTV) { search() }
+
+                HStack(spacing: FrostTheme.spacing) {
+                    TextField("Search TMDB…", text: $query)
+                        .textFieldStyle(.frost)
+                        .onSubmit { search() }
+                    Button("Search", action: search)
+                        .buttonStyle(.frostPrimary)
+                }
             }
             .padding(FrostTheme.paddingM)
 
@@ -100,7 +106,22 @@ struct TMDBSearchView: View {
     private var resultsList: some View {
         List {
             ForEach(vm.tmdbResults, id: \.id) { result in
-                HStack {
+                HStack(spacing: FrostTheme.paddingM) {
+                    AsyncImage(url: result.posterURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        default:
+                            ZStack {
+                                FrostTheme.background
+                                Image(systemName: "snowflake")
+                                    .foregroundStyle(FrostTheme.teal.opacity(0.4))
+                            }
+                        }
+                    }
+                    .frame(width: 36, height: 54)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
                     VStack(alignment: .leading, spacing: 2) {
                         Text(result.title).bold().lineLimit(1)
                         Text("\(result.year) · \(result.mediaType == .tv ? "TV" : "Movie")")
@@ -114,8 +135,8 @@ struct TMDBSearchView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    vm.confirmTMDB(result: result, chosenTitle: chosenTitle,
-                                   scanResult: scanResult, isTV: isTV)
+                    vm.confirmTMDB(result: result, scanResult: scanResult,
+                                   isTV: result.mediaType == .tv)
                 }
             }
             Button("Enter manually…") { showManualEntry = true }
@@ -131,9 +152,9 @@ struct TMDBSearchView: View {
                 .font(.caption).bold().foregroundStyle(.secondary)
             HStack(spacing: FrostTheme.spacing) {
                 TextField("Title", text: $manualTitle)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.frost)
                 TextField("Year", text: $manualYear)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.frost)
                     .frame(width: 72)
             }
             HStack {
@@ -142,7 +163,7 @@ struct TMDBSearchView: View {
                 Spacer()
                 Button("Continue") {
                     vm.enterManually(title: manualTitle, year: manualYear,
-                                     chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
+                                     scanResult: scanResult, isTV: isTV)
                 }
                 .buttonStyle(.frostPrimary)
                 .disabled(manualTitle.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -154,6 +175,6 @@ struct TMDBSearchView: View {
     // MARK: - Actions
 
     private func search() {
-        vm.searchTMDB(query: query, chosenTitle: chosenTitle, scanResult: scanResult, isTV: isTV)
+        vm.searchTMDB(query: query, scanResult: scanResult, isTV: isTV)
     }
 }

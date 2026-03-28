@@ -20,6 +20,9 @@ struct RipFlowView: View {
         }
         .frame(minWidth: 640, idealWidth: 960, maxWidth: .infinity,
                minHeight: 460, idealHeight: 680, maxHeight: .infinity)
+        .background(FrostTheme.background)
+        .foregroundStyle(FrostTheme.textPrimary)
+        .colorScheme(.dark)
         .onAppear {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
@@ -63,24 +66,23 @@ struct RipFlowView: View {
             RipIdleView(vm: vm)
         case .scanning:
             RipScanningView()
-        case .titleSelection(let scanResult):
-            TitleSelectionView(vm: vm, scanResult: scanResult)
-        case .mediaType(let title, let scanResult):
-            MediaTypeView(vm: vm, chosenTitle: title, scanResult: scanResult)
-        case .tmdbSearch(let title, let scanResult, let isTV):
-            TMDBSearchView(vm: vm, chosenTitle: title, scanResult: scanResult, isTV: isTV)
-        case .tvEpisode(let title, let scanResult, let mediaTitle, let year):
-            TVEpisodeView(vm: vm, chosenTitle: title, scanResult: scanResult,
-                          title: mediaTitle, year: year)
-        case .audioTrackSelection(let title, let scanResult, let mediaTitle,
+        case .identify(let scanResult):
+            TMDBSearchView(vm: vm, scanResult: scanResult)
+        case .tvEpisode(let scanResult, let mediaTitle, let year):
+            TVEpisodeView(vm: vm, scanResult: scanResult, title: mediaTitle, year: year)
+        case .titleSelection(let scanResult, let mediaTitle, let year, let isTV, let season, let episode):
+            TitleSelectionView(vm: vm, scanResult: scanResult,
+                               mediaTitle: mediaTitle, year: year,
+                               isTV: isTV, season: season, episode: episode)
+        case .audioTrackSelection(let discTitle, let scanResult, let mediaTitle,
                                   let year, let isTV, let season, let episode):
-            AudioTrackSelectionView(vm: vm, chosenTitle: title, scanResult: scanResult,
+            AudioTrackSelectionView(vm: vm, chosenTitle: discTitle, scanResult: scanResult,
                                     title: mediaTitle, year: year,
                                     isTV: isTV, season: season, episode: episode)
         case .confirmation(let ripInput, let encodeInput):
             ConfirmationView(vm: vm, ripInput: ripInput, encodeInput: encodeInput)
-        case .ripping(let title, let progress):
-            rippingDetail(title: title, progress: progress)
+        case .ripping:
+            RipRippingView(vm: vm)
         case .done(let title):
             RipCompleteView(vm: vm, title: title, isError: false,
                             message: "Added to encode queue.")
@@ -173,7 +175,7 @@ struct RipFlowView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(queueVM.jobs) { job in
+                        ForEach(queueVM.jobs.reversed()) { job in
                             HStack(alignment: .top, spacing: FrostTheme.paddingM) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(job.title)
@@ -326,70 +328,7 @@ struct RipFlowView: View {
     // MARK: - Logs detail
 
     private var logsDetail: some View {
-        VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
-            Text("Logs")
-                .font(.title3).bold()
-                .padding(.horizontal, FrostTheme.paddingL)
-                .padding(.top, FrostTheme.paddingL)
-            Text("Log output coming soon.")
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, FrostTheme.paddingL)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Ripping detail
-
-    @ViewBuilder
-    private func rippingDetail(title: String, progress: Int) -> some View {
-        VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
-            Spacer()
-
-            Text(title)
-                .font(.title3)
-                .bold()
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if let ei = vm.confirmedEncodeInput {
-                VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
-                    metaRow("Output", ei.outputURL.lastPathComponent)
-                    metaRow("Preset", ei.preset)
-                    if let ep = ei.episode { metaRow("Episode", ep) }
-                }
-            }
-
-            Spacer()
-
-            Text("\(progress)% complete")
-                .font(.headline)
-                .foregroundStyle(FrostTheme.teal)
-            if let remaining = vm.estimatedSecondsRemaining {
-                Text("~\(Int(remaining / 60) + 1) min remaining")
-                    .font(.caption)
-                    .foregroundStyle(FrostTheme.glacier)
-            }
-            Text("Encoding will begin automatically when complete.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-        }
-        .padding(FrostTheme.paddingL)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func metaRow(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-            Text(value)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-        }
+        LogsView()
     }
 
     // MARK: - Progress bar

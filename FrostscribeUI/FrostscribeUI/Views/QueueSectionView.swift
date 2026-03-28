@@ -12,7 +12,7 @@ struct QueueSectionView: View {
                 Text("QUEUE")
                     .font(.caption)
                     .bold()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(FrostTheme.textPrimary.opacity(0.5))
                     .kerning(0.5)
                 Spacer()
                 if queueVM.activeCount > 0 {
@@ -25,7 +25,7 @@ struct QueueSectionView: View {
             if queueVM.jobs.isEmpty {
                 Text("Queue is empty")
                     .font(.subheadline)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(FrostTheme.textPrimary.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, FrostTheme.paddingS)
             } else {
@@ -36,7 +36,7 @@ struct QueueSectionView: View {
                     if queueVM.jobs.count > Self.maxVisible {
                         Text("+ \(queueVM.jobs.count - Self.maxVisible) more")
                             .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(FrostTheme.textPrimary.opacity(0.4))
                     }
                 }
             }

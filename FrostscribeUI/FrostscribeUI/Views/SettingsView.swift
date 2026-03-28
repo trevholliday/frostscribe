@@ -72,6 +72,9 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(FrostTheme.background)
+        .foregroundStyle(FrostTheme.textPrimary)
         .navigationTitle("Settings")
         .overlay(alignment: .bottom) {
             if savedConfirmation {
@@ -136,7 +139,7 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             TextField(hint, text: value)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.frost)
                 .multilineTextAlignment(.leading)
             saveButtonIfDirty(value.wrappedValue != saved)
         }
@@ -149,7 +152,7 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             SecureField(hint, text: value)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.frost)
                 .multilineTextAlignment(.leading)
             saveButtonIfDirty(value.wrappedValue != saved)
         }

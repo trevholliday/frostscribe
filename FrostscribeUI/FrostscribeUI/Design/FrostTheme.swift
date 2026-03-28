@@ -9,6 +9,11 @@ enum FrostTheme {
     static let deepBlue  = Color(.sRGB, red: 0.05, green: 0.15, blue: 0.3, opacity: 1)
     static let alert     = Color(.sRGB, red: 1,    green: 0.3,  blue: 0.3, opacity: 1)
 
+    // UI chrome
+    static let background  = Color(.sRGB, red: 0.04, green: 0.22, blue: 0.28, opacity: 1)
+    static let textPrimary = Color(.sRGB, red: 0.82, green: 0.90, blue: 0.93, opacity: 1)
+    static let divider     = Color(.sRGB, red: 0.1,  green: 0.32, blue: 0.38, opacity: 1)
+
     // Layout
     static let paddingS: CGFloat     = 8
     static let paddingM: CGFloat     = 12
@@ -54,6 +59,52 @@ extension ButtonStyle where Self == FrostPrimaryButtonStyle {
 
 extension ButtonStyle where Self == FrostDestructiveButtonStyle {
     static var frostDestructive: FrostDestructiveButtonStyle { FrostDestructiveButtonStyle() }
+}
+
+// MARK: - Text field style
+
+extension FrostTheme {
+    static let inputBackground = Color(.sRGB, red: 0.22, green: 0.22, blue: 0.24, opacity: 1)
+}
+
+struct FrostTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(FrostTheme.inputBackground, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: FrostTheme.cornerRadius)
+                    .stroke(FrostTheme.divider, lineWidth: 1)
+            )
+    }
+}
+
+extension TextFieldStyle where Self == FrostTextFieldStyle {
+    static var frost: FrostTextFieldStyle { FrostTextFieldStyle() }
+}
+
+// MARK: - Shared input container modifier
+
+struct FrostInputModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(FrostTheme.inputBackground, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: FrostTheme.cornerRadius)
+                    .stroke(FrostTheme.divider, lineWidth: 1)
+            )
+    }
+}
+
+extension View {
+    func frostInputStyle() -> some View {
+        modifier(FrostInputModifier())
+    }
 }
 
 // MARK: - Status color

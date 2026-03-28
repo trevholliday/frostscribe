@@ -4,15 +4,26 @@ import FrostscribeCore
 struct TitleSelectionView: View {
     let vm: RipFlowViewModel
     let scanResult: DiscScanResult
+    let mediaTitle: String
+    let year: String
+    let isTV: Bool
+    let season: Int
+    let episode: Int
+
+    private var maxBytes: Int { scanResult.titles.map(\.sizeBytes).max() ?? 0 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader("SELECT TITLE", subtitle: "\(scanResult.titles.count) titles found")
             Divider()
             List(scanResult.titles, id: \.number) { title in
-                TitleRow(title: title)
+                TitleRow(title: title, isMain: title.sizeBytes == maxBytes)
                     .contentShape(Rectangle())
-                    .onTapGesture { vm.selectTitle(title, from: scanResult) }
+                    .onTapGesture {
+                        vm.selectTitle(title, scanResult: scanResult,
+                                       mediaTitle: mediaTitle, year: year,
+                                       isTV: isTV, season: season, episode: episode)
+                    }
             }
             .listStyle(.plain)
         }
@@ -21,72 +32,96 @@ struct TitleSelectionView: View {
 
 private struct TitleRow: View {
     let title: DiscTitle
+    let isMain: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Row 1: number, name, badges, size
-            HStack(spacing: FrostTheme.spacing) {
-                Text("[\(title.number)]")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(FrostTheme.glacier)
-                    .frame(width: 28, alignment: .leading)
-                Text(title.name)
-                    .bold()
-                    .lineLimit(1)
-                Spacer()
-                badges
-                Text(title.sizeFormatted)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        HStack(alignment: .top, spacing: FrostTheme.paddingM) {
+            // Left: number + metadata
+            VStack(alignment: .leading, spacing: 4) {
+                // Number + name
+                HStack(spacing: 6) {
+                    Text("[\(title.number)]")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(FrostTheme.glacier)
+                    Text(title.name)
+                        .font(.subheadline)
+                        .bold()
+                        .foregroundStyle(isMain ? .primary : .secondary)
+                        .lineLimit(1)
+                }
+
+                // Duration + chapters + angle + subtitles
+                HStack(spacing: 4) {
+                    Text(title.duration)
+                    Text("·")
+                    Text("\(title.chapters) ch")
+                    if let angle = title.angle {
+                        Text("·")
+                        Text("Angle \(angle)")
+                    }
+                    if title.subtitleCount > 0 {
+                        Text("·")
+                        Text("\(title.subtitleCount) sub")
+                    }
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+
+                // Audio tracks
+                if title.audioTracks.isEmpty {
+                    Text("No audio info from scan")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                } else {
+                    VStack(alignment: .leading, spacing: 1) {
+                        ForEach(Array(title.audioTracks.enumerated()), id: \.offset) { _, track in
+                            Text(track.summary)
+                                .font(.caption2)
+                                .foregroundStyle(track.isLossless ? FrostTheme.teal : .secondary)
+                        }
+                    }
+                }
             }
 
-            // Row 2: duration, chapters, subtitles, audio summary
-            HStack(spacing: FrostTheme.spacing) {
-                Text(title.duration)
-                Text("·")
-                Text("\(title.chapters) ch")
-                if title.subtitleCount > 0 {
-                    Text("·")
-                    Text("\(title.subtitleCount) sub")
+            Spacer()
+
+            // Right: badges + size
+            VStack(alignment: .trailing, spacing: 4) {
+                HStack(spacing: 4) {
+                    if isMain {
+                        Text("MAIN")
+                            .font(.caption2.bold())
+                            .foregroundStyle(FrostTheme.teal)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(FrostTheme.teal.opacity(0.15), in: Capsule())
+                    }
+                    if title.is4K {
+                        Text("4K")
+                            .font(.caption2.bold())
+                            .foregroundStyle(FrostTheme.frostCyan)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(FrostTheme.frostCyan.opacity(0.15), in: Capsule())
+                    } else if let res = title.videoResolution {
+                        Text(resolutionLabel(res))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.primary.opacity(0.06), in: Capsule())
+                    }
                 }
-                Spacer()
-                audioSummary(title.audioTracks)
+                Text(title.sizeFormatted)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(isMain ? FrostTheme.teal : .secondary)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
         .padding(.vertical, 6)
-    }
-
-    @ViewBuilder
-    private var badges: some View {
-        if title.isMainTitleCandidate {
-            Text("MAIN")
-                .font(.caption2.bold())
-                .foregroundStyle(FrostTheme.teal)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
-                .background(FrostTheme.teal.opacity(0.15), in: Capsule())
-        }
-        if title.is4K {
-            Text("4K")
-                .font(.caption2.bold())
-                .foregroundStyle(FrostTheme.frostCyan)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
-                .background(FrostTheme.frostCyan.opacity(0.15), in: Capsule())
-        } else if let res = title.videoResolution {
-            Text(resolutionLabel(res))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
-                .background(Color.primary.opacity(0.06), in: Capsule())
-        }
+        .opacity(isMain ? 1.0 : 0.7)
     }
 
     private func resolutionLabel(_ res: String) -> String {
-        // "1920x1080" → "1080p", "1280x720" → "720p"
         guard let heightStr = res.split(separator: "x").last,
               let height = Int(heightStr) else { return res }
         switch height {
@@ -97,39 +132,12 @@ private struct TitleRow: View {
         default:      return "\(height)p"
         }
     }
-
-    @ViewBuilder
-    private func audioSummary(_ tracks: [AudioTrack]) -> some View {
-        if tracks.isEmpty {
-            Text("No audio").font(.caption).foregroundStyle(.secondary)
-        } else {
-            HStack(spacing: 4) {
-                ForEach(Array(tracks.prefix(3).enumerated()), id: \.offset) { _, track in
-                    Text(trackLabel(track))
-                        .font(.caption2)
-                        .foregroundStyle(track.isLossless ? FrostTheme.teal : .secondary)
-                }
-                if tracks.count > 3 {
-                    Text("+\(tracks.count - 3)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    private func trackLabel(_ track: AudioTrack) -> String {
-        var parts = [track.codec]
-        if let ch = track.channels { parts.append(ch) }
-        return parts.joined(separator: " ")
-    }
 }
 
 private func sectionHeader(_ title: String, subtitle: String) -> some View {
     HStack {
         Text(title)
-            .font(.caption)
-            .bold()
+            .font(.caption).bold()
             .foregroundStyle(.secondary)
         Spacer()
         Text(subtitle)

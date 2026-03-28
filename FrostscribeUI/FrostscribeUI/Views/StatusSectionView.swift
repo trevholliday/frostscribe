@@ -9,7 +9,7 @@ struct StatusSectionView: View {
             Text("RIP")
                 .font(.caption)
                 .bold()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(FrostTheme.textPrimary.opacity(0.5))
                 .kerning(0.5)
 
             if statusVM.file.status == .ripping, let job = statusVM.file.currentJob {
@@ -17,7 +17,7 @@ struct StatusSectionView: View {
             } else {
                 Text("No disc active")
                     .font(.subheadline)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(FrostTheme.textPrimary.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, FrostTheme.paddingS)
             }
@@ -40,7 +40,7 @@ struct StatusSectionView: View {
                         .frame(width: 12, height: 12)
                     Text("Scanning disc…")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(FrostTheme.textPrimary.opacity(0.6))
                 }
             } else {
                 ProgressView(value: job.progress.progressFraction)
@@ -54,7 +54,7 @@ struct StatusSectionView: View {
                     if let item = job.currentItem {
                         Text(item)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(FrostTheme.textPrimary.opacity(0.6))
                             .lineLimit(1)
                     }
                 }

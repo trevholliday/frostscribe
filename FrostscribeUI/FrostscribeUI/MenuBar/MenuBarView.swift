@@ -11,22 +11,24 @@ struct MenuBarView: View {
     var body: some View {
         VStack(spacing: 0) {
             headerRow
-            Divider()
+            FrostTheme.divider.frame(height: 1)
             StatusSectionView()
                 .padding(FrostTheme.paddingM)
                 .contentShape(Rectangle())
                 .onTapGesture { openSection(.ripJob) }
-            Divider()
+            FrostTheme.divider.frame(height: 1)
             QueueSectionView()
                 .padding(FrostTheme.paddingM)
                 .contentShape(Rectangle())
                 .onTapGesture { openSection(.encodeQueue) }
-            Divider()
+            FrostTheme.divider.frame(height: 1)
             footerRow
-            Divider()
+            FrostTheme.divider.frame(height: 1)
             quitRow
         }
         .frame(width: FrostTheme.popoverWidth)
+        .background(FrostTheme.background)
+        .foregroundStyle(FrostTheme.textPrimary)
     }
 
     // MARK: - Navigation
@@ -63,7 +65,7 @@ struct MenuBarView: View {
                 .frame(width: 7, height: 7)
             Text(badgeLabel)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(FrostTheme.textPrimary.opacity(0.6))
         }
     }
 
@@ -98,14 +100,20 @@ struct MenuBarView: View {
                     .font(.caption)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(FrostTheme.textPrimary.opacity(0.6))
             Spacer()
-            Text("v1.0.0")
+            Text(appVersion)
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(FrostTheme.textPrimary.opacity(0.35))
         }
         .padding(.horizontal, FrostTheme.paddingM)
         .padding(.vertical, FrostTheme.paddingS)
+    }
+
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "v\(v) (\(b))"
     }
 
     private var quitRow: some View {
@@ -117,7 +125,7 @@ struct MenuBarView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(FrostTheme.textPrimary.opacity(0.6))
         .padding(.horizontal, FrostTheme.paddingM)
         .padding(.vertical, FrostTheme.paddingS)
     }

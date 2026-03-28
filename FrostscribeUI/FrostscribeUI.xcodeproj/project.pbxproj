@@ -18,6 +18,7 @@
 		E1B2C3D4E5F6A7B8C9D0E1F7 /* QueueSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F3 /* QueueSectionView.swift */; };
 		E1B2C3D4E5F6A7B8C9D0E1F8 /* QueueRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */; };
 		E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */; };
+		LV01C3D4E5F6A7B8C9D0E1F2 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = LV01C3D4E5F6A7B8C9D0E1F1 /* LogsView.swift */; };
 		F1B2C3D4E5F6A7B8C9D0E1F3 /* FrostscribeCore in Frameworks */ = {isa = PBXBuildFile; productRef = F1B2C3D4E5F6A7B8C9D0E1F5 /* FrostscribeCore */; };
 		AW01C3D4E5F6A7B8C9D0E1F2 /* AppSupportWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AW01C3D4E5F6A7B8C9D0E1F1 /* AppSupportWatcher.swift */; };
 		F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B2C3D4E5F6A7B8C9D0E1F1 /* VigilWatcher.swift */; };
@@ -37,6 +38,7 @@
 		FA10C3D4E5F6A7B8C9D0E1F2 /* ConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA10C3D4E5F6A7B8C9D0E1F1 /* ConfirmationView.swift */; };
 		FA11C3D4E5F6A7B8C9D0E1F2 /* RippingProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA11C3D4E5F6A7B8C9D0E1F1 /* RippingProgressView.swift */; };
 		FA12C3D4E5F6A7B8C9D0E1F2 /* RipCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA12C3D4E5F6A7B8C9D0E1F1 /* RipCompleteView.swift */; };
+		FA13C3D4E5F6A7B8C9D0E1F2 /* RipCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA13C3D4E5F6A7B8C9D0E1F3 /* RipCarouselView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +60,7 @@
 		FA10C3D4E5F6A7B8C9D0E1F1 /* ConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationView.swift; sourceTree = "<group>"; };
 		FA11C3D4E5F6A7B8C9D0E1F1 /* RippingProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippingProgressView.swift; sourceTree = "<group>"; };
 		FA12C3D4E5F6A7B8C9D0E1F1 /* RipCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipCompleteView.swift; sourceTree = "<group>"; };
+		FA13C3D4E5F6A7B8C9D0E1F3 /* RipCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RipCarouselView.swift; sourceTree = "<group>"; };
 		H3B2C3D4E5F6A7B8C9D0E1F1 /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = System/Library/Frameworks/DiskArbitration.framework; sourceTree = SDKROOT; };
 		C1B2C3D4E5F6A7B8C9D0E1F5 /* FrostTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostTheme.swift; sourceTree = "<group>"; };
 		C1B2C3D4E5F6A7B8C9D0E1F6 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -68,6 +71,7 @@
 		D1B2C3D4E5F6A7B8C9D0E1F3 /* QueueSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueSectionView.swift; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueRowView.swift; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		LV01C3D4E5F6A7B8C9D0E1F1 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
 		FB01C3D4E5F6A7B8C9D0E1F1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F7 /* FrostscribeUI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FrostscribeUI.entitlements; sourceTree = "<group>"; };
@@ -182,6 +186,7 @@
 				D1B2C3D4E5F6A7B8C9D0E1F3 /* QueueSectionView.swift */,
 				D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */,
 				D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */,
+				LV01C3D4E5F6A7B8C9D0E1F1 /* LogsView.swift */,
 				FA00C3D4E5F6A7B8C9D0E1F1 /* Rip */,
 			);
 			path = Views;
@@ -202,6 +207,7 @@
 				FA10C3D4E5F6A7B8C9D0E1F1 /* ConfirmationView.swift */,
 				FA11C3D4E5F6A7B8C9D0E1F1 /* RippingProgressView.swift */,
 				FA12C3D4E5F6A7B8C9D0E1F1 /* RipCompleteView.swift */,
+				FA13C3D4E5F6A7B8C9D0E1F3 /* RipCarouselView.swift */,
 			);
 			path = Rip;
 			sourceTree = "<group>";
@@ -298,6 +304,7 @@
 				E1B2C3D4E5F6A7B8C9D0E1F7 /* QueueSectionView.swift in Sources */,
 				E1B2C3D4E5F6A7B8C9D0E1F8 /* QueueRowView.swift in Sources */,
 				E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */,
+				LV01C3D4E5F6A7B8C9D0E1F2 /* LogsView.swift in Sources */,
 				AW01C3D4E5F6A7B8C9D0E1F2 /* AppSupportWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */,
@@ -315,6 +322,7 @@
 				FA10C3D4E5F6A7B8C9D0E1F2 /* ConfirmationView.swift in Sources */,
 				FA11C3D4E5F6A7B8C9D0E1F2 /* RippingProgressView.swift in Sources */,
 				FA12C3D4E5F6A7B8C9D0E1F2 /* RipCompleteView.swift in Sources */,
+				FA13C3D4E5F6A7B8C9D0E1F2 /* RipCarouselView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -446,7 +454,7 @@
 				CODE_SIGN_ENTITLEMENTS = FrostscribeUI/FrostscribeUI.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -474,7 +482,7 @@
 				CODE_SIGN_ENTITLEMENTS = FrostscribeUI/FrostscribeUI.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;

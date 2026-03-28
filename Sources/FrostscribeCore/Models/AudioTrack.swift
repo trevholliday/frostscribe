@@ -9,12 +9,12 @@ public struct AudioTrack: Sendable {
         return lossless.contains(where: { codec.contains($0) })
     }
 
-    /// Human-readable summary, e.g. "DTS-HD MA 7.1 · English"
+    /// Human-readable summary, e.g. "English (DTS-HD MA 7.1)"
     public var summary: String {
-        var parts = [codec]
-        if let ch = channels { parts.append(ch) }
-        parts.append(language)
-        return parts.joined(separator: " · ")
+        var codecPart = codec
+        if let ch = channels { codecPart += " \(ch)" }
+        if language.isEmpty || language == "Unknown" { return codecPart }
+        return "\(language) (\(codecPart))"
     }
 
     public init(language: String, codec: String, channels: String? = nil) {

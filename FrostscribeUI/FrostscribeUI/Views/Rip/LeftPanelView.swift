@@ -13,26 +13,19 @@ struct LeftPanelView: View {
         ("Logs",         "doc.text",               .logs),
     ]
 
-    private var showPoster: Bool {
+    private var showRippingStatus: Bool {
         guard navCoordinator.selectedSection == .rip else { return false }
-        switch vm.phase {
-        case .ripping, .done: return true
-        default: return false
-        }
+        if case .ripping = vm.phase { return true }
+        if case .done = vm.phase { return true }
+        return false
     }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            if showPoster {
-                posterPanel
+            if showRippingStatus {
+                rippingStatusPanel
             } else {
                 navPanel
-            }
-
-            if showPoster {
-                settingsButton
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
-                    .padding(FrostTheme.paddingS)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -101,58 +94,95 @@ struct LeftPanelView: View {
         .padding(FrostTheme.paddingM)
     }
 
-    // MARK: - Poster panel
+    // MARK: - Ripping status panel
 
-    private var posterPanel: some View {
-        ZStack(alignment: .bottom) {
-            Group {
-                if let url = vm.posterURL {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        placeholderBg
+    private var rippingStatusPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
+                    // Title + year
+                    if let title = vm.confirmedTitle {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title)
+                                .font(.headline).bold()
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if let year = vm.confirmedYear, !year.isEmpty {
+                                Text(year)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
-                } else {
-                    placeholderBg
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
 
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.8)],
-                startPoint: .center,
-                endPoint: .bottom
-            )
+                    // Rating + runtime row
+                    if let details = vm.mediaDetails {
+                        HStack(spacing: 6) {
+                            if let cert = details.certification {
+                                Text(cert)
+                                    .font(.caption2.bold())
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
+                                    )
+                            }
+                            if let runtime = details.runtimeFormatted {
+                                Text(runtime)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
 
-            if let title = vm.confirmedTitle {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.subheadline)
-                        .bold()
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let year = vm.confirmedYear {
-                        Text(year)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.65))
+                        // Release date
+                        if let release = details.releaseDate {
+                            Text(release)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        // Genres
+                        if !details.genres.isEmpty {
+                            Text(details.genres.joined(separator: ", "))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
                     }
                 }
                 .padding(FrostTheme.paddingM)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-        }
-    }
 
-    private var placeholderBg: some View {
-        ZStack {
-            Color(nsColor: .controlBackgroundColor)
-            Image(systemName: "snowflake")
-                .font(.system(size: 36))
-                .foregroundStyle(FrostTheme.teal.opacity(0.3))
+            Divider().opacity(0.3)
+
+            // Progress
+            VStack(alignment: .leading, spacing: 6) {
+                if case .ripping(_, let progress) = vm.phase {
+                    ProgressView(value: Double(progress), total: 100)
+                        .tint(FrostTheme.frostCyan)
+                    Text("\(progress)% complete")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(FrostTheme.teal)
+                    if let remaining = vm.estimatedSecondsRemaining {
+                        Text("~\(Int(remaining / 60) + 1) min remaining")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if case .done = vm.phase {
+                    Label("Added to queue", systemImage: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(FrostTheme.teal)
+                }
+                Text("Encoding will begin automatically.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(FrostTheme.paddingM)
+
+            settingsButton
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

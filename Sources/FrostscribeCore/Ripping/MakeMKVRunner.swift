@@ -120,12 +120,14 @@ public final class MakeMKVRunner: MakeMKVRunning {
             let videoResolution = buildVideoResolution(from: streams)
             let subtitleCount = streams.values.filter { $0[1]?.hasPrefix("S_") == true }.count
             let orderWeight = Int(attrs[33] ?? "0") ?? 0
+            let angle = attrs[42].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
             return DiscTitle(
                 number: num,
                 name: attrs[27] ?? "title_\(num)",
                 duration: attrs[9] ?? "?",
                 chapters: attrs[8] ?? "?",
                 sizeBytes: sizeBytes,
+                angle: angle,
                 audioTracks: audioTracks,
                 videoResolution: videoResolution,
                 subtitleCount: subtitleCount,

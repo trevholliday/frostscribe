@@ -3,7 +3,6 @@ import FrostscribeCore
 
 struct TVEpisodeView: View {
     let vm: RipFlowViewModel
-    let chosenTitle: DiscTitle
     let scanResult: DiscScanResult
     let title: String
     let year: String
@@ -38,8 +37,7 @@ struct TVEpisodeView: View {
 
             Button("Continue") {
                 vm.setEpisode(season: season, episode: episode,
-                              chosenTitle: chosenTitle, scanResult: scanResult,
-                              title: title, year: year)
+                              scanResult: scanResult, title: title, year: year)
             }
             .buttonStyle(.frostPrimary)
 
