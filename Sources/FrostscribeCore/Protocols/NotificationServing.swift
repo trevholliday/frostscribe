@@ -1,4 +1,4 @@
+// Retained for source compatibility. Use HookRunner for lifecycle events.
 public protocol NotificationServing: Sendable {
-    func requestAuthorizationIfNeeded() async
-    func send(title: String, body: String)
+    func fire(event: String, title: String, body: String)
 }

@@ -4,22 +4,21 @@ import FrostscribeCore
 actor EncodeWorker {
     private let queueManager: any QueueManaging
     private let handbrakeRunner: any HandBrakeRunning
-    private let notificationService: any NotificationServing
+    private let hookRunner: HookRunner
     private var running = false
     private let pollInterval: TimeInterval = 10
 
     init(
         queueManager: any QueueManaging,
         handbrakeRunner: any HandBrakeRunning,
-        notificationService: any NotificationServing
+        hookRunner: HookRunner
     ) {
         self.queueManager = queueManager
         self.handbrakeRunner = handbrakeRunner
-        self.notificationService = notificationService
+        self.hookRunner = hookRunner
     }
 
     func start() async {
-        await notificationService.requestAuthorizationIfNeeded()
         running = true
         log("Frostscribe worker started (pid \(ProcessInfo.processInfo.processIdentifier))")
         while running {
@@ -74,11 +73,11 @@ actor EncodeWorker {
             try? FileManager.default.removeItem(at: rawMKV)
             try? FileManager.default.removeItem(at: rawMKV.deletingLastPathComponent())
 
-            notificationService.send(title: "Encode Complete", body: job.label)
+            hookRunner.fire(event: "encode_complete", title: "Encode Complete", body: job.label)
         } catch {
             log("Encode failed for \(job.label): \(error)")
             try? queueManager.updateStatus(id: job.id, status: .error)
-            notificationService.send(title: "Encode Failed", body: job.label)
+            hookRunner.fire(event: "encode_failed", title: "Encode Failed", body: job.label)
         }
     }
 

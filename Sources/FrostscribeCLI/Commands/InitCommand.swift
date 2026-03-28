@@ -70,7 +70,6 @@ struct InitCommand: ParsableCommand {
         Colors.section("Options")
         print()
 
-        let notifications = Prompt.confirm("Enable macOS notifications?", default: true)
         let selectAudio   = Prompt.confirm(
             "Prompt to select audio tracks before each rip?",
             default: false
@@ -90,7 +89,6 @@ struct InitCommand: ParsableCommand {
             makemkvKey:           makemkvKey,
             makemkvBin:           makemkvBin,
             handbrakeBin:         handbrakeBin,
-            notificationsEnabled: notifications,
             vigilMode:            vigil,
             selectAudioTracks:    selectAudio
         )

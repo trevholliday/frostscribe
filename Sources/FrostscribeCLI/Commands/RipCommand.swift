@@ -40,6 +40,7 @@ struct RipCommand: AsyncParsableCommand {
         let ejector      = DiscEjector()
 
         // Scan
+        Colors.section("Disc Scan")
         let scanResult = try await scanDisc(runner: runner)
 
         guard !scanResult.titles.isEmpty else {
@@ -54,7 +55,7 @@ struct RipCommand: AsyncParsableCommand {
         }
 
         // Identify media before presenting titles
-        print()
+        Colors.section("Identify Media")
         let (title, year, isTV, _) = try await lookupMedia(discName: scanResult.discName, config: config)
 
         var episodeLabel: String? = nil
@@ -68,7 +69,7 @@ struct RipCommand: AsyncParsableCommand {
             episodeLabel = String(format: "S%02dE%02d", season, episode)
         }
 
-        print()
+        Colors.section("Select Title")
         printTitles(scanResult.titles)
         let chosen = pickTitle(from: scanResult.titles)
 
@@ -122,7 +123,9 @@ struct RipCommand: AsyncParsableCommand {
             titleNumber: chosen.number,
             baseTemp: URL(fileURLWithPath: config.tempDir),
             mediaType: isTV ? .tvshow : .movie,
-            jobLabel: jobLabel
+            jobLabel: jobLabel,
+            discType: scanResult.discType,
+            titleSizeBytes: chosen.sizeBytes
         )
         let encodeInput = EncodeInput(
             outputURL: outputURL,
@@ -165,6 +168,10 @@ struct RipCommand: AsyncParsableCommand {
         if verbose { Colors.verbose("MKV: \(mkvURL.path)") }
         try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
 
+        HookRunner(command: config.eventHook).fire(
+            event: "rip_complete", title: "Rip Complete", body: jobLabel
+        )
+
         print("\r  \(Colors.teal)✔\(Colors.reset) \(Colors.bold)Rip complete.\(Colors.reset)                                        ")
 
         print()
@@ -176,6 +183,7 @@ struct RipCommand: AsyncParsableCommand {
     // MARK: - Scan
 
     private func scanDisc(runner: any MakeMKVRunning) async throws -> DiscScanResult {
+        print()
         let spinner = Task {
             var tick = 0
             while !Task.isCancelled {

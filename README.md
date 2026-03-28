@@ -67,13 +67,30 @@ frostscribe init
 
 This creates `~/Library/Application Support/Frostscribe/config.json` with your output directories, media server selection, and optional API keys.
 
-Start the background encode worker:
+Install and start the background encode worker:
 
 ```bash
-frostscribe worker start
+cp /usr/local/bin/frostscribe-worker /usr/local/bin/frostscribe-worker
+launchctl load ~/Library/LaunchAgents/com.frostscribe.worker.plist
 ```
 
-The worker installs as a launchd agent and starts automatically on login.
+**Why the worker runs as a launchd agent**
+
+Encoding is slow — a Blu-ray can take 30–90 minutes. The worker runs as a persistent background service managed by launchd so it survives terminal sessions, restarts after crashes, and starts automatically on login. It polls the encode queue every 10 seconds and processes jobs one at a time using VideoToolbox hardware encoding.
+
+The worker plist lives at `~/Library/LaunchAgents/com.frostscribe.worker.plist` and logs to `~/Library/Logs/Frostscribe/worker.log`.
+
+To stop the worker:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.frostscribe.worker.plist
+```
+
+To restart it (e.g. after updating the binary):
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.frostscribe.worker
+```
 
 ---
 
@@ -113,10 +130,10 @@ frostscribe queue        # Encode queue with per-job progress
 ### Manage the worker
 
 ```bash
-frostscribe worker start     # Install and start
-frostscribe worker stop      # Stop and uninstall
-frostscribe worker restart   # Restart
-frostscribe worker status    # Show worker status and current job
+launchctl load ~/Library/LaunchAgents/com.frostscribe.worker.plist    # Start
+launchctl unload ~/Library/LaunchAgents/com.frostscribe.worker.plist  # Stop
+launchctl kickstart -k gui/$(id -u)/com.frostscribe.worker            # Restart
+tail -f ~/Library/Logs/Frostscribe/worker.log                         # Follow logs
 ```
 
 ---
@@ -159,7 +176,7 @@ TV Shows/Breaking Bad/Season01/Breaking Bad S01E01.mkv
 | `makemkv_key` | No | MakeMKV registration key (trial mode without it) |
 | `makemkv_bin` | No | Full path to `makemkvcon` (searched in `$PATH` if empty) |
 | `handbrake_bin` | No | Full path to `HandBrakeCLI` (searched in `$PATH` if empty) |
-| `notifications_enabled` | No | Native macOS notifications on job completion (default: `true`) |
+| `event_hook` | No | Shell command executed on lifecycle events. Receives `FROSTSCRIBE_EVENT` (`rip_complete`, `encode_complete`, `encode_failed`), `FROSTSCRIBE_TITLE`, and `FROSTSCRIBE_BODY` as environment variables. Use this to send notifications via Home Assistant, Slack, Pushover, etc. |
 | `vigil_mode` | No | `true` = Vigil Mode (interactive, user-guided — default). `false` = AutoScribe (auto-rips inserted discs without prompting) |
 | `select_audio_tracks` | No | Prompt to choose which audio tracks to include before ripping (default: `false`) |
 

@@ -253,11 +253,9 @@ final class RipFlowViewModel {
                 }
             }
             try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
-            if config.notificationsEnabled {
-                let svc = NotificationService.shared
-                await svc.requestAuthorizationIfNeeded()
-                svc.send(title: "Rip Complete", body: "\(ripInput.jobLabel) added to encode queue")
-            }
+            HookRunner(command: config.eventHook).fire(
+                event: "rip_complete", title: "Rip Complete", body: "\(ripInput.jobLabel) added to encode queue"
+            )
             phase = .done(title: ripInput.jobLabel)
         } catch {
             phase = .error(error.localizedDescription)

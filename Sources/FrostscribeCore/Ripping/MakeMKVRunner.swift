@@ -43,12 +43,12 @@ public final class MakeMKVRunner: MakeMKVRunning {
         onMessage: @escaping @Sendable (String) -> Void,
         onProgress: @escaping @Sendable (Int) -> Void
     ) throws {
-        let lines = try run(
+        try run(
             arguments: ["-r", "mkv", "disc:0", "\(titleNumber)", destination.path],
             onLine: { line in
                 switch MakeMKVParser.parse(line) {
-                case .progress(_, let total, let max) where max > 0:
-                    let pct = min(Int(Double(total) / Double(max) * 100), 99)
+                case .progress(let current, _, let max) where max > 0:
+                    let pct = min(Int(Double(current) / Double(max) * 100), 99)
                     onProgress(pct)
                 case .progressTitle(let msg):
                     onMessage(msg)
@@ -59,12 +59,6 @@ public final class MakeMKVRunner: MakeMKVRunning {
                 }
             }
         )
-
-        for line in lines {
-            if case .criticalError(let code, let message) = MakeMKVParser.parse(line) {
-                throw FrostscribeError.makemkvCriticalError(code: code, message: message)
-            }
-        }
     }
 
     // MARK: - Process runner

@@ -54,15 +54,35 @@ public final class RipUseCase: Sendable {
         try status.write(status: .ripping, job: ripJob)
         defer { try? status.write(status: .idle, job: nil) }
 
-        let tempDir = input.baseTemp.appending(path: UUID().uuidString)
+        let safeName = input.jobLabel
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+        let tempDir = input.baseTemp.appending(path: safeName)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        let progressJob = ProgressJobRef(base: ripJob)
+
+        // Poll file size every 500ms for real-time progress — PRGV:current resets per segment.
+        let expectedBytes = input.titleSizeBytes
+        let sizePoller = Task {
+            while !Task.isCancelled {
+                if expectedBytes > 0, let written = dirBytes(tempDir) {
+                    let pct = min(Int(Double(written) / Double(expectedBytes) * 100), 99)
+                    progressJob.update(pct: pct)
+                    try? self.status.write(status: .ripping, job: progressJob.job)
+                    onProgress(pct)
+                }
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+        }
 
         try await runner.rip(
             titleNumber: input.titleNumber,
             to: tempDir,
             onMessage: onMessage,
-            onProgress: onProgress
+            onProgress: { _ in }   // progress now driven by file size above
         )
+        sizePoller.cancel()
 
         // Write 100% before defer transitions to idle so history captures completion
         var completedJob = ripJob
@@ -87,11 +107,29 @@ public final class RipUseCase: Sendable {
         return mkv
     }
 
+}
+
+private final class ProgressJobRef: @unchecked Sendable {
+    private(set) var job: RipJob
+    init(base: RipJob) { self.job = base }
+    func update(pct: Int) { job.progress = "\(pct)%" }
+}
+
+extension RipUseCase {
     private func findMKV(in dir: URL) throws -> URL {
         let contents = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
         guard let mkv = contents.first(where: { $0.pathExtension.lowercased() == "mkv" }) else {
             throw FrostscribeError.noMKVFound(directory: dir)
         }
         return mkv
+    }
+
+    private func dirBytes(_ dir: URL) -> Int? {
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: dir, includingPropertiesForKeys: [.fileSizeKey]
+        ) else { return nil }
+        return contents.compactMap {
+            try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize
+        }.reduce(0, +)
     }
 }

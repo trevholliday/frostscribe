@@ -8,7 +8,7 @@ let config = try? ConfigManager().load()
 let worker = EncodeWorker(
     queueManager: QueueManager(appSupportURL: appSupportURL),
     handbrakeRunner: HandBrakeRunner(binPath: config?.handbrakeBin ?? "HandBrakeCLI"),
-    notificationService: NotificationService.shared
+    hookRunner: HookRunner(command: config?.eventHook ?? "")
 )
 
 let sigSrc = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)

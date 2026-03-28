@@ -56,9 +56,7 @@ struct SettingsView: View {
             }
 
             Section("Options") {
-                Toggle("Enable notifications", isOn: $config.notificationsEnabled)
-                    .tint(FrostTheme.frostCyan)
-                    .onChange(of: config.notificationsEnabled) { save() }
+                textRow("Event hook", hint: "/path/to/notify.sh", value: $config.eventHook, saved: savedConfig.eventHook)
                 vigilModeToggle
                 Toggle("Select audio tracks before ripping", isOn: $config.selectAudioTracks)
                     .tint(FrostTheme.frostCyan)

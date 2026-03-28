@@ -7,7 +7,8 @@ public struct Config: Sendable {
     public var makemkvKey: String
     public var makemkvBin: String
     public var handbrakeBin: String
-    public var notificationsEnabled: Bool
+    /// Shell command run on lifecycle events. Receives FROSTSCRIBE_EVENT, FROSTSCRIBE_TITLE, FROSTSCRIBE_BODY.
+    public var eventHook: String
     /// When true, the user is present — the app guides ripping interactively (Vigil Mode).
     /// When false, AutoScribe is active — the app auto-rips any inserted disc without user input.
     public var vigilMode: Bool
@@ -25,7 +26,7 @@ public struct Config: Sendable {
         makemkvKey: String = "",
         makemkvBin: String = "",
         handbrakeBin: String = "",
-        notificationsEnabled: Bool = true,
+        eventHook: String = "",
         vigilMode: Bool = true,
         selectAudioTracks: Bool = false,
         qualityDVD: EncodeQuality = .q80,
@@ -40,7 +41,7 @@ public struct Config: Sendable {
         self.makemkvKey = makemkvKey
         self.makemkvBin = makemkvBin
         self.handbrakeBin = handbrakeBin
-        self.notificationsEnabled = notificationsEnabled
+        self.eventHook = eventHook
         self.vigilMode = vigilMode
         self.selectAudioTracks = selectAudioTracks
         self.qualityDVD = qualityDVD
@@ -52,7 +53,7 @@ public struct Config: Sendable {
 extension Config: Codable {
     enum CodingKeys: String, CodingKey {
         case mediaServer, moviesDir, tvDir, tempDir, tmdbApiKey, makemkvKey,
-             makemkvBin, handbrakeBin, notificationsEnabled, vigilMode,
+             makemkvBin, handbrakeBin, eventHook, vigilMode,
              selectAudioTracks, qualityDVD, qualityBluray, qualityUHD
     }
 
@@ -66,7 +67,7 @@ extension Config: Codable {
         makemkvKey           = (try? c.decode(String.self,         forKey: .makemkvKey))        ?? ""
         makemkvBin           = (try? c.decode(String.self,         forKey: .makemkvBin))        ?? ""
         handbrakeBin         = (try? c.decode(String.self,         forKey: .handbrakeBin))      ?? ""
-        notificationsEnabled = (try? c.decode(Bool.self,           forKey: .notificationsEnabled)) ?? true
+        eventHook            = (try? c.decode(String.self,         forKey: .eventHook))            ?? ""
         vigilMode            = (try? c.decode(Bool.self,           forKey: .vigilMode))         ?? true
         selectAudioTracks    = (try? c.decode(Bool.self,           forKey: .selectAudioTracks)) ?? false
         qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .q80
