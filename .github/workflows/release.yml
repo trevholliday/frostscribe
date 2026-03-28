@@ -19,58 +19,50 @@ on:
 
 jobs:
 
-  # ── Build arm64 ────────────────────────────────────────────────────────────
-  build-arm64:
-    name: Build (arm64)
-    runs-on: macos-14
+  # ── Build both architectures ────────────────────────────────────────────────
+  build:
+    name: Build (arm64 + x86_64)
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build release binaries
-        run: swift build -c release
+      - name: Build arm64
+        run: swift build -c release --arch arm64
 
-      - name: Pack tarball
+      - name: Pack arm64 tarball
         run: |
-          mkdir staging
-          cp .build/release/frostscribe .build/release/frostscribe-worker staging/
-          tar -czf frostscribe-arm64.tar.gz -C staging frostscribe frostscribe-worker
+          mkdir -p staging-arm64
+          cp .build/arm64-apple-macosx/release/frostscribe \
+             .build/arm64-apple-macosx/release/frostscribe-worker \
+             staging-arm64/
+          tar -czf frostscribe-arm64.tar.gz -C staging-arm64 frostscribe frostscribe-worker
           shasum -a 256 frostscribe-arm64.tar.gz | awk '{print $1}' > sha256-arm64.txt
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: arm64
-          path: |
-            frostscribe-arm64.tar.gz
-            sha256-arm64.txt
+      - name: Build x86_64
+        run: swift build -c release --arch x86_64
 
-  # ── Build x86_64 ───────────────────────────────────────────────────────────
-  build-x86_64:
-    name: Build (x86_64)
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build release binaries
-        run: swift build -c release
-
-      - name: Pack tarball
+      - name: Pack x86_64 tarball
         run: |
-          mkdir staging
-          cp .build/release/frostscribe .build/release/frostscribe-worker staging/
-          tar -czf frostscribe-x86_64.tar.gz -C staging frostscribe frostscribe-worker
+          mkdir -p staging-x86_64
+          cp .build/x86_64-apple-macosx/release/frostscribe \
+             .build/x86_64-apple-macosx/release/frostscribe-worker \
+             staging-x86_64/
+          tar -czf frostscribe-x86_64.tar.gz -C staging-x86_64 frostscribe frostscribe-worker
           shasum -a 256 frostscribe-x86_64.tar.gz | awk '{print $1}' > sha256-x86_64.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: x86_64
+          name: dist
           path: |
+            frostscribe-arm64.tar.gz
             frostscribe-x86_64.tar.gz
+            sha256-arm64.txt
             sha256-x86_64.txt
 
   # ── Create release & update tap ────────────────────────────────────────────
   release:
     name: Release & update tap
-    needs: [build-arm64, build-x86_64]
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -80,12 +72,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: arm64
-          path: dist
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: x86_64
+          name: dist
           path: dist
 
       - name: Read version and SHA256s
