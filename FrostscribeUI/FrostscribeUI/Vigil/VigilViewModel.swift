@@ -81,7 +81,7 @@ final class VigilViewModel {
         phase = .scanning
 
         let runner = MakeMKVRunner(binPath: config.makemkvBin)
-        let notifications = NotificationService.shared
+        let hook = HookRunner(command: config.eventHook)
 
         let scanResult: DiscScanResult
         do { scanResult = try await runner.scan() }
@@ -98,22 +98,16 @@ final class VigilViewModel {
 
         let (mediaTitle, year, mediaType) = await lookupTitle(discName: scanResult.discName, config: config)
         guard let mediaTitle else {
-            await notifications.requestAuthorizationIfNeeded()
-            notifications.send(
-                title: "Unknown Disc",
-                body: "Vigil Mode could not identify this disc. Run 'frostscribe rip' manually."
-            )
+            hook.fire(event: "vigil_unknown_disc", title: "Unknown Disc",
+                      body: "Vigil Mode could not identify this disc. Run 'frostscribe rip' manually.")
             phase = .idle
             return
         }
 
         // TV shows need interactive episode selection — hand off to the user
         if mediaType == .tv {
-            await notifications.requestAuthorizationIfNeeded()
-            notifications.send(
-                title: "TV Disc Identified: \(mediaTitle)",
-                body: "Run 'frostscribe rip' to select episodes and start ripping."
-            )
+            hook.fire(event: "vigil_tv_identified", title: "TV Disc Identified: \(mediaTitle)",
+                      body: "Run 'frostscribe rip' to select episodes and start ripping.")
             phase = .idle
             return
         }
@@ -143,8 +137,7 @@ final class VigilViewModel {
             quality: EncoderPreset.quality(for: scanResult.discType, config: config)
         )
 
-        await notifications.requestAuthorizationIfNeeded()
-        notifications.send(title: "Ripping Started", body: mediaTitle)
+        hook.fire(event: "ripping_started", title: "Ripping Started", body: mediaTitle)
 
         let ripUseCase = RipUseCase(
             runner: runner,
@@ -166,9 +159,9 @@ final class VigilViewModel {
                 }
             }
             try encodeUseCase.execute(encodeInput, inputMKV: mkvURL)
-            notifications.send(title: "Rip Complete", body: "\(mediaTitle) — added to encode queue")
+            hook.fire(event: "rip_complete", title: "Rip Complete", body: "\(mediaTitle) — added to encode queue")
         } catch {
-            notifications.send(title: "Rip Failed", body: mediaTitle)
+            hook.fire(event: "rip_failed", title: "Rip Failed", body: mediaTitle)
             phase = .error(error.localizedDescription)
             await resetAfterDelay()
             return
