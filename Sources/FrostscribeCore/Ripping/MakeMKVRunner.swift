@@ -131,7 +131,7 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
             let streams = streamData[num] ?? [:]
             let audioTracks = buildAudioTracks(from: streams)
             let videoResolution = buildVideoResolution(from: streams)
-            let subtitleCount = streams.values.filter { $0[1]?.hasPrefix("S_") == true }.count
+            let subtitleCount = streams.values.filter { $0[1] == "Subtitles" }.count
             let orderWeight = Int(attrs[33] ?? "0") ?? 0
             let angle = attrs[42].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
             return DiscTitle(
@@ -154,12 +154,14 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
 
     private func buildAudioTracks(from streams: [Int: [Int: String]]) -> [AudioTrack] {
         streams.sorted { $0.key < $1.key }.compactMap { _, attrs in
-            guard let typeVal = attrs[1], typeVal.hasPrefix("A_") else { return nil }
-            let codec = attrs[2] ?? String(typeVal.dropFirst(2))
+            // attr[1] = stream type label: "Audio", "Video", "Subtitles"
+            guard attrs[1] == "Audio" else { return nil }
+            // attr[3] = human-readable codec ("Dolby Digital", "DTS-HD High Resolution Audio")
+            // attr[2] = internal codec short name ("A_AC3", "A_DTS") — strip prefix as fallback
+            let codec = attrs[3] ?? attrs[2].map { $0.hasPrefix("A_") ? String($0.dropFirst(2)) : $0 } ?? "Unknown"
             let language = attrs[14] ?? attrs[13] ?? "Unknown"
-            // Attr 40 = AP_ItemAttribute_AudioChannelLayoutName ("7.1", "5.1", "2.0", etc.)
-            // Fall back to parsing it from the codec string if not present.
-            let channels = attrs[40] ?? channelsFromCodec(attrs[2] ?? "")
+            // attr[40] = AP_ItemAttribute_AudioChannelLayoutName ("7.1", "5.1", "2.0", etc.)
+            let channels = attrs[40] ?? channelsFromCodec(codec)
             return AudioTrack(language: language, codec: codec, channels: channels)
         }
     }
@@ -174,7 +176,7 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
         // Attr 19 = AP_ItemAttribute_VideoSize ("1920x1080", "3840x2160", etc.)
         // Take the first video stream's resolution.
         for (_, attrs) in streams.sorted(by: { $0.key < $1.key }) {
-            guard let typeVal = attrs[1], typeVal.hasPrefix("V_") else { continue }
+            guard attrs[1] == "Video" else { continue }
             if let res = attrs[19], !res.isEmpty { return res }
         }
         return nil

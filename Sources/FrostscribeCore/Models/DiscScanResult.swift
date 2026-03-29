@@ -1,6 +1,6 @@
 import Foundation
 
-public struct DiscScanResult: Sendable {
+public struct DiscScanResult: Codable, Sendable {
     public var titles: [DiscTitle]
     public var discName: String?
     public var discType: DiscType

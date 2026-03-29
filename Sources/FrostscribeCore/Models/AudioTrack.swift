@@ -1,4 +1,4 @@
-public struct AudioTrack: Sendable {
+public struct AudioTrack: Codable, Sendable {
     public var language: String
     public var codec: String
     /// Channel layout, e.g. "7.1", "5.1", "2.0". Nil if MakeMKV did not report it.

@@ -1,4 +1,4 @@
-public struct DiscTitle: Sendable {
+public struct DiscTitle: Codable, Sendable {
     public var number: Int
     public var name: String
     public var duration: String

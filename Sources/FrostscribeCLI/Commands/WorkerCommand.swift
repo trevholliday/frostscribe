@@ -220,24 +220,16 @@ struct WorkerHealth: ParsableCommand {
         }
 
         // --- Queue status ---
-        let queueURL = ConfigManager.appSupportURL.appending(path: "rip_queue.json")
-        if let data = try? Data(contentsOf: queueURL),
-           let queue = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let jobs = queue["jobs"] as? [[String: Any]] {
-            let pending  = jobs.filter { ($0["status"] as? String) == "pending" }.count
-            let running  = jobs.filter { ($0["status"] as? String) == "running" }.count
-            let done     = jobs.filter { ($0["status"] as? String) == "done" }.count
-            print("  \(Colors.bold)Queue\(Colors.reset)    pending=\(pending)  running=\(running)  done=\(done)")
-        }
+        let jobs = (try? RipQueueManager(appSupportURL: ConfigManager.appSupportURL).read()) ?? []
+        let pending = jobs.filter { $0.status == .pending }.count
+        let running = jobs.filter { $0.status == .ripping }.count
+        let done    = jobs.filter { $0.status == .done    }.count
+        print("  \(Colors.bold)Queue\(Colors.reset)    pending=\(pending)  running=\(running)  done=\(done)")
 
         // --- Status file ---
-        let statusURL = ConfigManager.appSupportURL.appending(path: "status.json")
-        if let data = try? Data(contentsOf: statusURL),
-           let status = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            let st = status["status"] as? String ?? "unknown"
-            let progress = status["progressPercent"] as? Int
-            var line = "  \(Colors.bold)Status\(Colors.reset)   \(st)"
-            if let p = progress { line += " (\(p)%)" }
+        if let file = try? StatusManager(appSupportURL: ConfigManager.appSupportURL).read() {
+            var line = "  \(Colors.bold)Status\(Colors.reset)   \(file.status.rawValue)"
+            if let job = file.currentJob { line += " — \(job.title) (\(job.progress))" }
             print(line)
         }
 
