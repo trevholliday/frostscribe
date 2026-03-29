@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.jpg" width="160" alt="Frostscribe" />
+  <img src="ios_app_icon_1024.png" width="160" alt="Frostscribe" />
 </p>
 
 <p align="center">
