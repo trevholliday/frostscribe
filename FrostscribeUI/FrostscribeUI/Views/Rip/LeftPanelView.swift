@@ -21,20 +21,6 @@ struct LeftPanelView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            if showRippingStatus {
-                rippingStatusPanel
-            } else {
-                navPanel
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
-    }
-
-    // MARK: - Nav panel
-
-    private var navPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(Self.sections, id: \.section) { item in
@@ -44,10 +30,17 @@ struct LeftPanelView: View {
             .padding(FrostTheme.paddingS)
             .padding(.top, FrostTheme.paddingM)
 
+            if showRippingStatus {
+                Divider().opacity(0.3).padding(.vertical, FrostTheme.paddingS)
+                rippingStatusPanel
+            }
+
             Spacer()
 
             settingsButton
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .controlBackgroundColor))
     }
 
     private func sectionTab(label: String, icon: String, section: AppSection) -> some View {
@@ -55,15 +48,15 @@ struct LeftPanelView: View {
         return Button {
             navCoordinator.selectedSection = section
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: 18)
+                    .font(.system(size: 18, weight: .medium))
+                    .frame(width: 22)
                 Text(label)
-                    .font(.subheadline)
+                    .font(.system(size: 17))
             }
             .foregroundStyle(isActive ? FrostTheme.teal : Color.primary.opacity(0.45))
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .padding(.horizontal, FrostTheme.paddingS)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
@@ -83,9 +76,9 @@ struct LeftPanelView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "gear")
-                    .font(.system(size: 12))
+                    .font(.system(size: 18))
                 Text("Settings")
-                    .font(.caption)
+                    .font(.system(size: 17))
             }
             .foregroundStyle(isActive ? FrostTheme.teal : Color.secondary)
         }
@@ -97,92 +90,71 @@ struct LeftPanelView: View {
     // MARK: - Ripping status panel
 
     private var rippingStatusPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
-                    // Title + year
-                    if let title = vm.confirmedTitle {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(title)
-                                .font(.headline).bold()
-                                .lineLimit(3)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if let year = vm.confirmedYear, !year.isEmpty {
-                                Text(year)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-
-                    // Rating + runtime row
-                    if let details = vm.mediaDetails {
-                        HStack(spacing: 6) {
-                            if let cert = details.certification {
-                                Text(cert)
-                                    .font(.caption2.bold())
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
-                                    )
-                            }
-                            if let runtime = details.runtimeFormatted {
-                                Text(runtime)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        // Release date
-                        if let release = details.releaseDate {
-                            Text(release)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        // Genres
-                        if !details.genres.isEmpty {
-                            Text(details.genres.joined(separator: ", "))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-                    }
-                }
-                .padding(FrostTheme.paddingM)
-            }
-
-            Divider().opacity(0.3)
-
-            // Progress
-            VStack(alignment: .leading, spacing: 6) {
-                if case .ripping(_, let progress) = vm.phase {
-                    ProgressView(value: Double(progress), total: 100)
-                        .tint(FrostTheme.frostCyan)
-                    Text("\(progress)% complete")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(FrostTheme.teal)
-                    if let remaining = vm.estimatedSecondsRemaining {
-                        Text("~\(Int(remaining / 60) + 1) min remaining")
-                            .font(.caption2)
+        VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
+            // Title + year
+            if let title = vm.confirmedTitle {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .bold))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let year = vm.confirmedYear, !year.isEmpty {
+                        Text(year)
+                            .font(.system(size: 15))
                             .foregroundStyle(.secondary)
                     }
-                } else if case .done = vm.phase {
-                    Label("Added to queue", systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(FrostTheme.teal)
                 }
-                Text("Encoding will begin automatically.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(FrostTheme.paddingM)
 
-            settingsButton
+            // Rating + runtime
+            if let details = vm.mediaDetails {
+                HStack(spacing: 6) {
+                    if let cert = details.certification {
+                        Text(cert)
+                            .font(.system(size: 12, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .overlay(RoundedRectangle(cornerRadius: 3)
+                                .stroke(Color.secondary.opacity(0.5), lineWidth: 1))
+                    }
+                    if let runtime = details.runtimeFormatted {
+                        Text(runtime)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if !details.genres.isEmpty {
+                    Text(details.genres.joined(separator: ", "))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            // Progress
+            if case .ripping(_, let progress) = vm.phase {
+                VStack(alignment: .leading, spacing: 4) {
+                    ProgressView(value: Double(progress), total: 100)
+                        .tint(FrostTheme.frostCyan)
+                    HStack {
+                        Text("\(progress)%")
+                            .font(.system(size: 14).monospacedDigit())
+                            .foregroundStyle(FrostTheme.teal)
+                        if let remaining = vm.estimatedSecondsRemaining {
+                            Spacer()
+                            Text("~\(Int(remaining / 60) + 1) min")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } else if case .done = vm.phase {
+                Label("Added to queue", systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(FrostTheme.teal)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, FrostTheme.paddingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

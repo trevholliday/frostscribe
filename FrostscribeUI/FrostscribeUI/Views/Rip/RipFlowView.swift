@@ -9,10 +9,9 @@ struct RipFlowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
+            HSplitView {
                 LeftPanelView(vm: vm)
-                    .frame(width: 200)
-                Divider()
+                    .frame(minWidth: 250, maxWidth: 600)
                 rightContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -27,6 +26,7 @@ struct RipFlowView: View {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
             NSApp.windows.first(where: { $0.title == "Frostscribe" })?.makeKeyAndOrderFront(nil)
+            vm.initialize()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
             guard let window = notification.object as? NSWindow, window.title == "Frostscribe" else { return }
@@ -170,12 +170,13 @@ struct RipFlowView: View {
                     }
                 }
 
-                if queueVM.jobs.isEmpty {
+                let activeJobs = queueVM.jobs.filter(\.isActive).reversed()
+                if activeJobs.isEmpty {
                     Text("Queue is empty.")
                         .foregroundStyle(.secondary)
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(queueVM.jobs.reversed()) { job in
+                        ForEach(activeJobs) { job in
                             HStack(alignment: .top, spacing: FrostTheme.paddingM) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(job.title)
@@ -196,10 +197,7 @@ struct RipFlowView: View {
                                 Spacer()
                                 Text(job.status.rawValue.capitalized)
                                     .font(.caption)
-                                    .foregroundStyle(
-                                        job.status == .encoding ? FrostTheme.teal :
-                                        job.status == .done ? Color.secondary : Color.secondary
-                                    )
+                                    .foregroundStyle(job.status == .encoding ? FrostTheme.teal : .secondary)
                             }
                             .padding(.vertical, FrostTheme.paddingS)
                             Divider()
@@ -231,42 +229,46 @@ struct RipFlowView: View {
                                 $0.jobLabel == entry.title &&
                                 abs($0.timestamp.timeIntervalSince(entry.startedAt)) < 300
                             }
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading, spacing: 2) {
+                            let encoded = queueVM.jobs.contains {
+                                $0.title == entry.title && $0.status == .done
+                            }
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(alignment: .top) {
                                     Text(entry.title)
                                         .font(.subheadline)
                                         .bold()
                                         .lineLimit(1)
-                                    HStack(spacing: 6) {
-                                        Text(entry.type.rawValue.capitalized)
-                                            .font(.caption)
+                                    Spacer()
+                                    Text(entry.startedAt, style: .date)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                HStack(spacing: 6) {
+                                    if let r = record {
+                                        Text(r.discType.displayName)
+                                            .font(.caption2)
                                             .foregroundStyle(.secondary)
-                                        if let r = record {
-                                            Text("·")
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                            Text(r.discType.displayName)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            Text("·")
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                            Text(formatBytes(r.titleSizeBytes))
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            Text("·")
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                            Text(formatDuration(r.ripDurationSeconds))
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
+                                        Text("·")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                        Text(formatBytes(r.titleSizeBytes))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        Text("·")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                        Text(formatDuration(r.ripDurationSeconds))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
                                     }
                                 }
-                                Spacer()
-                                Text(entry.startedAt, style: .date)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                // Completion pills
+                                HStack(spacing: 6) {
+                                    pill("Ripped", color: FrostTheme.teal)
+                                    if encoded {
+                                        pill("Encoded", color: FrostTheme.glacier)
+                                    }
+                                }
                             }
                             .padding(.vertical, FrostTheme.paddingS)
                             Divider()
@@ -313,6 +315,15 @@ struct RipFlowView: View {
         }
         .padding(FrostTheme.paddingM)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
+    }
+
+    private func pill(_ label: String, color: Color) -> some View {
+        Text(label)
+            .font(.caption2.bold())
+            .foregroundStyle(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.15), in: Capsule())
     }
 
     private func formatBytes(_ bytes: Int) -> String {

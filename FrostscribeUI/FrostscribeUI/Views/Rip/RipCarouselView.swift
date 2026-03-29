@@ -12,14 +12,17 @@ struct RipRippingView: View {
                 PeekingCarouselView(imageURLs: vm.carouselURLs)
                     .frame(height: geo.size.height * 0.45)
 
-                Divider().opacity(0.2)
+                let hasDetails = vm.mediaDetails != nil || !vm.carouselURLs.isEmpty
+                if hasDetails {
+                    Divider().opacity(0.2)
 
-                ScrollView {
-                    mediaDetails
-                        .padding(FrostTheme.paddingL)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    ScrollView {
+                        mediaDetails
+                            .padding(FrostTheme.paddingL)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: .infinity)
                 }
-                .frame(maxHeight: .infinity)
             }
         }
     }
@@ -55,8 +58,8 @@ struct RipRippingView: View {
                     crewGrid(details.crew)
                 }
             }
-        } else {
-            // Placeholder while loading
+        } else if !vm.carouselURLs.isEmpty {
+            // TMDB data was fetched but details haven't arrived yet
             VStack(spacing: FrostTheme.paddingM) {
                 ProgressView().tint(FrostTheme.frostCyan)
                 Text("Loading details…")

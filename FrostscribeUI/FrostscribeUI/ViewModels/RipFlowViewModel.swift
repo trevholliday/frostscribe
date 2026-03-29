@@ -71,6 +71,52 @@ final class RipFlowViewModel {
     private var ripTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
 
+    // MARK: - Initialize (resume in-progress rip on launch)
+
+    func initialize() {
+        guard case .idle = phase else { return }
+        let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
+        let ripQueue  = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
+
+        guard let file = try? statusMgr.read(),
+              file.status == .ripping,
+              let currentJob = file.currentJob,
+              let jobs = try? ripQueue.read(),
+              let queueJob = jobs.first(where: { $0.isActive }) else { return }
+
+        let pct   = Int(currentJob.progress.replacingOccurrences(of: "%", with: "")) ?? 0
+        let title = queueJob.encodeTitle
+        // Parse year from jobLabel e.g. "The Fifth Element (1997)"
+        let year  = queueJob.jobLabel
+            .components(separatedBy: "(").last?
+            .replacingOccurrences(of: ")", with: "")
+            .trimmingCharacters(in: .whitespaces) ?? ""
+
+        confirmedTitle = title
+        confirmedYear  = year
+        phase = .ripping(title: queueJob.jobLabel, progress: pct)
+        ripTask = Task { await pollRip(jobId: queueJob.id, title: queueJob.jobLabel) }
+
+        // Fetch TMDB data in background
+        let config = try? ConfigManager().load()
+        guard let config, !config.tmdbApiKey.isEmpty else { return }
+        storedConfig = config
+        let isTV = queueJob.mediaType == "tvshow"
+        Task {
+            let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
+            let query = year.isEmpty ? title : "\(title) \(year)"
+            guard let results = try? await tmdb.searchMulti(query: query),
+                  let best = results.first(where: { isTV ? $0.mediaType == .tv : $0.mediaType == .movie })
+                           ?? results.first else { return }
+            posterURL = best.posterURL
+            async let backdropFetch = tmdb.backdrops(id: best.id, mediaType: best.mediaType)
+            async let detailsFetch  = tmdb.details(id: best.id, mediaType: best.mediaType)
+            let urls = (try? await backdropFetch) ?? []
+            backdropURLs = urls.isEmpty ? [best.backdropURL].compactMap { $0 } : urls
+            mediaDetails = try? await detailsFetch
+        }
+    }
+
     // MARK: - Flow entry
 
     func startRip() {
