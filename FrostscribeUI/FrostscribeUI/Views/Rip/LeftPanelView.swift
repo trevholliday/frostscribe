@@ -4,6 +4,7 @@ import FrostscribeCore
 struct LeftPanelView: View {
     let vm: RipFlowViewModel
     @Environment(NavigationCoordinator.self) private var navCoordinator
+    @Environment(\.openWindow) private var openWindow
 
     private static let sections: [(label: String, icon: String, section: AppSection)] = [
         ("Rip",          "opticaldisc",            .rip),
@@ -72,6 +73,7 @@ struct LeftPanelView: View {
         let isActive = navCoordinator.selectedSection == .settings
         return Button {
             navCoordinator.selectedSection = isActive ? .rip : .settings
+            openWindow(id: "rip-flow")
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "gear")
@@ -82,7 +84,6 @@ struct LeftPanelView: View {
             .foregroundStyle(isActive ? FrostTheme.teal : Color.secondary)
         }
         .buttonStyle(.plain)
-        .disabled(vm.isRipping)
         .padding(FrostTheme.paddingM)
     }
 

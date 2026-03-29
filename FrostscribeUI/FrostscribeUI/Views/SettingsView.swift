@@ -262,34 +262,36 @@ private struct WorkerHealthSection: View {
     }
 
     private func refresh() {
-        // Worker running state — use `launchctl list` (no args) which outputs PID\tExit\tLabel per line
-        let check = Process()
-        check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-        check.arguments = ["list"]
-        let pipe = Pipe()
-        check.standardOutput = pipe
-        check.standardError = FileHandle.nullDevice
-        try? check.run()
-        check.waitUntilExit()
-        let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        // Find the line for our label and extract the PID (first tab-separated column)
-        let line = out.split(separator: "\n").first { $0.contains("com.frostscribe.worker") }
-        let pid = line?.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "-"
-        health.isRunning = pid != "-"
-        health.pid = pid
+        Task.detached {
+            // Worker running state — blocking process call, must be off main thread
+            let check = Process()
+            check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            check.arguments = ["list"]
+            let pipe = Pipe()
+            check.standardOutput = pipe
+            check.standardError = FileHandle.nullDevice
+            try? check.run()
+            check.waitUntilExit()
+            let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let line = out.split(separator: "\n").first { $0.contains("com.frostscribe.worker") }
+            let pid = line?.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "-"
 
-        // Queue counts
-        let queueURL = ConfigManager.appSupportURL.appending(path: "rip_queue.json")
-        if let data = try? Data(contentsOf: queueURL),
-           let queue = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let jobs = queue["jobs"] as? [[String: Any]] {
-            health.pending = jobs.filter { ($0["status"] as? String) == "pending" }.count
-            health.running = jobs.filter { ($0["status"] as? String) == "running" }.count
+            // Queue counts
+            let jobs = (try? RipQueueManager(appSupportURL: ConfigManager.appSupportURL).read()) ?? []
+            let pending = jobs.filter { $0.status == .pending }.count
+            let running = jobs.filter { $0.status == .ripping }.count
+
+            // Last log line
+            let lastLog = LogStore(appSupportURL: ConfigManager.appSupportURL).load(limit: 1).first?.message ?? ""
+
+            await MainActor.run {
+                health.isRunning = pid != "-"
+                health.pid = pid
+                health.pending = pending
+                health.running = running
+                health.lastLog = lastLog
+            }
         }
-
-        // Last log line
-        let store = LogStore(appSupportURL: ConfigManager.appSupportURL)
-        health.lastLog = store.load(limit: 1).first?.message ?? ""
     }
 
     private func reinstall() {
