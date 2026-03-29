@@ -106,8 +106,8 @@ struct TMDBSearchView: View {
     private var resultsGrid: some View {
         ScrollView {
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 12)],
-                spacing: 12
+                columns: [GridItem(.adaptive(minimum: 180, maximum: 220), spacing: 16)],
+                spacing: 16
             ) {
                 ForEach(vm.tmdbResults, id: \.id) { result in
                     TMDBResultCard(result: result)
@@ -117,7 +117,7 @@ struct TMDBSearchView: View {
                         }
                 }
             }
-            .padding(FrostTheme.paddingM)
+            .padding(16)
 
             Button("Enter manually…") { showManualEntry = true }
                 .buttonStyle(.plain)
@@ -172,10 +172,10 @@ private struct TMDBResultCard: View {
                     image.resizable().aspectRatio(contentMode: .fill)
                 default:
                     ZStack {
-                        FrostTheme.background
+                        Color.white.opacity(0.04)
                         VStack(spacing: 6) {
                             Image(systemName: "film")
-                                .font(.system(size: 32))
+                                .font(.system(size: 28))
                                 .foregroundStyle(FrostTheme.teal.opacity(0.35))
                             Text(result.title)
                                 .font(.caption2)
@@ -186,7 +186,7 @@ private struct TMDBResultCard: View {
                     }
                 }
             }
-            .frame(width: 200, height: 260)
+            .aspectRatio(2/3, contentMode: .fit)
             .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
@@ -208,9 +208,7 @@ private struct TMDBResultCard: View {
                 }
             }
             .padding(8)
-            .frame(width: 200, alignment: .leading)
         }
-        .frame(width: 200)
         .background(Color.white.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.08), lineWidth: 1))
