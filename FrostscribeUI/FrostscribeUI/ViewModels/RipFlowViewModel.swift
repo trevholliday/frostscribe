@@ -88,11 +88,9 @@ final class RipFlowViewModel {
 
         let pct   = Int(currentJob.progress.replacingOccurrences(of: "%", with: "")) ?? 0
         let title = queueJob.encodeTitle
-        // Parse year from jobLabel e.g. "The Fifth Element (1997)"
-        let year  = queueJob.jobLabel
-            .components(separatedBy: "(").last?
-            .replacingOccurrences(of: ")", with: "")
-            .trimmingCharacters(in: .whitespaces) ?? ""
+        // Parse 4-digit year from jobLabel e.g. "The Fifth Element (1997)"
+        let yearMatch = queueJob.jobLabel.range(of: #"\((\d{4})\)"#, options: .regularExpression)
+        let year = yearMatch.map { String(queueJob.jobLabel[$0].dropFirst().dropLast()) } ?? ""
 
         confirmedTitle = title
         confirmedYear  = year
