@@ -12,6 +12,19 @@ struct TVEpisodeView: View {
 
     var body: some View {
         VStack(spacing: FrostTheme.paddingL) {
+            if vm.canGoBack {
+                HStack {
+                    Button { vm.goBack() } label: {
+                        Label("Back", systemImage: "chevron.left")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, FrostTheme.paddingL)
+                .padding(.top, FrostTheme.paddingM)
+            }
             Spacer()
             Image(systemName: "tv")
                 .font(.system(size: 40))

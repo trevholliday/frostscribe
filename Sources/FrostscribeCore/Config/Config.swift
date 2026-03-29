@@ -16,6 +16,7 @@ public struct Config: Sendable {
     public var qualityDVD: EncodeQuality
     public var qualityBluray: EncodeQuality
     public var qualityUHD: EncodeQuality
+    public var filterShortTitles: Bool
 
     public init(
         mediaServer: MediaServer = .jellyfin,
@@ -31,7 +32,8 @@ public struct Config: Sendable {
         selectAudioTracks: Bool = false,
         qualityDVD: EncodeQuality = .q80,
         qualityBluray: EncodeQuality = .q70,
-        qualityUHD: EncodeQuality = .q70
+        qualityUHD: EncodeQuality = .q70,
+        filterShortTitles: Bool = true
     ) {
         self.mediaServer = mediaServer
         self.moviesDir = moviesDir
@@ -47,6 +49,7 @@ public struct Config: Sendable {
         self.qualityDVD = qualityDVD
         self.qualityBluray = qualityBluray
         self.qualityUHD = qualityUHD
+        self.filterShortTitles = filterShortTitles
     }
 }
 
@@ -54,7 +57,8 @@ extension Config: Codable {
     enum CodingKeys: String, CodingKey {
         case mediaServer, moviesDir, tvDir, tempDir, tmdbApiKey, makemkvKey,
              makemkvBin, handbrakeBin, eventHook, vigilMode,
-             selectAudioTracks, qualityDVD, qualityBluray, qualityUHD
+             selectAudioTracks, qualityDVD, qualityBluray, qualityUHD,
+             filterShortTitles
     }
 
     public init(from decoder: Decoder) throws {
@@ -73,5 +77,6 @@ extension Config: Codable {
         qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .q80
         qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .q70
         qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .q70
+        filterShortTitles    = (try? c.decode(Bool.self,           forKey: .filterShortTitles)) ?? true
     }
 }

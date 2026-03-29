@@ -9,6 +9,18 @@ struct LogsView: View {
 
     private let timer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
+    private static let isoParser: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    private static let localFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f
+    }()
+
     struct LogLine: Identifiable {
         let id: Int
         let timestamp: String
@@ -121,6 +133,9 @@ struct LogsView: View {
                 if raw.hasPrefix("["), let close = raw.firstIndex(of: "]") {
                     ts  = String(raw[raw.index(after: raw.startIndex)..<close])
                     msg = String(raw[raw.index(after: close)...]).trimmingCharacters(in: .whitespaces)
+                }
+                if let date = Self.isoParser.date(from: ts) {
+                    ts = Self.localFormatter.string(from: date)
                 }
                 let level: LogLine.Level = msg.lowercased().contains("fail") || msg.lowercased().contains("error")
                     ? .error

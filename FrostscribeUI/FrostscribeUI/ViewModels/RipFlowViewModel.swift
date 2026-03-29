@@ -45,6 +45,22 @@ final class RipFlowViewModel {
     // Rip estimation
     private(set) var ripEstimate: RipEstimate?
 
+    // Phase navigation history (never contains .scanning/.ripping/.done/.error/.idle)
+    private var phaseStack: [Phase] = []
+
+    var canGoBack: Bool { !phaseStack.isEmpty }
+
+    func goBack() {
+        guard !phaseStack.isEmpty else { return }
+        phase = phaseStack.removeLast()
+    }
+
+    var filterShortTitles: Bool { storedConfig?.filterShortTitles ?? true }
+
+    func ejectDisc() {
+        Task.detached { DiscEjector().eject() }
+    }
+
     var estimatedSecondsRemaining: Double? {
         guard let estimate = ripEstimate,
               case .ripping(_, let progress) = phase,
@@ -234,6 +250,7 @@ final class RipFlowViewModel {
     }
 
     private func advance(title: String, year: String, scanResult: DiscScanResult, isTV: Bool) {
+        phaseStack.append(phase)
         confirmedTitle = title
         confirmedYear = year
         if isTV {
@@ -248,6 +265,7 @@ final class RipFlowViewModel {
 
     func setEpisode(season: Int, episode: Int, scanResult: DiscScanResult,
                     title: String, year: String) {
+        phaseStack.append(phase)
         phase = .titleSelection(scanResult, title: title, year: year,
                                 isTV: true, season: season, episode: episode)
     }
@@ -257,6 +275,7 @@ final class RipFlowViewModel {
     func selectTitle(_ discTitle: DiscTitle, scanResult: DiscScanResult,
                      mediaTitle: String, year: String,
                      isTV: Bool, season: Int, episode: Int) {
+        phaseStack.append(phase)
         advanceToAudioOrConfirmation(chosenTitle: discTitle, scanResult: scanResult,
                                      title: mediaTitle, year: year,
                                      isTV: isTV, season: season, episode: episode)
@@ -279,6 +298,7 @@ final class RipFlowViewModel {
 
     func selectAudioTracks(_ tracks: [Int]?, chosenTitle: DiscTitle, scanResult: DiscScanResult,
                            title: String, year: String, isTV: Bool, season: Int, episode: Int) {
+        phaseStack.append(phase)
         buildConfirmation(chosenTitle: chosenTitle, scanResult: scanResult, title: title,
                            year: year, isTV: isTV, season: season, episode: episode, selectedTracks: tracks)
     }
@@ -412,6 +432,7 @@ final class RipFlowViewModel {
 
     func reset() {
         ripTask?.cancel()
+        phaseStack = []
         searchTask?.cancel()
         ripTask = nil
         searchTask = nil

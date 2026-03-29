@@ -50,7 +50,7 @@ struct TMDBSearchView: View {
             } else if vm.tmdbResults.isEmpty && !showManualEntry {
                 emptyState
             } else {
-                resultsList
+                resultsGrid
             }
 
             if showManualEntry {
@@ -103,47 +103,27 @@ struct TMDBSearchView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var resultsList: some View {
-        List {
-            ForEach(vm.tmdbResults, id: \.id) { result in
-                HStack(spacing: FrostTheme.paddingM) {
-                    AsyncImage(url: result.posterURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable().aspectRatio(contentMode: .fill)
-                        default:
-                            ZStack {
-                                FrostTheme.background
-                                Image(systemName: "snowflake")
-                                    .foregroundStyle(FrostTheme.teal.opacity(0.4))
-                            }
+    private var resultsGrid: some View {
+        ScrollView {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 12)],
+                spacing: 12
+            ) {
+                ForEach(vm.tmdbResults, id: \.id) { result in
+                    TMDBResultCard(result: result)
+                        .onTapGesture {
+                            vm.confirmTMDB(result: result, scanResult: scanResult,
+                                           isTV: result.mediaType == .tv)
                         }
-                    }
-                    .frame(width: 36, height: 54)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(result.title).bold().lineLimit(1)
-                        Text("\(result.year) · \(result.mediaType == .tv ? "TV" : "Movie")")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    vm.confirmTMDB(result: result, scanResult: scanResult,
-                                   isTV: result.mediaType == .tv)
                 }
             }
+            .padding(FrostTheme.paddingM)
+
             Button("Enter manually…") { showManualEntry = true }
                 .buttonStyle(.plain)
                 .foregroundStyle(FrostTheme.glacier)
+                .padding(.bottom, FrostTheme.paddingM)
         }
-        .listStyle(.plain)
     }
 
     private var manualEntryForm: some View {
@@ -176,5 +156,63 @@ struct TMDBSearchView: View {
 
     private func search() {
         vm.searchTMDB(query: query, scanResult: scanResult, isTV: isTV)
+    }
+}
+
+// MARK: - Card
+
+private struct TMDBResultCard: View {
+    let result: TMDBClient.SearchResult
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AsyncImage(url: result.posterURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().aspectRatio(contentMode: .fill)
+                default:
+                    ZStack {
+                        FrostTheme.background
+                        VStack(spacing: 6) {
+                            Image(systemName: "film")
+                                .font(.system(size: 32))
+                                .foregroundStyle(FrostTheme.teal.opacity(0.35))
+                            Text(result.title)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 8)
+                        }
+                    }
+                }
+            }
+            .frame(width: 200, height: 260)
+            .clipped()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.title)
+                    .font(.subheadline.bold())
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Text(result.year)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(result.mediaType == .tv ? "TV" : "Movie")
+                        .font(.caption2.bold())
+                        .foregroundStyle(FrostTheme.teal)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(FrostTheme.teal.opacity(0.15), in: Capsule())
+                }
+            }
+            .padding(8)
+            .frame(width: 200, alignment: .leading)
+        }
+        .frame(width: 200)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 }

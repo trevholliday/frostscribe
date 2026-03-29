@@ -105,6 +105,15 @@ struct AudioTrackSelectionView: View {
 
     private var headerRow: some View {
         HStack {
+            if vm.canGoBack {
+                Button { vm.goBack() } label: {
+                    Label("Back", systemImage: "chevron.left")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
+            Spacer()
             Text("SELECT AUDIO TRACKS")
                 .font(.caption).bold().foregroundStyle(.secondary)
             Spacer()

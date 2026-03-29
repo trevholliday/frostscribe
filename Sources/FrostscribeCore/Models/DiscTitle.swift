@@ -21,6 +21,16 @@ public struct DiscTitle: Sendable {
     /// True when MakeMKV flags this as a primary title (orderWeight == 0).
     public var isMainTitleCandidate: Bool { orderWeight == 0 }
 
+    /// Returns total duration in minutes. Duration string format is "H:MM:SS".
+    public var durationMinutes: Int {
+        let parts = duration.split(separator: ":").compactMap { Int($0) }
+        switch parts.count {
+        case 3: return parts[0] * 60 + parts[1]
+        case 2: return parts[0]
+        default: return 0
+        }
+    }
+
     /// True if the video stream appears to be 4K (width ≥ 3840).
     public var is4K: Bool {
         guard let res = videoResolution,

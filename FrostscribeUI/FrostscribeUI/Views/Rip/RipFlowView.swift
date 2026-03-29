@@ -164,9 +164,10 @@ struct RipFlowView: View {
                                 $0.jobLabel == entry.title &&
                                 abs($0.timestamp.timeIntervalSince(entry.startedAt)) < 300
                             }
-                            let encoded = queueVM.jobs.contains {
-                                $0.title == entry.title && $0.status == .done
-                            }
+                            let encodeJob = queueVM.jobs.first { $0.title == entry.title }
+                            let encoded = encodeJob?.status == .done
+                            let encodeFailed = encodeJob?.status == .error
+                            let ripFailed = record?.success == false
                             let entryYear = entry.title.range(of: #"\((\d{4})\)"#, options: .regularExpression)
                                 .map { String(entry.title[$0].dropFirst().dropLast()) }
                             HStack(alignment: .top, spacing: FrostTheme.paddingM) {
@@ -175,6 +176,7 @@ struct RipFlowView: View {
                                     Text(entry.title)
                                         .font(.subheadline).bold()
                                         .lineLimit(1)
+                                        .foregroundStyle(ripFailed || encodeFailed ? FrostTheme.alert : .primary)
                                     if let y = entryYear {
                                         Text(y)
                                             .font(.caption)
@@ -199,8 +201,19 @@ struct RipFlowView: View {
                                         .font(.caption2)
                                         .foregroundStyle(.tertiary)
                                     HStack(spacing: 4) {
-                                        pill("Ripped", color: FrostTheme.teal)
-                                        if encoded {
+                                        if ripFailed {
+                                            pill("Rip Failed", color: FrostTheme.alert)
+                                        } else {
+                                            pill("Ripped", color: FrostTheme.teal)
+                                        }
+                                        if encodeFailed {
+                                            Button {
+                                                if let job = encodeJob { queueVM.requeue(job) }
+                                            } label: {
+                                                pill("Encode Failed — Re-encode", color: FrostTheme.alert)
+                                            }
+                                            .buttonStyle(.plain)
+                                        } else if encoded {
                                             pill("Encoded", color: FrostTheme.glacier)
                                         }
                                     }

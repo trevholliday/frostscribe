@@ -10,14 +10,37 @@ struct TitleSelectionView: View {
     let season: Int
     let episode: Int
 
-    private var maxBytes: Int { scanResult.titles.map(\.sizeBytes).max() ?? 0 }
+    private var displayedTitles: [DiscTitle] {
+        guard vm.filterShortTitles else { return scanResult.titles }
+        return scanResult.titles.filter { $0.durationMinutes >= 60 }
+    }
+
+    private var filteredCount: Int { scanResult.titles.count - displayedTitles.count }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionHeader("SELECT TITLE", subtitle: "\(scanResult.titles.count) titles found")
+            HStack {
+                if vm.canGoBack {
+                    Button { vm.goBack() } label: {
+                        Label("Back", systemImage: "chevron.left")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                sectionHeader(
+                    "SELECT TITLE",
+                    subtitle: filteredCount > 0
+                        ? "\(displayedTitles.count) titles (\(filteredCount) short filtered)"
+                        : "\(scanResult.titles.count) titles found"
+                )
+            }
+            .padding(.horizontal, FrostTheme.paddingM)
+            .padding(.vertical, FrostTheme.paddingS)
             Divider()
-            List(scanResult.titles, id: \.number) { title in
-                TitleRow(title: title, isMain: title.sizeBytes == maxBytes)
+            List(displayedTitles, id: \.number) { title in
+                TitleRow(title: title, isMain: title.isMainTitleCandidate)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         vm.selectTitle(title, scanResult: scanResult,
@@ -136,14 +159,9 @@ private struct TitleRow: View {
 
 private func sectionHeader(_ title: String, subtitle: String) -> some View {
     HStack {
-        Text(title)
-            .font(.caption).bold()
-            .foregroundStyle(.secondary)
         Spacer()
         Text(subtitle)
             .font(.caption)
             .foregroundStyle(.secondary)
     }
-    .padding(.horizontal, FrostTheme.paddingM)
-    .padding(.vertical, FrostTheme.paddingS)
 }

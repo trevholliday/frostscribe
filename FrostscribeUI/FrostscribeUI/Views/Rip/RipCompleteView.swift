@@ -1,10 +1,14 @@
 import SwiftUI
+import FrostscribeCore
 
 struct RipCompleteView: View {
     let vm: RipFlowViewModel
     let title: String
     let isError: Bool
     let message: String
+
+    @State private var isEjecting = false
+    @State private var ejected = false
 
     var body: some View {
         VStack(spacing: FrostTheme.paddingL) {
@@ -26,6 +30,30 @@ struct RipCompleteView: View {
             } else {
                 Button("Rip Another Disc") { vm.reset() }
                     .buttonStyle(.frostPrimary)
+            }
+            if ejected {
+                Label("Disc ejected", systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(FrostTheme.teal)
+            } else {
+                Button {
+                    isEjecting = true
+                    Task {
+                        await Task.detached { DiscEjector().eject() }.value
+                        isEjecting = false
+                        ejected = true
+                    }
+                } label: {
+                    if isEjecting {
+                        Label("Ejecting…", systemImage: "eject")
+                    } else {
+                        Label("Eject Disc", systemImage: "eject")
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .disabled(isEjecting)
             }
             Spacer()
         }

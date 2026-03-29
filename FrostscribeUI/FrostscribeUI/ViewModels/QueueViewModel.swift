@@ -34,4 +34,19 @@ final class QueueViewModel {
     func refresh() {
         jobs = (try? queueManager.read()) ?? []
     }
+
+    func requeue(_ job: EncodeJob) {
+        do {
+            try queueManager.add(
+                input: URL(fileURLWithPath: job.input),
+                output: URL(fileURLWithPath: job.output),
+                preset: job.preset,
+                title: job.title,
+                episode: job.episode,
+                audioTracks: job.audioTracks,
+                quality: job.quality
+            )
+            refresh()
+        } catch {}
+    }
 }

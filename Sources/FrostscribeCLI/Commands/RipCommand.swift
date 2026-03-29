@@ -221,17 +221,20 @@ struct RipCommand: AsyncParsableCommand {
             let isMain = t.sizeBytes == maxBytes
             let numStr = "\(t.number)".padding(toLength: 5, withPad: " ", startingAt: 0)
             let dur    = t.duration.padding(toLength: 12, withPad: " ", startingAt: 0)
-            let desc   = "\(t.chapters)ch, \(t.sizeFormatted)"
+            let resLabel = resolvedResLabel(t.videoResolution)
+            let descParts = ["\(t.chapters)ch", resLabel, t.sizeFormatted].compactMap { $0 }
+            let desc = descParts.joined(separator: " · ")
             let audioLines = formatAudioLines(t.audioTracks)
             let firstAudio = audioLines.first ?? "\(Colors.dim)—\(Colors.reset)"
+            let subTag = t.subtitleCount > 0 ? " \(Colors.dim)[\(t.subtitleCount) sub]\(Colors.reset)" : ""
 
             if isMain {
-                let descStyled = "\(Colors.dim)\(t.chapters)ch, \(Colors.reset)\(Colors.teal)\(t.sizeFormatted)\(Colors.reset)"
+                let descStyled = "\(Colors.dim)\(t.chapters)ch · \(resLabel ?? "") \(Colors.reset)\(Colors.teal)\(t.sizeFormatted)\(Colors.reset)"
                 let descPad = String(repeating: " ", count: max(0, 28 - desc.count))
-                print("  \(Colors.iceWhite)\(numStr)\(Colors.reset)\(Colors.iceWhite)\(dur)\(Colors.reset) \(descStyled)\(descPad) \(firstAudio) \(Colors.iceWhite)\(t.name)\(Colors.reset)")
+                print("  \(Colors.iceWhite)\(numStr)\(Colors.reset)\(Colors.iceWhite)\(dur)\(Colors.reset) \(descStyled)\(descPad) \(firstAudio)\(subTag) \(Colors.iceWhite)\(t.name)\(Colors.reset)")
             } else {
                 let descPad = String(repeating: " ", count: max(0, 28 - desc.count))
-                print("  \(Colors.dim)\(numStr)\(Colors.iceWhite)\(dur)\(Colors.reset) \(Colors.dim)\(desc)\(descPad)\(Colors.reset) \(firstAudio) \(Colors.dim)\(t.name)\(Colors.reset)")
+                print("  \(Colors.dim)\(numStr)\(Colors.iceWhite)\(dur)\(Colors.reset) \(Colors.dim)\(desc)\(descPad)\(Colors.reset) \(firstAudio)\(subTag) \(Colors.dim)\(t.name)\(Colors.reset)")
             }
 
             for extraAudio in audioLines.dropFirst() {
@@ -313,6 +316,19 @@ struct RipCommand: AsyncParsableCommand {
         let title = Prompt.ask("Title")
         let year  = Prompt.ask("Year", default: String(Calendar.current.component(.year, from: Date())))
         return (title, year, isTV, nil)
+    }
+
+    private func resolvedResLabel(_ resolution: String?) -> String? {
+        guard let res = resolution,
+              let heightStr = res.split(separator: "x").last,
+              let height = Int(heightStr) else { return nil }
+        switch height {
+        case 2160...: return "4K"
+        case 1080:    return "1080p"
+        case 720:     return "720p"
+        case 480:     return "480p"
+        default:      return "\(height)p"
+        }
     }
 
     private func cleanForTMDB(_ name: String) -> String {
