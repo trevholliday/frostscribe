@@ -53,8 +53,6 @@ struct RipFlowView: View {
             NavigationStack {
                 SettingsView()
             }
-        } else if navCoordinator.selectedSection == .ripJob {
-            statusDetail
         } else if navCoordinator.selectedSection == .encodeQueue {
             queueDetail
         } else if navCoordinator.selectedSection == .history {
@@ -89,69 +87,6 @@ struct RipFlowView: View {
         case .error(let message):
             RipCompleteView(vm: vm, title: "Rip Failed", isError: true, message: message)
         } }
-    }
-
-    // MARK: - Status detail
-
-    private var statusDetail: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
-                Text("Rip Status")
-                    .font(.title3).bold()
-
-                if statusVM.file.status == .ripping, let job = statusVM.file.currentJob {
-                    VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
-                        statusRow("Title", job.title)
-                        statusRow("Progress", job.progress)
-                        if let item = job.currentItem {
-                            statusRow("Current", item)
-                        }
-                        ProgressView(value: job.progress.progressFraction)
-                            .tint(FrostTheme.frostCyan)
-                    }
-                    .padding(FrostTheme.paddingM)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: FrostTheme.cornerRadius))
-                } else {
-                    Text("No rip in progress.")
-                        .foregroundStyle(.secondary)
-                }
-
-                if !statusVM.file.history.isEmpty {
-                    Text("Recent History")
-                        .font(.headline)
-                    VStack(alignment: .leading, spacing: FrostTheme.paddingS) {
-                        ForEach(Array(statusVM.file.history.prefix(10).enumerated()), id: \.offset) { _, entry in
-                            HStack(alignment: .top) {
-                                Text(entry.title)
-                                    .font(.caption)
-                                    .lineLimit(1)
-                                Spacer()
-                                Text(entry.startedAt, style: .date)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
-                            .padding(.vertical, 3)
-                            Divider()
-                        }
-                    }
-                }
-            }
-            .padding(FrostTheme.paddingL)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func statusRow(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .frame(width: 60, alignment: .leading)
-            Text(value)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-        }
     }
 
     // MARK: - Queue detail

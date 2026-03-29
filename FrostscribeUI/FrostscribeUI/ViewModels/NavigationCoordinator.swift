@@ -2,7 +2,6 @@ import Foundation
 
 enum AppSection: Hashable {
     case rip
-    case ripJob
     case encodeQueue
     case history
     case logs
@@ -11,7 +10,6 @@ enum AppSection: Hashable {
     var label: String {
         switch self {
         case .rip:         return "Rip"
-        case .ripJob:      return "Rip Job"
         case .encodeQueue: return "Encode Queue"
         case .history:     return "History"
         case .logs:        return "Logs"
@@ -22,7 +20,6 @@ enum AppSection: Hashable {
     var icon: String {
         switch self {
         case .rip:         return "opticaldisc"
-        case .ripJob:      return "waveform"
         case .encodeQueue: return "list.bullet"
         case .history:     return "clock.arrow.trianglehead.counterclockwise.rotate.90"
         case .logs:        return "doc.text"

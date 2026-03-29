@@ -15,7 +15,7 @@ struct MenuBarView: View {
             StatusSectionView()
                 .padding(FrostTheme.paddingM)
                 .contentShape(Rectangle())
-                .onTapGesture { openSection(.ripJob) }
+                .onTapGesture { openSection(.rip) }
             FrostTheme.divider.frame(height: 1)
             QueueSectionView()
                 .padding(FrostTheme.paddingM)

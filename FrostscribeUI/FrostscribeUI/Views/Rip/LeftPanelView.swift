@@ -7,7 +7,6 @@ struct LeftPanelView: View {
 
     private static let sections: [(label: String, icon: String, section: AppSection)] = [
         ("Rip",          "opticaldisc",            .rip),
-        ("Rip Job",      "waveform",               .ripJob),
         ("Encode Queue", "list.bullet",             .encodeQueue),
         ("History",      "clock.arrow.trianglehead.counterclockwise.rotate.90", .history),
         ("Logs",         "doc.text",               .logs),
