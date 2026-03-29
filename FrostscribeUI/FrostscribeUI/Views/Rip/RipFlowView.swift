@@ -65,7 +65,7 @@ struct RipFlowView: View {
         case .idle:
             RipIdleView(vm: vm)
         case .scanning:
-            RipScanningView()
+            RipScanningView(message: vm.scanMessage)
         case .identify(let scanResult):
             TMDBSearchView(vm: vm, scanResult: scanResult)
         case .tvEpisode(let scanResult, let mediaTitle, let year):
@@ -232,41 +232,42 @@ struct RipFlowView: View {
                             let encoded = queueVM.jobs.contains {
                                 $0.title == entry.title && $0.status == .done
                             }
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(alignment: .top) {
+                            let entryYear = entry.title.range(of: #"\((\d{4})\)"#, options: .regularExpression)
+                                .map { String(entry.title[$0].dropFirst().dropLast()) }
+                            HStack(alignment: .top, spacing: FrostTheme.paddingM) {
+                                // Left: title + year
+                                VStack(alignment: .leading, spacing: 2) {
                                     Text(entry.title)
-                                        .font(.subheadline)
-                                        .bold()
+                                        .font(.subheadline).bold()
                                         .lineLimit(1)
-                                    Spacer()
+                                    if let y = entryYear {
+                                        Text(y)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    if let r = record {
+                                        HStack(spacing: 4) {
+                                            Text(r.discType.displayName)
+                                            Text("·")
+                                            Text(formatBytes(r.titleSizeBytes))
+                                            Text("·")
+                                            Text(formatDuration(r.ripDurationSeconds))
+                                        }
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                    }
+                                }
+                                Spacer()
+                                // Right: date + pills
+                                VStack(alignment: .trailing, spacing: 4) {
                                     Text(entry.startedAt, style: .date)
                                         .font(.caption2)
                                         .foregroundStyle(.tertiary)
-                                }
-                                HStack(spacing: 6) {
-                                    if let r = record {
-                                        Text(r.discType.displayName)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                        Text("·")
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
-                                        Text(formatBytes(r.titleSizeBytes))
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                        Text("·")
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
-                                        Text(formatDuration(r.ripDurationSeconds))
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                // Completion pills
-                                HStack(spacing: 6) {
-                                    pill("Ripped", color: FrostTheme.teal)
-                                    if encoded {
-                                        pill("Encoded", color: FrostTheme.glacier)
+                                    HStack(spacing: 4) {
+                                        pill("Ripped", color: FrostTheme.teal)
+                                        if encoded {
+                                            pill("Encoded", color: FrostTheme.glacier)
+                                        }
                                     }
                                 }
                             }

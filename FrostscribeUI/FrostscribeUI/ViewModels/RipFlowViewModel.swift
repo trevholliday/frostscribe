@@ -26,6 +26,7 @@ final class RipFlowViewModel {
     private(set) var phase: Phase = .idle
     private(set) var tmdbResults: [TMDBClient.SearchResult] = []
     private(set) var isSearching = false
+    private(set) var scanMessage: String = ""
 
     // Persisted across phases for the left panel / carousel
     private(set) var posterURL: URL?
@@ -153,7 +154,17 @@ final class RipFlowViewModel {
             let config = try ConfigManager().load()
             storedConfig = config
             let runner = MakeMKVRunner(binPath: config.makemkvBin)
-            let result = try await runner.scan()
+            let result = try await runner.scan { [weak self] line in
+                guard let self else { return }
+                switch MakeMKVParser.parse(line) {
+                case .message(let msg) where !msg.isEmpty:
+                    Task { @MainActor in self.scanMessage = msg }
+                case .progressTitle(let msg) where !msg.isEmpty:
+                    Task { @MainActor in self.scanMessage = msg }
+                default:
+                    break
+                }
+            }
             guard !result.titles.isEmpty else {
                 phase = .error("No titles found. Is a disc inserted?")
                 return
@@ -407,6 +418,7 @@ final class RipFlowViewModel {
         storedConfig = nil
         tmdbResults = []
         isSearching = false
+        scanMessage = ""
         posterURL = nil
         backdropURLs = []
         mediaDetails = nil
