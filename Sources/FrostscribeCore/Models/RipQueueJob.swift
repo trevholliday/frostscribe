@@ -6,6 +6,7 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         case ripping
         case done
         case error
+        case cancelled
     }
 
     public var id: String

@@ -4,6 +4,28 @@ import FrostscribeCore
 struct StatusCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "status",
+        abstract: "Show or reset the current ripper status.",
+        subcommands: [StatusShow.self, StatusReset.self],
+        defaultSubcommand: StatusShow.self
+    )
+}
+
+struct StatusReset: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "reset",
+        abstract: "Force status back to idle (use when the UI is stuck after a crash)."
+    )
+
+    func run() throws {
+        let manager = StatusManager(appSupportURL: ConfigManager.appSupportURL)
+        try manager.write(status: .idle, job: nil)
+        Colors.success("Status reset to idle.")
+    }
+}
+
+struct StatusShow: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "show",
         abstract: "Show the current ripper status."
     )
 

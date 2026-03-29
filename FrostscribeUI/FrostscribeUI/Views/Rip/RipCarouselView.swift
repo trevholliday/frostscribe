@@ -23,6 +23,15 @@ struct RipRippingView: View {
                     }
                     .frame(maxHeight: .infinity)
                 }
+
+                Divider().opacity(0.2)
+                HStack {
+                    Spacer()
+                    Button("Abort Rip", role: .destructive) { vm.reset() }
+                        .buttonStyle(.frostDestructive)
+                    Spacer()
+                }
+                .padding(FrostTheme.paddingM)
             }
         }
     }
@@ -37,7 +46,7 @@ struct RipRippingView: View {
                 if let tagline = details.tagline {
                     Text(tagline)
                         .italic()
-                        .font(.callout)
+                        .font(.system(size: 20))
                         .foregroundStyle(.secondary)
                 }
 
@@ -45,9 +54,9 @@ struct RipRippingView: View {
                 if let overview = details.overview {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Overview")
-                            .font(.headline)
+                            .font(.system(size: 21, weight: .semibold))
                         Text(overview)
-                            .font(.callout)
+                            .font(.system(size: 20))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -63,7 +72,7 @@ struct RipRippingView: View {
             VStack(spacing: FrostTheme.paddingM) {
                 ProgressView().tint(FrostTheme.frostCyan)
                 Text("Loading details…")
-                    .font(.caption)
+                    .font(.system(size: 15))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
@@ -77,10 +86,10 @@ struct RipRippingView: View {
             ForEach(Array(crew.enumerated()), id: \.offset) { _, member in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(member.name)
-                        .font(.subheadline).bold()
+                        .font(.system(size: 19, weight: .bold))
                         .lineLimit(1)
                     Text(member.job)
-                        .font(.caption)
+                        .font(.system(size: 15))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -154,7 +163,7 @@ struct PeekingCarouselView: View {
         ZStack {
             FrostTheme.background
             Image(systemName: "snowflake")
-                .font(.system(size: 48))
+                .font(.system(size: 60))
                 .foregroundStyle(FrostTheme.teal.opacity(0.2))
         }
     }
@@ -169,6 +178,47 @@ struct PeekingCarouselView: View {
                 var t = Transaction()
                 t.disablesAnimations = true
                 withTransaction(t) { currentIndex = imageURLs.count }
+            }
+        }
+    }
+}
+
+// MARK: - Log overlay
+
+struct RipLogOverlay: View {
+    let message: String
+
+    private struct LogEntry: Identifiable {
+        let id = UUID()
+        let text: String
+    }
+
+    @State private var logLines: [LogEntry] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(Array(logLines.enumerated()), id: \.element.id) { index, entry in
+                let age = Double(index) / Double(max(logLines.count - 1, 1))
+                Text(entry.text)
+                    .font(.system(size: 15, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.35 + age * 0.65))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .top).combined(with: .opacity)
+                    ))
+            }
+        }
+        .padding(.horizontal, FrostTheme.paddingL)
+        .padding(.bottom, FrostTheme.paddingM)
+        .frame(maxWidth: .infinity)
+        .onChange(of: message) { _, newValue in
+            guard !newValue.isEmpty else { return }
+            withAnimation(.easeInOut(duration: 0.25)) {
+                logLines.append(LogEntry(text: newValue))
+                if logLines.count > 5 { logLines.removeFirst() }
             }
         }
     }

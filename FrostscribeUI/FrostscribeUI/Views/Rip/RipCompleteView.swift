@@ -14,11 +14,10 @@ struct RipCompleteView: View {
         VStack(spacing: FrostTheme.paddingL) {
             Spacer()
             Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                .font(.system(size: 52))
+                .font(.system(size: 65))
                 .foregroundStyle(isError ? FrostTheme.alert : FrostTheme.teal)
             Text(title)
-                .font(.title3)
-                .bold()
+                .font(.system(size: 25, weight: .bold))
                 .lineLimit(1)
             Text(message)
                 .foregroundStyle(.secondary)
@@ -33,7 +32,7 @@ struct RipCompleteView: View {
             }
             if ejected {
                 Label("Disc ejected", systemImage: "checkmark.circle")
-                    .font(.caption)
+                    .font(.system(size: 15))
                     .foregroundStyle(FrostTheme.teal)
             } else {
                 Button {
@@ -52,7 +51,7 @@ struct RipCompleteView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .font(.caption)
+                .font(.system(size: 15))
                 .disabled(isEjecting)
             }
             Spacer()

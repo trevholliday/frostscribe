@@ -8,26 +8,27 @@ struct ConfirmationView: View {
 
     var body: some View {
         VStack(spacing: FrostTheme.paddingL) {
-            if vm.canGoBack {
-                HStack {
+            HStack {
+                if vm.canGoBack {
                     Button { vm.goBack() } label: {
                         Label("Back", systemImage: "chevron.left")
-                            .font(.caption)
+                            .font(.system(size: 15))
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    Spacer()
                 }
-                .padding(.horizontal, FrostTheme.paddingL)
-                .padding(.top, FrostTheme.paddingM)
+                Spacer()
+                Button("Abort Rip", role: .destructive) { vm.reset() }
+                    .buttonStyle(.frostDestructive)
             }
+            .padding(.horizontal, FrostTheme.paddingL)
+            .padding(.top, FrostTheme.paddingM)
             Spacer()
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 40))
+                .font(.system(size: 50))
                 .foregroundStyle(FrostTheme.glacier)
             Text("Ready to Rip")
-                .font(.title3)
-                .bold()
+                .font(.system(size: 25, weight: .bold))
 
             VStack(spacing: 0) {
                 infoRow(label: "Title", value: encodeInput.title)
@@ -71,10 +72,10 @@ struct ConfirmationView: View {
     private var pathRow: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Output")
-                .font(.caption)
+                .font(.system(size: 15))
                 .foregroundStyle(.secondary)
             Text(encodeInput.outputURL.path)
-                .font(.caption.monospaced())
+                .font(.system(size: 15, design: .monospaced))
                 .foregroundStyle(.primary)
                 .lineLimit(3)
                 .truncationMode(.middle)
@@ -85,11 +86,11 @@ struct ConfirmationView: View {
     private func infoRow(label: String, value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)
-                .font(.caption)
+                .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .leading)
             Text(value)
-                .font(.caption)
+                .font(.system(size: 15))
                 .lineLimit(2)
             Spacer()
         }

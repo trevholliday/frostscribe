@@ -19,6 +19,8 @@
 		E1B2C3D4E5F6A7B8C9D0E1F8 /* QueueRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */; };
 		E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */; };
 		LV01C3D4E5F6A7B8C9D0E1F2 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = LV01C3D4E5F6A7B8C9D0E1F1 /* LogsView.swift */; };
+		SV01C3D4E5F6A7B8C9D0E1F2 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SV01C3D4E5F6A7B8C9D0E1F1 /* StatsView.swift */; };
+		SM01C3D4E5F6A7B8C9D0E1F2 /* StatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = SM01C3D4E5F6A7B8C9D0E1F1 /* StatsViewModel.swift */; };
 		F1B2C3D4E5F6A7B8C9D0E1F3 /* FrostscribeCore in Frameworks */ = {isa = PBXBuildFile; productRef = F1B2C3D4E5F6A7B8C9D0E1F5 /* FrostscribeCore */; };
 		AW01C3D4E5F6A7B8C9D0E1F2 /* AppSupportWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AW01C3D4E5F6A7B8C9D0E1F1 /* AppSupportWatcher.swift */; };
 		F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B2C3D4E5F6A7B8C9D0E1F1 /* VigilWatcher.swift */; };
@@ -72,6 +74,8 @@
 		D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueRowView.swift; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		LV01C3D4E5F6A7B8C9D0E1F1 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
+		SV01C3D4E5F6A7B8C9D0E1F1 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		SM01C3D4E5F6A7B8C9D0E1F1 /* StatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsViewModel.swift; sourceTree = "<group>"; };
 		FB01C3D4E5F6A7B8C9D0E1F1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D1B2C3D4E5F6A7B8C9D0E1F7 /* FrostscribeUI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FrostscribeUI.entitlements; sourceTree = "<group>"; };
@@ -175,6 +179,7 @@
 				C1B2C3D4E5F6A7B8C9D0E1F9 /* QueueViewModel.swift */,
 				FA01C3D4E5F6A7B8C9D0E1F1 /* RipFlowViewModel.swift */,
 				FC01C3D4E5F6A7B8C9D0E1F1 /* NavigationCoordinator.swift */,
+				SM01C3D4E5F6A7B8C9D0E1F1 /* StatsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -187,6 +192,7 @@
 				D1B2C3D4E5F6A7B8C9D0E1F4 /* QueueRowView.swift */,
 				D1B2C3D4E5F6A7B8C9D0E1F5 /* SettingsView.swift */,
 				LV01C3D4E5F6A7B8C9D0E1F1 /* LogsView.swift */,
+				SV01C3D4E5F6A7B8C9D0E1F1 /* StatsView.swift */,
 				FA00C3D4E5F6A7B8C9D0E1F1 /* Rip */,
 			);
 			path = Views;
@@ -305,6 +311,8 @@
 				E1B2C3D4E5F6A7B8C9D0E1F8 /* QueueRowView.swift in Sources */,
 				E1B2C3D4E5F6A7B8C9D0E1F9 /* SettingsView.swift in Sources */,
 				LV01C3D4E5F6A7B8C9D0E1F2 /* LogsView.swift in Sources */,
+				SV01C3D4E5F6A7B8C9D0E1F2 /* StatsView.swift in Sources */,
+				SM01C3D4E5F6A7B8C9D0E1F2 /* StatsViewModel.swift in Sources */,
 				AW01C3D4E5F6A7B8C9D0E1F2 /* AppSupportWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F3 /* VigilWatcher.swift in Sources */,
 				F3B2C3D4E5F6A7B8C9D0E1F4 /* VigilViewModel.swift in Sources */,

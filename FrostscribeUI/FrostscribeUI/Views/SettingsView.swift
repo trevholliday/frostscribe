@@ -12,6 +12,9 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Worker") {
+                WorkerHealthSection()
+            }
             Section("Paths") {
                 textRow("Movies directory",  hint: "/Volumes/Media/Movies",       value: $config.moviesDir,    saved: savedConfig.moviesDir)
                 textRow("TV Shows directory",hint: "/Volumes/Media/TV Shows",     value: $config.tvDir,        saved: savedConfig.tvDir)
@@ -172,6 +175,7 @@ struct SettingsView: View {
 
     // MARK: - Config I/O
 
+
     private func loadConfig() {
         guard let loaded = try? configManager.load() else { return }
         config = loaded
@@ -190,6 +194,125 @@ struct SettingsView: View {
             }
         } catch {
             saveError = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Worker health section
+
+private struct WorkerHealthSection: View {
+    private struct Health {
+        var isRunning = false
+        var pid: String = "-"
+        var pending = 0
+        var running = 0
+        var lastLog: String = ""
+    }
+
+    @State private var health = Health()
+    @State private var reinstalling = false
+    private let timer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: FrostTheme.paddingM) {
+            // Status row
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(health.isRunning ? FrostTheme.teal : FrostTheme.alert)
+                    .frame(width: 8, height: 8)
+                Text(health.isRunning ? "Running (pid \(health.pid))" : "Stopped")
+                    .font(.system(size: 15))
+                    .foregroundStyle(health.isRunning ? FrostTheme.teal : FrostTheme.alert)
+            }
+
+            // Queue counts
+            HStack(spacing: FrostTheme.paddingL) {
+                statPill(label: "Pending", value: health.pending)
+                statPill(label: "Running", value: health.running)
+            }
+
+            // Last log line
+            if !health.lastLog.isEmpty {
+                Text(health.lastLog)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            // Reinstall button
+            Button(reinstalling ? "Reinstalling…" : "Reinstall & Restart Worker") {
+                reinstall()
+            }
+            .buttonStyle(.frostPrimary)
+            .disabled(reinstalling)
+        }
+        .onAppear { refresh() }
+        .onReceive(timer) { _ in refresh() }
+    }
+
+    private func statPill(label: String, value: Int) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 19, weight: .bold).monospacedDigit())
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func refresh() {
+        // Worker running state — use `launchctl list` (no args) which outputs PID\tExit\tLabel per line
+        let check = Process()
+        check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        check.arguments = ["list"]
+        let pipe = Pipe()
+        check.standardOutput = pipe
+        check.standardError = FileHandle.nullDevice
+        try? check.run()
+        check.waitUntilExit()
+        let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        // Find the line for our label and extract the PID (first tab-separated column)
+        let line = out.split(separator: "\n").first { $0.contains("com.frostscribe.worker") }
+        let pid = line?.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "-"
+        health.isRunning = pid != "-"
+        health.pid = pid
+
+        // Queue counts
+        let queueURL = ConfigManager.appSupportURL.appending(path: "rip_queue.json")
+        if let data = try? Data(contentsOf: queueURL),
+           let queue = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let jobs = queue["jobs"] as? [[String: Any]] {
+            health.pending = jobs.filter { ($0["status"] as? String) == "pending" }.count
+            health.running = jobs.filter { ($0["status"] as? String) == "running" }.count
+        }
+
+        // Last log line
+        let store = LogStore(appSupportURL: ConfigManager.appSupportURL)
+        health.lastLog = store.load(limit: 1).first?.message ?? ""
+    }
+
+    private func reinstall() {
+        reinstalling = true
+        Task.detached {
+            let start = Date()
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/local/bin/frostscribe")
+            p.arguments = ["worker", "reinstall"]
+            p.standardOutput = FileHandle.nullDevice
+            p.standardError = FileHandle.nullDevice
+            try? p.run()
+            p.waitUntilExit()
+            // Always show loading for at least 600ms
+            let elapsed = Date().timeIntervalSince(start)
+            let remaining = 0.6 - elapsed
+            if remaining > 0 {
+                try? await Task.sleep(for: .seconds(remaining))
+            }
+            await MainActor.run {
+                reinstalling = false
+                refresh()
+            }
         }
     }
 }

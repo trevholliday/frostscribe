@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RipScanningView: View {
     let message: String
+    let onAbort: () -> Void
 
     private struct LogEntry: Identifiable {
         let id = UUID()
@@ -23,7 +24,7 @@ struct RipScanningView: View {
                 ForEach(Array(logLines.enumerated()), id: \.element.id) { index, entry in
                     let age = Double(index) / Double(max(logLines.count - 1, 1))
                     Text(entry.text)
-                        .font(.caption.monospaced())
+                        .font(.system(size: 15, design: .monospaced))
                         .foregroundStyle(.tertiary.opacity(0.35 + age * 0.65))
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -38,6 +39,8 @@ struct RipScanningView: View {
             .clipped()
             .padding(.horizontal, FrostTheme.paddingL)
 
+            Button("Abort Rip", role: .destructive) { onAbort() }
+                .buttonStyle(.frostDestructive)
             Spacer()
         }
         .onChange(of: message) { _, newValue in

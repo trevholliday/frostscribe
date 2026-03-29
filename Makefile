@@ -9,10 +9,30 @@
 # One-time tap repo setup (run after creating homebrew-frostscribe on GitHub):
 #   make setup-tap
 
-.PHONY: build test build-ui release setup-tap
+.PHONY: build test build-ui install release setup-tap
 
 build:
 	swift build -c release
+
+install:
+	@echo "→ Building CLI and worker..."
+	swift build -c release --product frostscribe --product frostscribe-worker
+	@echo "→ Installing CLI binaries to /usr/local/bin..."
+	cp $(CURDIR)/.build/release/frostscribe /usr/local/bin/frostscribe
+	cp $(CURDIR)/.build/release/frostscribe-worker /usr/local/bin/frostscribe-worker
+	@echo "→ Building FrostscribeUI..."
+	xcodebuild -project FrostscribeUI/FrostscribeUI.xcodeproj \
+	           -scheme FrostscribeUI \
+	           -configuration Release \
+	           -derivedDataPath /tmp/frostscribe-build \
+	           build 2>&1 | grep -E "error:|warning:|BUILD"
+	@echo "→ Installing FrostscribeUI..."
+	rm -rf /Applications/FrostscribeUI.app
+	cp -R /tmp/frostscribe-build/Build/Products/Release/FrostscribeUI.app /Applications/
+	@echo "→ Reinstalling and starting worker..."
+	frostscribe worker reinstall
+	@echo ""
+	@echo "✓ All done."
 
 test:
 	swift test

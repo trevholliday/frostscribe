@@ -3,6 +3,7 @@ import FrostscribeCore
 
 struct RipFlowView: View {
     @State private var vm = RipFlowViewModel()
+    @State private var showStats = false
     @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(StatusViewModel.self) private var statusVM
     @Environment(QueueViewModel.self) private var queueVM
@@ -37,9 +38,9 @@ struct RipFlowView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { navCoordinator.selectedSection = .rip }
                 }
-            } else if vm.canCancel {
+            } else if vm.canAbort {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", role: .destructive) { vm.reset() }
+                    Button("Abort Rip", role: .destructive) { vm.reset() }
                 }
             }
         }
@@ -63,7 +64,7 @@ struct RipFlowView: View {
         case .idle:
             RipIdleView(vm: vm)
         case .scanning:
-            RipScanningView(message: vm.scanMessage)
+            RipScanningView(message: vm.scanMessage, onAbort: { vm.reset() })
         case .identify(let scanResult):
             TMDBSearchView(vm: vm, scanResult: scanResult)
         case .tvEpisode(let scanResult, let mediaTitle, let year):
@@ -96,11 +97,11 @@ struct RipFlowView: View {
             VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
                 HStack {
                     Text("Encode Queue")
-                        .font(.title3).bold()
+                        .font(.system(size: 25, weight: .bold))
                     Spacer()
                     if queueVM.activeCount > 0 {
                         Text("\(queueVM.activeCount) active")
-                            .font(.caption)
+                            .font(.system(size: 15))
                             .foregroundStyle(FrostTheme.teal)
                     }
                 }
@@ -115,23 +116,22 @@ struct RipFlowView: View {
                             HStack(alignment: .top, spacing: FrostTheme.paddingM) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(job.title)
-                                        .font(.subheadline)
-                                        .bold()
+                                        .font(.system(size: 19, weight: .bold))
                                         .lineLimit(1)
                                     if let ep = job.episode {
                                         Text(ep)
-                                            .font(.caption)
+                                            .font(.system(size: 15))
                                             .foregroundStyle(.secondary)
                                     }
                                     Text(URL(fileURLWithPath: job.output).lastPathComponent)
-                                        .font(.caption.monospaced())
+                                        .font(.system(size: 15, design: .monospaced))
                                         .foregroundStyle(.tertiary)
                                         .lineLimit(1)
                                         .truncationMode(.middle)
                                 }
                                 Spacer()
                                 Text(job.status.rawValue.capitalized)
-                                    .font(.caption)
+                                    .font(.system(size: 15))
                                     .foregroundStyle(job.status == .encoding ? FrostTheme.teal : .secondary)
                             }
                             .padding(.vertical, FrostTheme.paddingS)
@@ -151,8 +151,23 @@ struct RipFlowView: View {
         let ripRecords = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL).load()
         return ScrollView {
             VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
-                Text("History")
-                    .font(.title3).bold()
+                HStack {
+                    Text("History")
+                        .font(.system(size: 25, weight: .bold))
+                    Spacer()
+                    Button {
+                        showStats = true
+                    } label: {
+                        Label("Stats", systemImage: "chart.bar.fill")
+                            .font(.system(size: 15))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(FrostTheme.glacier)
+                }
+                .sheet(isPresented: $showStats) {
+                    StatsView()
+                        .frame(minWidth: 640, minHeight: 480)
+                }
 
                 if statusVM.file.history.isEmpty {
                     Text("No history yet.")
@@ -174,12 +189,12 @@ struct RipFlowView: View {
                                 // Left: title + year
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(entry.title)
-                                        .font(.subheadline).bold()
+                                        .font(.system(size: 19, weight: .bold))
                                         .lineLimit(1)
                                         .foregroundStyle(ripFailed || encodeFailed ? FrostTheme.alert : .primary)
                                     if let y = entryYear {
                                         Text(y)
-                                            .font(.caption)
+                                            .font(.system(size: 15))
                                             .foregroundStyle(.secondary)
                                     }
                                     if let r = record {
@@ -190,7 +205,7 @@ struct RipFlowView: View {
                                             Text("·")
                                             Text(formatDuration(r.ripDurationSeconds))
                                         }
-                                        .font(.caption2)
+                                        .font(.system(size: 14))
                                         .foregroundStyle(.tertiary)
                                     }
                                 }
@@ -198,7 +213,7 @@ struct RipFlowView: View {
                                 // Right: date + pills
                                 VStack(alignment: .trailing, spacing: 4) {
                                     Text(entry.startedAt, style: .date)
-                                        .font(.caption2)
+                                        .font(.system(size: 14))
                                         .foregroundStyle(.tertiary)
                                     HStack(spacing: 4) {
                                         if ripFailed {
@@ -246,18 +261,18 @@ struct RipFlowView: View {
             }
         return VStack(alignment: .leading, spacing: FrostTheme.paddingS) {
             Text("Rip Rates")
-                .font(.subheadline).bold()
+                .font(.system(size: 19, weight: .bold))
             ForEach(rows, id: \.type) { row in
                 HStack {
                     Text(row.type.displayName)
-                        .font(.caption)
+                        .font(.system(size: 15))
                         .foregroundStyle(.secondary)
                         .frame(width: 60, alignment: .leading)
                     Text(String(format: "%.1f MB/s", row.avgMBps))
-                        .font(.caption.monospaced())
+                        .font(.system(size: 15, design: .monospaced))
                         .foregroundStyle(FrostTheme.teal)
                     Text("(\(row.count) rip\(row.count == 1 ? "" : "s"))")
-                        .font(.caption2)
+                        .font(.system(size: 14))
                         .foregroundStyle(.tertiary)
                 }
             }
@@ -268,7 +283,7 @@ struct RipFlowView: View {
 
     private func pill(_ label: String, color: Color) -> some View {
         Text(label)
-            .font(.caption2.bold())
+            .font(.system(size: 14, weight: .bold))
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)

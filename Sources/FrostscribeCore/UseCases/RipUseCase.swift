@@ -68,6 +68,13 @@ public final class RipUseCase: Sendable {
 
         let progressJob = ProgressJobRef(base: ripJob)
 
+        // Intercept messages to surface them in status.json for the UI
+        let wrappedMessage: @Sendable (String) -> Void = { msg in
+            progressJob.update(message: msg)
+            try? self.status.write(status: .ripping, job: progressJob.job)
+            onMessage(msg)
+        }
+
         // Poll file size every 500ms for real-time progress — PRGV:current resets per segment.
         let expectedBytes = input.titleSizeBytes
         let sizePoller = Task {
@@ -85,7 +92,7 @@ public final class RipUseCase: Sendable {
         try await runner.rip(
             titleNumber: input.titleNumber,
             to: tempDir,
-            onMessage: onMessage,
+            onMessage: wrappedMessage,
             onProgress: { _ in }   // progress now driven by file size above
         )
         sizePoller.cancel()
@@ -119,6 +126,7 @@ private final class ProgressJobRef: @unchecked Sendable {
     private(set) var job: RipJob
     init(base: RipJob) { self.job = base }
     func update(pct: Int) { job.progress = "\(pct)%" }
+    func update(message: String) { job.currentItem = message }
 }
 
 extension RipUseCase {

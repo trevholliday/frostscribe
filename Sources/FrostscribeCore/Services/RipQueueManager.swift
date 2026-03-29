@@ -44,6 +44,38 @@ public final class RipQueueManager: @unchecked Sendable {
         }
     }
 
+    /// Mark a job as cancelled so the worker terminates it.
+    public func markCancelled(id: String) throws {
+        try lock.withLock {
+            var jobs = try _read()
+            guard let index = jobs.firstIndex(where: { $0.id == id }) else { return }
+            jobs[index].status = .cancelled
+            try _write(jobs)
+        }
+    }
+
+    /// Remove all jobs in a terminal state (done / error / cancelled), keeping pending and ripping.
+    public func removeTerminal() throws {
+        try lock.withLock {
+            let jobs = try _read()
+            try _write(jobs.filter { $0.status == .pending || $0.status == .ripping })
+        }
+    }
+
+    /// Reset any job stuck in `.ripping` back to `.pending` so the worker retries it.
+    public func resetStuck() throws -> Int {
+        try lock.withLock {
+            var jobs = try _read()
+            var count = 0
+            for i in jobs.indices where jobs[i].status == .ripping {
+                jobs[i].status = .pending
+                count += 1
+            }
+            try _write(jobs)
+            return count
+        }
+    }
+
     private func _read() throws -> [RipQueueJob] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
         let data = try Data(contentsOf: fileURL)

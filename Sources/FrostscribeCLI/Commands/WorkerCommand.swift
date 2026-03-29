@@ -15,7 +15,9 @@ struct WorkerCommand: ParsableCommand {
             WorkerStart.self,
             WorkerStop.self,
             WorkerRestart.self,
+            WorkerReinstall.self,
             WorkerStatus.self,
+            WorkerHealth.self,
         ]
     )
 }
@@ -141,6 +143,117 @@ struct WorkerStatus: ParsableCommand {
             Colors.info("Run \(Colors.bold)frostscribe queue\(Colors.reset) to see active encode jobs.")
         } else {
             Colors.info("Run \(Colors.bold)frostscribe worker start\(Colors.reset) to start the worker.")
+        }
+        print()
+    }
+}
+
+struct WorkerReinstall: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "reinstall",
+        abstract: "Tear down, reinstall, and restart the worker, then open the UI."
+    )
+
+    func run() throws {
+        Colors.info("Stopping worker...")
+        _ = launchctl("bootout", "gui/\(getuid())/\(label)")
+        Thread.sleep(forTimeInterval: 0.5)
+
+        let binPath = resolveWorkerBin()
+        let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path
+
+        try FileManager.default.createDirectory(
+            at: ConfigManager.appSupportURL,
+            withIntermediateDirectories: true
+        )
+
+        let plist = buildPlist(binPath: binPath, logPath: logPath)
+        try plist.write(to: plistURL, atomically: true, encoding: .utf8)
+        Colors.info("Installing plist at \(plistURL.path)...")
+
+        let bootstrap = launchctl("bootstrap", "gui/\(getuid())", plistURL.path)
+        guard bootstrap == 0 else {
+            Colors.error("Failed to install worker (launchctl exited \(bootstrap)).")
+            throw ExitCode.failure
+        }
+
+        Colors.info("Starting worker...")
+        _ = launchctl("start", label)
+
+        Colors.info("Opening FrostscribeUI...")
+        let open = Process()
+        open.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        open.arguments = ["-a", "FrostscribeUI"]
+        try? open.run()
+
+        Colors.success("Reinstall complete.")
+    }
+}
+
+struct WorkerHealth: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "health",
+        abstract: "Show worker health: running state, active job, and recent log lines."
+    )
+
+    func run() throws {
+        Colors.section("Worker Health")
+        print()
+
+        // --- Running state ---
+        let checkPid = Process()
+        checkPid.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        checkPid.arguments = ["list", label]
+        let pipe = Pipe()
+        checkPid.standardOutput = pipe
+        checkPid.standardError = FileHandle.nullDevice
+        try? checkPid.run()
+        checkPid.waitUntilExit()
+        let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let pid = out.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "-"
+        let isRunning = pid != "-"
+
+        if isRunning {
+            print("  \(Colors.bold)State\(Colors.reset)    \(Colors.frostCyan)running\(Colors.reset) (pid \(pid))")
+        } else {
+            print("  \(Colors.bold)State\(Colors.reset)    \(Colors.dim)stopped\(Colors.reset)")
+        }
+
+        // --- Queue status ---
+        let queueURL = ConfigManager.appSupportURL.appending(path: "rip_queue.json")
+        if let data = try? Data(contentsOf: queueURL),
+           let queue = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let jobs = queue["jobs"] as? [[String: Any]] {
+            let pending  = jobs.filter { ($0["status"] as? String) == "pending" }.count
+            let running  = jobs.filter { ($0["status"] as? String) == "running" }.count
+            let done     = jobs.filter { ($0["status"] as? String) == "done" }.count
+            print("  \(Colors.bold)Queue\(Colors.reset)    pending=\(pending)  running=\(running)  done=\(done)")
+        }
+
+        // --- Status file ---
+        let statusURL = ConfigManager.appSupportURL.appending(path: "status.json")
+        if let data = try? Data(contentsOf: statusURL),
+           let status = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            let st = status["status"] as? String ?? "unknown"
+            let progress = status["progressPercent"] as? Int
+            var line = "  \(Colors.bold)Status\(Colors.reset)   \(st)"
+            if let p = progress { line += " (\(p)%)" }
+            print(line)
+        }
+
+        // --- Recent logs ---
+        print()
+        print("  \(Colors.bold)Recent logs\(Colors.reset)")
+        let store = LogStore(appSupportURL: ConfigManager.appSupportURL)
+        let entries = store.load(limit: 8)
+        if entries.isEmpty {
+            print("  \(Colors.dim)(no log entries)\(Colors.reset)")
+        } else {
+            for e in entries {
+                let ts = String(e.timestamp.prefix(19)).replacingOccurrences(of: "T", with: " ")
+                let color = e.level == "error" ? Colors.alert : Colors.dim
+                print("  \(Colors.dim)\(ts)\(Colors.reset)  \(color)\(e.message)\(Colors.reset)")
+            }
         }
         print()
     }

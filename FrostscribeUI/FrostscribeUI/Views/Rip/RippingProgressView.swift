@@ -8,23 +8,22 @@ struct RippingProgressView: View {
         VStack(spacing: FrostTheme.paddingL) {
             Spacer()
             Image(systemName: "opticaldisc")
-                .font(.system(size: 44))
+                .font(.system(size: 55))
                 .foregroundStyle(FrostTheme.teal)
                 .symbolEffect(.pulse, isActive: true)
             Text(title)
-                .font(.title3)
-                .bold()
+                .font(.system(size: 25, weight: .bold))
                 .lineLimit(1)
             VStack(spacing: FrostTheme.paddingS) {
                 ProgressView(value: Double(progress), total: 100)
                     .tint(FrostTheme.frostCyan)
                     .frame(width: 320)
                 Text("\(progress)%")
-                    .font(.caption.monospaced())
+                    .font(.system(size: 15, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
             Text("Ripping…")
-                .font(.caption)
+                .font(.system(size: 15))
                 .foregroundStyle(.secondary)
             Spacer()
         }

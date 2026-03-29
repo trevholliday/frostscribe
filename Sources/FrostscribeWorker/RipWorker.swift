@@ -7,6 +7,7 @@ actor RipWorker {
     private let statusManager: StatusManager
     private let makemkvBin: String
     private let hookRunner: HookRunner
+    private let logStore: LogStore
     private var running = false
     private let pollInterval: TimeInterval = 5
 
@@ -15,13 +16,15 @@ actor RipWorker {
         encodeQueueManager: any QueueManaging,
         statusManager: StatusManager,
         makemkvBin: String,
-        hookRunner: HookRunner
+        hookRunner: HookRunner,
+        logStore: LogStore
     ) {
         self.ripQueueManager    = ripQueueManager
         self.encodeQueueManager = encodeQueueManager
         self.statusManager      = statusManager
         self.makemkvBin         = makemkvBin
         self.hookRunner         = hookRunner
+        self.logStore           = logStore
     }
 
     func start() async {
@@ -44,7 +47,7 @@ actor RipWorker {
         do {
             jobs = try ripQueueManager.read()
         } catch {
-            log("Failed to read rip queue: \(error)")
+            log("Failed to read rip queue: \(error)", level: "error")
             return
         }
         guard let job = jobs.first(where: { $0.status == .pending }) else { return }
@@ -60,8 +63,7 @@ actor RipWorker {
 
             let mediaType = RipJob.MediaType(rawValue: job.mediaType) ?? .movie
             let discType  = DiscType(rawValue: job.discType) ?? .unknown
-
-            let ripInput = RipInput(
+            let ripInput  = RipInput(
                 titleNumber: job.titleNumber,
                 baseTemp: URL(fileURLWithPath: job.baseTempPath),
                 mediaType: mediaType,
@@ -69,7 +71,6 @@ actor RipWorker {
                 discType: discType,
                 titleSizeBytes: job.titleSizeBytes
             )
-
             let ripUseCase = RipUseCase(
                 runner: MakeMKVRunner(binPath: makemkvBin),
                 status: statusManager,
@@ -77,7 +78,39 @@ actor RipWorker {
                 historyStore: RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
             )
 
-            let mkvURL = try await ripUseCase.execute(ripInput) { _ in }
+            // Wrap in a Task so the cancellation watcher can cancel it.
+            let ripTask = Task { try await ripUseCase.execute(ripInput) { _ in } }
+
+            // Watch for a cancellation signal written to the queue by the UI.
+            let queueManager = ripQueueManager
+            let watchTask = Task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(2))
+                    if let updated = try? queueManager.read().first(where: { $0.id == job.id }),
+                       updated.status == .cancelled {
+                        ripTask.cancel()
+                        return
+                    }
+                }
+            }
+
+            let mkvURL: URL
+            do {
+                mkvURL = try await ripTask.value
+            } catch {
+                watchTask.cancel()
+                if error is CancellationError || ripTask.isCancelled {
+                    log("Rip cancelled: \(job.jobLabel)")
+                    try? ripQueueManager.updateStatus(id: job.id, status: .cancelled)
+                } else {
+                    log("Rip failed for \(job.jobLabel): \(error)", level: "error")
+                    try? ripQueueManager.updateStatus(id: job.id, status: .error,
+                                                     errorMessage: error.localizedDescription)
+                    hookRunner.fire(event: "rip_failed", title: "Rip Failed", body: job.jobLabel)
+                }
+                return
+            }
+            watchTask.cancel()
 
             // Hand off to encode queue
             try encodeQueueManager.add(
@@ -95,16 +128,17 @@ actor RipWorker {
             hookRunner.fire(event: "rip_complete", title: "Rip Complete",
                             body: "\(job.jobLabel) added to encode queue")
         } catch {
-            log("Rip failed for \(job.jobLabel): \(error)")
+            log("Rip failed for \(job.jobLabel): \(error)", level: "error")
             try? ripQueueManager.updateStatus(id: job.id, status: .error,
                                               errorMessage: error.localizedDescription)
             hookRunner.fire(event: "rip_failed", title: "Rip Failed", body: job.jobLabel)
         }
     }
 
-    private func log(_ message: String) {
+    private func log(_ message: String, level: String = "info") {
         let timestamp = ISO8601DateFormatter().string(from: Date())
         print("[\(timestamp)] \(message)")
         fflush(stdout)
+        logStore.append(timestamp: timestamp, message: message, level: level)
     }
 }

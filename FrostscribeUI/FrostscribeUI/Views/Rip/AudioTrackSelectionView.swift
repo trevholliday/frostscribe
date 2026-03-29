@@ -67,7 +67,7 @@ struct AudioTrackSelectionView: View {
                                         .bold()
                                     if track.isLossless {
                                         Text("lossless")
-                                            .font(.caption2)
+                                            .font(.system(size: 14))
                                             .padding(.horizontal, 5)
                                             .padding(.vertical, 1)
                                             .background(FrostTheme.teal.opacity(0.2),
@@ -76,7 +76,7 @@ struct AudioTrackSelectionView: View {
                                     }
                                 }
                                 Text(track.summary)
-                                    .font(.caption)
+                                    .font(.system(size: 15))
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -87,7 +87,7 @@ struct AudioTrackSelectionView: View {
             Divider()
             HStack {
                 Text("\(selectedIndices.count) of \(chosenTitle.audioTracks.count) selected")
-                    .font(.caption)
+                    .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("Continue") {
@@ -108,15 +108,17 @@ struct AudioTrackSelectionView: View {
             if vm.canGoBack {
                 Button { vm.goBack() } label: {
                     Label("Back", systemImage: "chevron.left")
-                        .font(.caption)
+                        .font(.system(size: 15))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
             }
             Spacer()
             Text("SELECT AUDIO TRACKS")
-                .font(.caption).bold().foregroundStyle(.secondary)
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(.secondary)
             Spacer()
+            Button("Abort Rip", role: .destructive) { vm.reset() }
+                .buttonStyle(.frostDestructive)
         }
         .padding(.horizontal, FrostTheme.paddingM)
         .padding(.vertical, FrostTheme.paddingS)

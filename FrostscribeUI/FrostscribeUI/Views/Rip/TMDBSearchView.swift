@@ -22,6 +22,15 @@ struct TMDBSearchView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Abort button row
+            HStack {
+                Spacer()
+                Button("Abort Rip", role: .destructive) { vm.reset() }
+                    .buttonStyle(.frostDestructive)
+            }
+            .padding(.horizontal, FrostTheme.paddingM)
+            .padding(.top, FrostTheme.paddingS)
+
             // Media type + search bar
             VStack(spacing: FrostTheme.spacing) {
                 Picker("Media Type", selection: $isTV) {
@@ -71,7 +80,7 @@ struct TMDBSearchView: View {
         VStack {
             Spacer()
             ProgressView().tint(FrostTheme.frostCyan)
-            Text("Searching…").foregroundStyle(.secondary).font(.caption)
+            Text("Searching…").foregroundStyle(.secondary).font(.system(size: 15))
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -94,7 +103,7 @@ struct TMDBSearchView: View {
             Spacer()
             Text("No TMDB key configured.").foregroundStyle(.secondary)
             Text("Add one in Settings, or enter the title manually.")
-                .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button("Enter manually") { showManualEntry = true }
                 .buttonStyle(.frostPrimary)
             Spacer()
@@ -129,7 +138,7 @@ struct TMDBSearchView: View {
     private var manualEntryForm: some View {
         VStack(alignment: .leading, spacing: FrostTheme.spacing) {
             Text("ENTER MANUALLY")
-                .font(.caption).bold().foregroundStyle(.secondary)
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(.secondary)
             HStack(spacing: FrostTheme.spacing) {
                 TextField("Title", text: $manualTitle)
                     .textFieldStyle(.frost)
@@ -175,10 +184,10 @@ private struct TMDBResultCard: View {
                         Color.white.opacity(0.04)
                         VStack(spacing: 6) {
                             Image(systemName: "film")
-                                .font(.system(size: 28))
+                                .font(.system(size: 35))
                                 .foregroundStyle(FrostTheme.teal.opacity(0.35))
                             Text(result.title)
-                                .font(.caption2)
+                                .font(.system(size: 14))
                                 .foregroundStyle(.tertiary)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 8)
@@ -191,16 +200,16 @@ private struct TMDBResultCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.title)
-                    .font(.subheadline.bold())
+                    .font(.system(size: 19, weight: .bold))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Text(result.year)
-                        .font(.caption)
+                        .font(.system(size: 15))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text(result.mediaType == .tv ? "TV" : "Movie")
-                        .font(.caption2.bold())
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(FrostTheme.teal)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)

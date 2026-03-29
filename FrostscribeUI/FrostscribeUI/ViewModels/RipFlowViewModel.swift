@@ -27,6 +27,8 @@ final class RipFlowViewModel {
     private(set) var tmdbResults: [TMDBClient.SearchResult] = []
     private(set) var isSearching = false
     private(set) var scanMessage: String = ""
+    private(set) var ripMessage: String = ""
+    private(set) var suggestedTitleNumber: Int? = nil
 
     // Persisted across phases for the left panel / carousel
     private(set) var posterURL: URL?
@@ -75,6 +77,13 @@ final class RipFlowViewModel {
         }
     }
 
+    var canAbort: Bool {
+        switch phase {
+        case .idle, .done, .error: return false
+        default: return true
+        }
+    }
+
     var isRipping: Bool {
         if case .ripping = phase { return true }
         return false
@@ -89,6 +98,7 @@ final class RipFlowViewModel {
     private var storedConfig: Config?
     private var ripTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var currentRipJobId: String?
 
     // MARK: - Initialize (resume in-progress rip on launch)
 
@@ -117,6 +127,7 @@ final class RipFlowViewModel {
         let store = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
         ripEstimate = RipEstimator(store: store).estimate(discType: discType, sizeBytes: queueJob.titleSizeBytes)
 
+        currentRipJobId = queueJob.id
         phase = .ripping(title: queueJob.jobLabel, progress: pct)
         ripTask = Task { await pollRip(jobId: queueJob.id, title: queueJob.jobLabel) }
 
@@ -256,6 +267,7 @@ final class RipFlowViewModel {
         if isTV {
             phase = .tvEpisode(scanResult, title: title, year: year)
         } else {
+            suggestedTitleNumber = HeuristicTitleSuggester().suggest(from: scanResult.titles)?.number
             phase = .titleSelection(scanResult, title: title, year: year,
                                     isTV: false, season: 1, episode: 1)
         }
@@ -266,6 +278,7 @@ final class RipFlowViewModel {
     func setEpisode(season: Int, episode: Int, scanResult: DiscScanResult,
                     title: String, year: String) {
         phaseStack.append(phase)
+        suggestedTitleNumber = HeuristicTitleSuggester().suggest(from: scanResult.titles)?.number
         phase = .titleSelection(scanResult, title: title, year: year,
                                 isTV: true, season: season, episode: episode)
     }
@@ -276,6 +289,17 @@ final class RipFlowViewModel {
                      mediaTitle: String, year: String,
                      isTV: Bool, season: Int, episode: Int) {
         phaseStack.append(phase)
+        // Record this selection for ML training data
+        let mediaType: RipJob.MediaType = isTV ? .tvshow : .movie
+        Task.detached {
+            TitleSelectionStore(appSupportURL: ConfigManager.appSupportURL).record(
+                selected: discTitle,
+                allTitles: scanResult.titles,
+                discType: scanResult.discType,
+                mediaType: mediaType,
+                discName: scanResult.discName
+            )
+        }
         advanceToAudioOrConfirmation(chosenTitle: discTitle, scanResult: scanResult,
                                      title: mediaTitle, year: year,
                                      isTV: isTV, season: season, episode: episode)
@@ -385,10 +409,37 @@ final class RipFlowViewModel {
             return
         }
 
+        kickWorker()
+
+        currentRipJobId = job.id
         phase = .ripping(title: ripInput.jobLabel, progress: 0)
         let jobId = job.id
         let title = ripInput.jobLabel
         ripTask = Task { await pollRip(jobId: jobId, title: title) }
+    }
+
+    private func kickWorker() {
+        // `launchctl list` (no args) outputs PID\tExit\tLabel per line; "-" PID means not running.
+        let check = Process()
+        check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        check.arguments = ["list"]
+        let pipe = Pipe()
+        check.standardOutput = pipe
+        check.standardError = FileHandle.nullDevice
+        try? check.run()
+        check.waitUntilExit()
+
+        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let line = output.split(separator: "\n").first { $0.contains("com.frostscribe.worker") }
+        let pid = line?.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "-"
+        guard pid == "-" else { return }
+
+        let start = Process()
+        start.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        start.arguments = ["start", "com.frostscribe.worker"]
+        start.standardOutput = FileHandle.nullDevice
+        start.standardError = FileHandle.nullDevice
+        try? start.run()
     }
 
     private func pollRip(jobId: String, title: String) async {
@@ -402,6 +453,9 @@ final class RipFlowViewModel {
                let currentJob = file.currentJob {
                 let pct = Int(currentJob.progress.replacingOccurrences(of: "%", with: "")) ?? 0
                 phase = .ripping(title: title, progress: pct)
+                if let msg = currentJob.currentItem, !msg.isEmpty {
+                    ripMessage = msg
+                }
             }
 
             // Check rip queue for terminal state
@@ -431,6 +485,12 @@ final class RipFlowViewModel {
     // MARK: - Reset
 
     func reset() {
+        // Signal the worker to terminate makemkvcon before resetting UI state.
+        if let jobId = currentRipJobId {
+            let ripQueue = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
+            try? ripQueue.markCancelled(id: jobId)
+        }
+        currentRipJobId = nil
         ripTask?.cancel()
         phaseStack = []
         searchTask?.cancel()
@@ -440,6 +500,8 @@ final class RipFlowViewModel {
         tmdbResults = []
         isSearching = false
         scanMessage = ""
+        ripMessage = ""
+        suggestedTitleNumber = nil
         posterURL = nil
         backdropURLs = []
         mediaDetails = nil

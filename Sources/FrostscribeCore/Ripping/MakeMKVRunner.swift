@@ -1,7 +1,13 @@
 import Foundation
 
-public final class MakeMKVRunner: MakeMKVRunning {
+public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
     private let binPath: String
+    private let processLock = NSLock()
+    private var _activeProcess: Process?
+    private var activeProcess: Process? {
+        get { processLock.withLock { _activeProcess } }
+        set { processLock.withLock { _activeProcess = newValue } }
+    }
 
     public init(binPath: String = "makemkvcon") {
         self.binPath = binPath
@@ -22,11 +28,15 @@ public final class MakeMKVRunner: MakeMKVRunning {
         onMessage: @escaping @Sendable (String) -> Void = { _ in },
         onProgress: @escaping @Sendable (Int) -> Void
     ) async throws {
-        try await withCheckedThrowingContinuation { cont in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do { try self.ripSync(titleNumber: titleNumber, to: destination, onMessage: onMessage, onProgress: onProgress); cont.resume() }
-                catch { cont.resume(throwing: error) }
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { cont in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    do { try self.ripSync(titleNumber: titleNumber, to: destination, onMessage: onMessage, onProgress: onProgress); cont.resume() }
+                    catch { cont.resume(throwing: error) }
+                }
             }
+        } onCancel: {
+            self.activeProcess?.terminate()
         }
     }
 
@@ -82,11 +92,14 @@ public final class MakeMKVRunner: MakeMKVRunning {
             collector.consume(handle.availableData)
         }
 
+        activeProcess = process
         try process.run()
         process.waitUntilExit()
+        activeProcess = nil
         pipe.fileHandleForReading.readabilityHandler = nil
 
         guard process.terminationStatus == 0 else {
+            if process.terminationReason == .uncaughtSignal { throw CancellationError() }
             throw FrostscribeError.makemkvFailed(exitCode: process.terminationStatus)
         }
         return collector.lines

@@ -1,11 +1,9 @@
 import SwiftUI
+import FrostscribeCore
 
 struct LogsView: View {
     @State private var lines: [LogLine] = []
     @State private var filter: String = ""
-
-    private static let logURL = URL(fileURLWithPath: NSHomeDirectory())
-        .appending(path: "Library/Logs/Frostscribe/worker.log")
 
     private let timer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
@@ -22,7 +20,7 @@ struct LogsView: View {
     }()
 
     struct LogLine: Identifiable {
-        let id: Int
+        let id: Int64
         let timestamp: String
         let message: String
         let level: Level
@@ -41,13 +39,22 @@ struct LogsView: View {
             // Header
             HStack {
                 Text("Logs")
-                    .font(.title3).bold()
+                    .font(.system(size: 25, weight: .bold))
                 Spacer()
                 if !lines.isEmpty {
                     Text("\(lines.count) lines")
-                        .font(.caption)
+                        .font(.system(size: 15))
                         .foregroundStyle(.secondary)
                 }
+                Button {
+                    LogStore(appSupportURL: ConfigManager.appSupportURL).clear()
+                    load()
+                } label: {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear all logs")
             }
             .padding(.horizontal, FrostTheme.paddingL)
             .padding(.top, FrostTheme.paddingL)
@@ -57,10 +64,10 @@ struct LogsView: View {
             HStack(spacing: FrostTheme.spacing) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                    .font(.caption)
+                    .font(.system(size: 15))
                 TextField("Filter…", text: $filter)
                     .textFieldStyle(.frost)
-                    .font(.caption)
+                    .font(.system(size: 15))
                 if !filter.isEmpty {
                     Button { filter = "" } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -79,9 +86,6 @@ struct LogsView: View {
                     Spacer()
                     Text("No log entries yet.")
                         .foregroundStyle(.secondary)
-                    Text(Self.logURL.path)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.tertiary)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -91,11 +95,11 @@ struct LogsView: View {
                         ForEach(filtered) { line in
                             HStack(alignment: .top, spacing: FrostTheme.spacing) {
                                 Text(line.timestamp)
-                                    .font(.caption2.monospaced())
+                                    .font(.system(size: 14, design: .monospaced))
                                     .foregroundStyle(.tertiary)
-                                    .frame(width: 160, alignment: .leading)
+                                    .frame(width: 200, alignment: .leading)
                                 Text(line.message)
-                                    .font(.caption.monospaced())
+                                    .font(.system(size: 15, design: .monospaced))
                                     .foregroundStyle(color(for: line.level))
                                     .textSelection(.enabled)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -117,32 +121,17 @@ struct LogsView: View {
     // MARK: - Load
 
     private func load() {
-        guard let raw = try? String(contentsOf: Self.logURL, encoding: .utf8) else {
-            lines = []
-            return
-        }
-        let parsed = raw
-            .components(separatedBy: .newlines)
-            .filter { !$0.isEmpty }
-            .enumerated()
-            .map { (idx, line) -> LogLine in
-                let raw = line
-                // Format: [2026-03-28T14:00:49Z] Message text
-                var ts = ""
-                var msg = raw
-                if raw.hasPrefix("["), let close = raw.firstIndex(of: "]") {
-                    ts  = String(raw[raw.index(after: raw.startIndex)..<close])
-                    msg = String(raw[raw.index(after: close)...]).trimmingCharacters(in: .whitespaces)
-                }
-                if let date = Self.isoParser.date(from: ts) {
-                    ts = Self.localFormatter.string(from: date)
-                }
-                let level: LogLine.Level = msg.lowercased().contains("fail") || msg.lowercased().contains("error")
-                    ? .error
-                    : msg.lowercased().contains("warn") ? .warning : .info
-                return LogLine(id: idx, timestamp: ts, message: msg, level: level)
+        let entries = LogStore(appSupportURL: ConfigManager.appSupportURL).load()
+        lines = entries.map { entry -> LogLine in
+            var ts = entry.timestamp
+            if let date = Self.isoParser.date(from: ts) {
+                ts = Self.localFormatter.string(from: date)
             }
-        lines = Array(parsed.reversed())
+            let level: LogLine.Level = entry.level == "error"
+                ? .error
+                : entry.level == "warning" ? .warning : .info
+            return LogLine(id: entry.id, timestamp: ts, message: entry.message, level: level)
+        }
     }
 
     private func color(for level: LogLine.Level) -> Color {

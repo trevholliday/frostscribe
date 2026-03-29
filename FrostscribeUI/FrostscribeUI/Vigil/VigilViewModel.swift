@@ -91,7 +91,7 @@ final class VigilViewModel {
             return
         }
 
-        guard let largestTitle = scanResult.titles.max(by: { $0.sizeBytes < $1.sizeBytes }) else {
+        guard let largestTitle = HeuristicTitleSuggester().suggest(from: scanResult.titles) else {
             phase = .idle
             return
         }

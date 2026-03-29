@@ -7,11 +7,10 @@ struct RipIdleView: View {
         VStack(spacing: FrostTheme.paddingL) {
             Spacer()
             Image(systemName: "opticaldisc")
-                .font(.system(size: 56))
+                .font(.system(size: 70))
                 .foregroundStyle(FrostTheme.glacier)
             Text("Rip a Disc")
-                .font(.title2)
-                .bold()
+                .font(.system(size: 28, weight: .bold))
             Text("Insert a disc and click Scan to begin.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

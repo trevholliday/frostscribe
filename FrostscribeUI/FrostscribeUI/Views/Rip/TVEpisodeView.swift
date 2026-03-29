@@ -12,26 +12,27 @@ struct TVEpisodeView: View {
 
     var body: some View {
         VStack(spacing: FrostTheme.paddingL) {
-            if vm.canGoBack {
-                HStack {
+            HStack {
+                if vm.canGoBack {
                     Button { vm.goBack() } label: {
                         Label("Back", systemImage: "chevron.left")
-                            .font(.caption)
+                            .font(.system(size: 15))
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    Spacer()
                 }
-                .padding(.horizontal, FrostTheme.paddingL)
-                .padding(.top, FrostTheme.paddingM)
+                Spacer()
+                Button("Abort Rip", role: .destructive) { vm.reset() }
+                    .buttonStyle(.frostDestructive)
             }
+            .padding(.horizontal, FrostTheme.paddingL)
+            .padding(.top, FrostTheme.paddingM)
             Spacer()
             Image(systemName: "tv")
-                .font(.system(size: 40))
+                .font(.system(size: 50))
                 .foregroundStyle(FrostTheme.glacier)
             Text(title)
-                .font(.title3)
-                .bold()
+                .font(.system(size: 25, weight: .bold))
                 .lineLimit(1)
             Text(year)
                 .foregroundStyle(.secondary)
@@ -45,7 +46,7 @@ struct TVEpisodeView: View {
             .padding(.vertical, FrostTheme.paddingM)
 
             Text("Label: \(String(format: "S%02dE%02d", season, episode))")
-                .font(.caption.monospaced())
+                .font(.system(size: 15, design: .monospaced))
                 .foregroundStyle(FrostTheme.teal)
 
             Button("Continue") {

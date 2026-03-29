@@ -49,10 +49,10 @@ struct LeftPanelView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .medium))
-                    .frame(width: 22)
+                    .font(.system(size: 23, weight: .medium))
+                    .frame(width: 27)
                 Text(label)
-                    .font(.system(size: 17))
+                    .font(.system(size: 21))
             }
             .foregroundStyle(isActive ? FrostTheme.teal : Color.primary.opacity(0.45))
             .padding(.vertical, 8)
@@ -75,9 +75,9 @@ struct LeftPanelView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "gear")
-                    .font(.system(size: 18))
+                    .font(.system(size: 23))
                 Text("Settings")
-                    .font(.system(size: 17))
+                    .font(.system(size: 21))
             }
             .foregroundStyle(isActive ? FrostTheme.teal : Color.secondary)
         }
@@ -94,12 +94,12 @@ struct LeftPanelView: View {
             if let title = vm.confirmedTitle {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: 21, weight: .bold))
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                     if let year = vm.confirmedYear, !year.isEmpty {
                         Text(year)
-                            .font(.system(size: 15))
+                            .font(.system(size: 19))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -110,7 +110,7 @@ struct LeftPanelView: View {
                 HStack(spacing: 6) {
                     if let cert = details.certification {
                         Text(cert)
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
                             .overlay(RoundedRectangle(cornerRadius: 3)
@@ -118,13 +118,13 @@ struct LeftPanelView: View {
                     }
                     if let runtime = details.runtimeFormatted {
                         Text(runtime)
-                            .font(.system(size: 14))
+                            .font(.system(size: 18))
                             .foregroundStyle(.secondary)
                     }
                 }
                 if !details.genres.isEmpty {
                     Text(details.genres.joined(separator: ", "))
-                        .font(.system(size: 13))
+                        .font(.system(size: 16))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -137,19 +137,20 @@ struct LeftPanelView: View {
                         .tint(FrostTheme.frostCyan)
                     HStack {
                         Text("\(progress)%")
-                            .font(.system(size: 14).monospacedDigit())
+                            .font(.system(size: 18).monospacedDigit())
                             .foregroundStyle(FrostTheme.teal)
                         if let remaining = vm.estimatedSecondsRemaining {
                             Spacer()
                             Text("~\(Int(remaining / 60) + 1) min")
-                                .font(.system(size: 13))
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
+                RipLogOverlay(message: vm.ripMessage)
             } else if case .done = vm.phase {
                 Label("Added to queue", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 14))
+                    .font(.system(size: 18))
                     .foregroundStyle(FrostTheme.teal)
             }
         }

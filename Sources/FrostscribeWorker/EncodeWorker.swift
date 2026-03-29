@@ -5,17 +5,20 @@ actor EncodeWorker {
     private let queueManager: any QueueManaging
     private let handbrakeRunner: any HandBrakeRunning
     private let hookRunner: HookRunner
+    private let logStore: LogStore
     private var running = false
     private let pollInterval: TimeInterval = 10
 
     init(
         queueManager: any QueueManaging,
         handbrakeRunner: any HandBrakeRunning,
-        hookRunner: HookRunner
+        hookRunner: HookRunner,
+        logStore: LogStore
     ) {
         self.queueManager = queueManager
         self.handbrakeRunner = handbrakeRunner
         self.hookRunner = hookRunner
+        self.logStore = logStore
     }
 
     func start() async {
@@ -38,7 +41,7 @@ actor EncodeWorker {
         do {
             jobs = try queueManager.read()
         } catch {
-            log("Failed to read queue: \(error)")
+            log("Failed to read queue: \(error)", level: "error")
             return
         }
 
@@ -75,15 +78,16 @@ actor EncodeWorker {
 
             hookRunner.fire(event: "encode_complete", title: "Encode Complete", body: job.label)
         } catch {
-            log("Encode failed for \(job.label): \(error)")
+            log("Encode failed for \(job.label): \(error)", level: "error")
             try? queueManager.updateStatus(id: job.id, status: .error)
             hookRunner.fire(event: "encode_failed", title: "Encode Failed", body: job.label)
         }
     }
 
-    private func log(_ message: String) {
+    private func log(_ message: String, level: String = "info") {
         let timestamp = ISO8601DateFormatter().string(from: Date())
         print("[\(timestamp)] \(message)")
         fflush(stdout)
+        logStore.append(timestamp: timestamp, message: message, level: level)
     }
 }

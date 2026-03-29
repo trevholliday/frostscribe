@@ -4,11 +4,13 @@ import FrostscribeCore
 // Composition root — wire concrete dependencies
 let appSupportURL = ConfigManager.appSupportURL
 let config = try? ConfigManager().load()
+let logStore = LogStore(appSupportURL: appSupportURL)
 
 let encodeWorker = EncodeWorker(
     queueManager: QueueManager(appSupportURL: appSupportURL),
     handbrakeRunner: HandBrakeRunner(binPath: config?.handbrakeBin ?? "HandBrakeCLI"),
-    hookRunner: HookRunner(command: config?.eventHook ?? "")
+    hookRunner: HookRunner(command: config?.eventHook ?? ""),
+    logStore: logStore
 )
 
 let ripWorker = RipWorker(
@@ -16,7 +18,8 @@ let ripWorker = RipWorker(
     encodeQueueManager: QueueManager(appSupportURL: appSupportURL),
     statusManager: StatusManager(appSupportURL: appSupportURL),
     makemkvBin: config?.makemkvBin ?? "makemkvcon",
-    hookRunner: HookRunner(command: config?.eventHook ?? "")
+    hookRunner: HookRunner(command: config?.eventHook ?? ""),
+    logStore: logStore
 )
 
 let sigSrc = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)

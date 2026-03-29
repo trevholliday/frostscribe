@@ -11,7 +11,9 @@ struct Frostscribe: AsyncParsableCommand {
             RipCommand.self,
             StatusCommand.self,
             QueueCommand.self,
+            RipQueueCommand.self,
             WorkerCommand.self,
+            ExportTrainingDataCommand.self,
         ]
     )
 }
