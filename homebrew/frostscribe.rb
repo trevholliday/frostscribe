@@ -1,7 +1,7 @@
 class Frostscribe < Formula
   desc "Native macOS disc ripping and encoding tool for Jellyfin, Plex, and Kodi"
   homepage "https://github.com/trevholliday/frostscribe"
-  version "1.0.0"
+  version "0.2.1"
   license "MIT"
 
   on_macos do
