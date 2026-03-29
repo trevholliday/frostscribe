@@ -7,26 +7,30 @@ struct EncoderPresetTests {
     // MARK: - preset(for:)
 
     @Test func blurayDiscTypeReturnsBlurayPreset() {
-        #expect(EncoderPreset.preset(for: "Blu-ray") == EncoderPreset.bluray)
-        #expect(EncoderPreset.preset(for: "blu-ray disc") == EncoderPreset.bluray)
+        #expect(EncoderPreset.preset(for: .bluray) == EncoderPreset.bluray)
+    }
+
+    @Test func uhdDiscTypeReturnsBlurayPreset() {
+        #expect(EncoderPreset.preset(for: .uhd) == EncoderPreset.bluray)
     }
 
     @Test func dvdDiscTypeReturnsDvdPreset() {
-        #expect(EncoderPreset.preset(for: "DVD") == EncoderPreset.dvd)
+        #expect(EncoderPreset.preset(for: .dvd) == EncoderPreset.dvd)
     }
 
-    @Test func nilDiscTypeReturnsDvdPreset() {
-        #expect(EncoderPreset.preset(for: nil) == EncoderPreset.dvd)
+    @Test func unknownDiscTypeReturnsDvdPreset() {
+        #expect(EncoderPreset.preset(for: .unknown) == EncoderPreset.dvd)
     }
 
-    // MARK: - arguments(input:output:preset:audioTracks:)
+    // MARK: - arguments(input:output:preset:audioTracks:quality:)
 
     @Test func nilAudioTracksUsesDefaultDualTrack() {
         let args = EncoderPreset.arguments(
             input: "/tmp/in.mkv",
             output: "/tmp/out.mkv",
             preset: EncoderPreset.dvd,
-            audioTracks: nil
+            audioTracks: nil,
+            quality: 70
         )
         #expect(args.contains("--audio"))
         let idx = args.firstIndex(of: "--audio")!
@@ -40,7 +44,8 @@ struct EncoderPresetTests {
             input: "/tmp/in.mkv",
             output: "/tmp/out.mkv",
             preset: EncoderPreset.dvd,
-            audioTracks: []
+            audioTracks: [],
+            quality: 70
         )
         let idx = args.firstIndex(of: "--audio")!
         #expect(args[idx + 1] == "1,1")
@@ -51,7 +56,8 @@ struct EncoderPresetTests {
             input: "/tmp/in.mkv",
             output: "/tmp/out.mkv",
             preset: EncoderPreset.dvd,
-            audioTracks: [1, 3]
+            audioTracks: [1, 3],
+            quality: 70
         )
         let audioIdx = args.firstIndex(of: "--audio")!
         #expect(args[audioIdx + 1] == "1,3")
@@ -71,7 +77,8 @@ struct EncoderPresetTests {
             input: "/tmp/in.mkv",
             output: "/tmp/out.mkv",
             preset: EncoderPreset.dvd,
-            audioTracks: [2]
+            audioTracks: [2],
+            quality: 70
         )
         let audioIdx = args.firstIndex(of: "--audio")!
         #expect(args[audioIdx + 1] == "2")
@@ -84,7 +91,9 @@ struct EncoderPresetTests {
         let args = EncoderPreset.arguments(
             input: "/in.mkv",
             output: "/out.mkv",
-            preset: "My Preset"
+            preset: "My Preset",
+            audioTracks: nil,
+            quality: 70
         )
         #expect(args.contains("-i"))
         #expect(args.contains("/in.mkv"))
@@ -95,9 +104,28 @@ struct EncoderPresetTests {
     }
 
     @Test func subtitleNoneIsAlwaysPresent() {
-        let args = EncoderPreset.arguments(input: "/in.mkv", output: "/out.mkv", preset: EncoderPreset.dvd)
+        let args = EncoderPreset.arguments(
+            input: "/in.mkv",
+            output: "/out.mkv",
+            preset: EncoderPreset.dvd,
+            audioTracks: nil,
+            quality: 70
+        )
         #expect(args.contains("--subtitle"))
         let idx = args.firstIndex(of: "--subtitle")!
         #expect(args[idx + 1] == "none")
+    }
+
+    @Test func qualityIsPassedToArguments() {
+        let args = EncoderPreset.arguments(
+            input: "/in.mkv",
+            output: "/out.mkv",
+            preset: EncoderPreset.dvd,
+            audioTracks: nil,
+            quality: 75
+        )
+        #expect(args.contains("--quality"))
+        let idx = args.firstIndex(of: "--quality")!
+        #expect(args[idx + 1] == "75")
     }
 }

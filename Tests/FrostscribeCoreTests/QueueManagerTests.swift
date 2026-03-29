@@ -29,7 +29,8 @@ struct QueueManagerTests {
             input: URL(fileURLWithPath: "/tmp/input.mkv"),
             output: URL(fileURLWithPath: "/tmp/output.mkv"),
             preset: "H.265 MKV 1080p30",
-            title: "The Matrix"
+            title: "The Matrix",
+            quality: 70
         )
 
         let jobs = try qm.read()
@@ -43,8 +44,8 @@ struct QueueManagerTests {
         let dir = makeTemp()
         let qm = QueueManager(appSupportURL: dir)
 
-        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "preset", title: "Alpha")
-        try qm.add(input: URL(fileURLWithPath: "/b.mkv"), output: URL(fileURLWithPath: "/b-out.mkv"), preset: "preset", title: "Beta")
+        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "preset", title: "Alpha", quality: 70)
+        try qm.add(input: URL(fileURLWithPath: "/b.mkv"), output: URL(fileURLWithPath: "/b-out.mkv"), preset: "preset", title: "Beta", quality: 70)
 
         let jobs = try qm.read()
         #expect(jobs.count == 2)
@@ -61,7 +62,8 @@ struct QueueManagerTests {
             output: URL(fileURLWithPath: "/tmp/output.mkv"),
             preset: "preset",
             title: "Breaking Bad",
-            episode: "S01E01"
+            episode: "S01E01",
+            quality: 70
         )
 
         let jobs = try qm.read()
@@ -74,7 +76,7 @@ struct QueueManagerTests {
     @Test func updateStatusToDone() throws {
         let dir = makeTemp()
         let qm = QueueManager(appSupportURL: dir)
-        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha")
+        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha", quality: 70)
         let id = try qm.read()[0].id
 
         try qm.updateStatus(id: id, status: .done, completedAt: .now)
@@ -87,7 +89,7 @@ struct QueueManagerTests {
     @Test func updateStatusToEncoding() throws {
         let dir = makeTemp()
         let qm = QueueManager(appSupportURL: dir)
-        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha")
+        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha", quality: 70)
         let id = try qm.read()[0].id
 
         try qm.updateStatus(id: id, status: .encoding)
@@ -99,9 +101,9 @@ struct QueueManagerTests {
     @Test func updateStatusIgnoresUnknownID() throws {
         let dir = makeTemp()
         let qm = QueueManager(appSupportURL: dir)
-        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha")
+        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha", quality: 70)
 
-        try qm.updateStatus(id: UUID(), status: .done)
+        try qm.updateStatus(id: UUID().uuidString, status: .done)
 
         let jobs = try qm.read()
         #expect(jobs[0].status == .pending)
@@ -112,7 +114,7 @@ struct QueueManagerTests {
     @Test func updateProgress() throws {
         let dir = makeTemp()
         let qm = QueueManager(appSupportURL: dir)
-        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha")
+        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha", quality: 70)
         let id = try qm.read()[0].id
 
         try qm.updateProgress(id: id, progress: "42.5%")
@@ -126,8 +128,8 @@ struct QueueManagerTests {
     @Test func activeJobsFiltersCorrectly() throws {
         let dir = makeTemp()
         let qm = QueueManager(appSupportURL: dir)
-        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha")
-        try qm.add(input: URL(fileURLWithPath: "/b.mkv"), output: URL(fileURLWithPath: "/b-out.mkv"), preset: "p", title: "Beta")
+        try qm.add(input: URL(fileURLWithPath: "/a.mkv"), output: URL(fileURLWithPath: "/a-out.mkv"), preset: "p", title: "Alpha", quality: 70)
+        try qm.add(input: URL(fileURLWithPath: "/b.mkv"), output: URL(fileURLWithPath: "/b-out.mkv"), preset: "p", title: "Beta", quality: 70)
 
         let firstID = try qm.read()[0].id
         try qm.updateStatus(id: firstID, status: .done)
@@ -140,10 +142,10 @@ struct QueueManagerTests {
     // MARK: - isActive property
 
     @Test func isActiveTrueForPendingAndEncoding() {
-        let pending = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", status: .pending)
-        let encoding = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", status: .encoding)
-        let done = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", status: .done)
-        let error = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", status: .error)
+        let pending = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", quality: 70, status: .pending)
+        let encoding = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", quality: 70, status: .encoding)
+        let done = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", quality: 70, status: .done)
+        let error = EncodeJob(title: "A", input: "/a", output: "/b", preset: "p", quality: 70, status: .error)
 
         #expect(pending.isActive)
         #expect(encoding.isActive)

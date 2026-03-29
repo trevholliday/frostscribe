@@ -19,9 +19,19 @@ on:
 
 jobs:
 
+  # ── Tests ───────────────────────────────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: swift test
+
   # ── Build both architectures ────────────────────────────────────────────────
   build:
     name: Build (arm64 + x86_64)
+    needs: [test]
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4

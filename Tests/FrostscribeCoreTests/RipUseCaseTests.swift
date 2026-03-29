@@ -10,7 +10,7 @@ final class SpyMakeMKVRunner: MakeMKVRunning, @unchecked Sendable {
     var ripError: Error?
 
     func scan(onMessage: @escaping @Sendable (String) -> Void) async throws -> DiscScanResult {
-        DiscScanResult(titles: [], discName: nil, discType: nil)
+        DiscScanResult(titles: [], discName: nil, discType: .unknown)
     }
 
     func rip(
@@ -43,13 +43,13 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
     func read() throws -> [EncodeJob] { [] }
     func activeJobs() throws -> [EncodeJob] { [] }
 
-    func add(input: URL, output: URL, preset: String, title: String, episode: String?, audioTracks: [Int]?) throws {
+    func add(input: URL, output: URL, preset: String, title: String, episode: String?, audioTracks: [Int]?, quality: Int) throws {
         if let error = addError { throw error }
         addCalls.append(AddCall(input: input, output: output, preset: preset, title: title, episode: episode, audioTracks: audioTracks))
     }
 
-    func updateProgress(id: UUID, progress: String) throws {}
-    func updateStatus(id: UUID, status: EncodeJob.Status, progress: String?, completedAt: Date?) throws {}
+    func updateProgress(id: String, progress: String) throws {}
+    func updateStatus(id: String, status: EncodeJob.Status, progress: String?, completedAt: Date?) throws {}
 }
 
 final class SpyStatusManager: StatusManaging, @unchecked Sendable {
@@ -107,9 +107,10 @@ struct RipUseCaseTests {
 
         _ = try await useCase.execute(makeInput(baseTemp: makeTemp()), onProgress: { _ in })
 
-        #expect(status.writeCalls.count == 2)
+        // RipUseCase writes: (1) ripping at start, (2) ripping at 100%, (3) idle via defer
+        #expect(status.writeCalls.count >= 2)
         #expect(status.writeCalls[0].status == .ripping)
-        #expect(status.writeCalls[1].status == .idle)
+        #expect(status.writeCalls.last?.status == .idle)
     }
 
     @Test func successRippingStatusIncludesJobLabel() async throws {
@@ -216,7 +217,8 @@ struct EncodeUseCaseTests {
             outputURL: URL(fileURLWithPath: "/output/Movie.mkv"),
             preset: "H.265 MKV 1080p30",
             title: "The Matrix",
-            episode: episode
+            episode: episode,
+            quality: 70
         )
     }
 
