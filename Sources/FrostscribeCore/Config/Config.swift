@@ -30,9 +30,9 @@ public struct Config: Sendable {
         eventHook: String = "",
         vigilMode: Bool = true,
         selectAudioTracks: Bool = false,
-        qualityDVD: EncodeQuality = .q80,
-        qualityBluray: EncodeQuality = .q70,
-        qualityUHD: EncodeQuality = .q70,
+        qualityDVD: EncodeQuality = .rf20,
+        qualityBluray: EncodeQuality = .rf20,
+        qualityUHD: EncodeQuality = .rf20,
         filterShortTitles: Bool = true
     ) {
         self.mediaServer = mediaServer
@@ -74,9 +74,9 @@ extension Config: Codable {
         eventHook            = (try? c.decode(String.self,         forKey: .eventHook))            ?? ""
         vigilMode            = (try? c.decode(Bool.self,           forKey: .vigilMode))         ?? true
         selectAudioTracks    = (try? c.decode(Bool.self,           forKey: .selectAudioTracks)) ?? false
-        qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .q80
-        qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .q70
-        qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .q70
+        qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .rf20
+        qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .rf20
+        qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .rf20
         filterShortTitles    = (try? c.decode(Bool.self,           forKey: .filterShortTitles)) ?? true
     }
 }

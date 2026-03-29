@@ -8,6 +8,7 @@ public enum FrostscribeError: Error, LocalizedError {
     case configNotFound
     case configInvalid(reason: String)
     case tmdbUnavailable
+    case ripIncomplete(expectedBytes: Int, actualBytes: Int)
 
     public var errorDescription: String? {
         switch self {
@@ -25,6 +26,9 @@ public enum FrostscribeError: Error, LocalizedError {
             return "Invalid config: \(reason)"
         case .tmdbUnavailable:
             return "TMDB is unavailable — check your API key"
+        case .ripIncomplete(let expected, let actual):
+            let pct = expected > 0 ? Int(Double(actual) / Double(expected) * 100) : 0
+            return "Rip appears incomplete: got \(pct)% of expected data (\(actual) of \(expected) bytes). The disc may have a read error."
         }
     }
 }

@@ -19,15 +19,21 @@ public enum EncoderPreset {
 
     public static func arguments(input: String, output: String, preset: String, audioTracks: [Int]?, quality: Int) -> [String] {
         let audio = audioArgs(tracks: audioTracks)
-        return [
+        let isDVD = preset == dvd
+        var args: [String] = [
             "-i", input,
             "-o", output,
             "--preset", preset,
-            "--encoder", "vt_h265",
+            "--encoder", "x265",
+            "--encoder-preset", "medium",
             "--quality", String(quality),
             "--encoder-level", "auto",
-            "--subtitle", "none",
-        ] + audio
+            "--subtitle", "1,2,3,4,5,6,7,8",
+        ]
+        if isDVD {
+            args += ["--width", "1920", "--height", "1080", "--comb-detect", "--decomb"]
+        }
+        return args + audio
     }
 
     // Generates --audio / --aencoder / --ab / --aname arguments.
@@ -35,12 +41,12 @@ public enum EncoderPreset {
     // [N, M, ...] → one AAC stream per selected track.
     private static func audioArgs(tracks: [Int]?) -> [String] {
         guard let tracks, !tracks.isEmpty else {
-            return ["--audio", "1,1", "--aencoder", "ca_aac,copy:ac3", "--ab", "160,auto", "--aname", "AAC Stereo,Surround"]
+            return ["--audio", "1,1", "--aencoder", "ca_aac,copy:ac3", "--ab", "320,auto", "--aname", "AAC Stereo,Surround"]
         }
-        let audioList  = tracks.map(String.init).joined(separator: ",")
-        let encoders   = Array(repeating: "ca_aac", count: tracks.count).joined(separator: ",")
-        let bitrates   = Array(repeating: "160", count: tracks.count).joined(separator: ",")
-        let names      = tracks.enumerated().map { i, t in "Track \(t)" }.joined(separator: ",")
+        let audioList = tracks.map(String.init).joined(separator: ",")
+        let encoders  = Array(repeating: "ca_aac", count: tracks.count).joined(separator: ",")
+        let bitrates  = Array(repeating: "320", count: tracks.count).joined(separator: ",")
+        let names     = tracks.enumerated().map { _, t in "Track \(t)" }.joined(separator: ",")
         return ["--audio", audioList, "--aencoder", encoders, "--ab", bitrates, "--aname", names]
     }
 }

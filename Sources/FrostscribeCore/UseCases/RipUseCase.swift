@@ -97,6 +97,16 @@ public final class RipUseCase: Sendable {
         )
         sizePoller.cancel()
 
+        // Verify the rip produced a reasonable amount of data.
+        // makemkvcon exits 0 even on partial rips caused by disc read errors,
+        // so we check that the output is at least 85% of the expected size.
+        if expectedBytes > 0, let actual = dirBytes(tempDir) {
+            let threshold = Int(Double(expectedBytes) * 0.85)
+            if actual < threshold {
+                throw FrostscribeError.ripIncomplete(expectedBytes: expectedBytes, actualBytes: actual)
+            }
+        }
+
         // Write 100% before defer transitions to idle so history captures completion
         var completedJob = ripJob
         completedJob.progress = "100%"
