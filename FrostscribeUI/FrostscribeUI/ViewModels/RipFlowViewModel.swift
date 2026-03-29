@@ -96,6 +96,12 @@ final class RipFlowViewModel {
 
         confirmedTitle = title
         confirmedYear  = year
+
+        // Compute time estimate from historical rip rates
+        let discType = DiscType(rawValue: queueJob.discType) ?? .unknown
+        let store = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
+        ripEstimate = RipEstimator(store: store).estimate(discType: discType, sizeBytes: queueJob.titleSizeBytes)
+
         phase = .ripping(title: queueJob.jobLabel, progress: pct)
         ripTask = Task { await pollRip(jobId: queueJob.id, title: queueJob.jobLabel) }
 
