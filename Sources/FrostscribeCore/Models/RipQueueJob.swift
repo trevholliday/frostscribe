@@ -23,6 +23,9 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
     public var episode: String?
     public var audioTracks: [Int]?
     public var quality: Int
+    // TMDB reference (stored at queue time for reliable resume)
+    public var tmdbId: Int?
+    public var tmdbMediaType: String?
     // Status tracking
     public var status: Status
     public var errorMessage: String?
@@ -44,6 +47,8 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         case episode
         case audioTracks   = "audio_tracks"
         case quality
+        case tmdbId        = "tmdb_id"
+        case tmdbMediaType = "tmdb_media_type"
         case status
         case errorMessage  = "error_message"
         case addedAt       = "added_at"
@@ -65,6 +70,8 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         episode: String? = nil,
         audioTracks: [Int]? = nil,
         quality: Int,
+        tmdbId: Int? = nil,
+        tmdbMediaType: String? = nil,
         status: Status = .pending,
         errorMessage: String? = nil,
         addedAt: Date = .now,
@@ -84,6 +91,8 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         self.episode       = episode
         self.audioTracks   = audioTracks
         self.quality       = quality
+        self.tmdbId        = tmdbId
+        self.tmdbMediaType = tmdbMediaType
         self.status        = status
         self.errorMessage  = errorMessage
         self.addedAt       = addedAt

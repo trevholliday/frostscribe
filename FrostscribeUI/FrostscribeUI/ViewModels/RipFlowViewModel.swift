@@ -34,6 +34,8 @@ final class RipFlowViewModel {
     private(set) var confirmedYear: String?
     private(set) var confirmedEncodeInput: EncodeInput?
     private(set) var mediaDetails: MediaDetails?
+    private(set) var confirmedTmdbId: Int?
+    private(set) var confirmedTmdbMediaType: String?
 
     var carouselURLs: [URL] {
         backdropURLs.isEmpty ? [posterURL].compactMap { $0 } : backdropURLs
@@ -102,17 +104,34 @@ final class RipFlowViewModel {
         guard let config, !config.tmdbApiKey.isEmpty else { return }
         storedConfig = config
         let isTV = queueJob.mediaType == "tvshow"
+        let storedTmdbId = queueJob.tmdbId
+        let storedTmdbType = queueJob.tmdbMediaType
         Task {
             let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
-            let query = year.isEmpty ? title : "\(title) \(year)"
-            guard let results = try? await tmdb.searchMulti(query: query),
-                  let best = results.first(where: { isTV ? $0.mediaType == .tv : $0.mediaType == .movie })
-                           ?? results.first else { return }
-            posterURL = best.posterURL
-            async let backdropFetch = tmdb.backdrops(id: best.id, mediaType: best.mediaType)
-            async let detailsFetch  = tmdb.details(id: best.id, mediaType: best.mediaType)
+            let resolvedId: Int
+            let resolvedType: TMDBClient.MediaType
+
+            if let tmdbId = storedTmdbId,
+               let typeStr = storedTmdbType,
+               let mediaType = TMDBClient.MediaType(rawValue: typeStr) {
+                // Direct lookup — no search needed
+                resolvedId = tmdbId
+                resolvedType = mediaType
+            } else {
+                // Fall back to search
+                let query = year.isEmpty ? title : "\(title) \(year)"
+                guard let results = try? await tmdb.searchMulti(query: query),
+                      let best = results.first(where: { isTV ? $0.mediaType == .tv : $0.mediaType == .movie })
+                               ?? results.first else { return }
+                posterURL = best.posterURL
+                resolvedId = best.id
+                resolvedType = best.mediaType
+            }
+
+            async let backdropFetch = tmdb.backdrops(id: resolvedId, mediaType: resolvedType)
+            async let detailsFetch  = tmdb.details(id: resolvedId, mediaType: resolvedType)
             let urls = (try? await backdropFetch) ?? []
-            backdropURLs = urls.isEmpty ? [best.backdropURL].compactMap { $0 } : urls
+            backdropURLs = urls.isEmpty ? [] : urls
             mediaDetails = try? await detailsFetch
         }
     }
@@ -163,6 +182,8 @@ final class RipFlowViewModel {
     }
 
     func confirmTMDB(result: TMDBClient.SearchResult, scanResult: DiscScanResult, isTV: Bool) {
+        confirmedTmdbId = result.id
+        confirmedTmdbMediaType = result.mediaType == .tv ? "tv" : "movie"
         posterURL = result.posterURL
         if let config = storedConfig {
             Task {
@@ -285,7 +306,9 @@ final class RipFlowViewModel {
             mediaType: mediaType,
             jobLabel: jobLabel,
             discType: scanResult.discType,
-            titleSizeBytes: chosenTitle.sizeBytes
+            titleSizeBytes: chosenTitle.sizeBytes,
+            tmdbId: confirmedTmdbId,
+            tmdbMediaType: confirmedTmdbMediaType
         )
         let encodeInput = EncodeInput(
             outputURL: outputURL,
@@ -314,7 +337,9 @@ final class RipFlowViewModel {
             encodeTitle: encodeInput.title,
             episode: encodeInput.episode,
             audioTracks: encodeInput.selectedAudioTracks,
-            quality: encodeInput.quality
+            quality: encodeInput.quality,
+            tmdbId: ripInput.tmdbId,
+            tmdbMediaType: ripInput.tmdbMediaType
         )
 
         let ripQueue = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
@@ -384,6 +409,8 @@ final class RipFlowViewModel {
         confirmedTitle = nil
         confirmedYear = nil
         confirmedEncodeInput = nil
+        confirmedTmdbId = nil
+        confirmedTmdbMediaType = nil
         ripEstimate = nil
         phase = .idle
     }

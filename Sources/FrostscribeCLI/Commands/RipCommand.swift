@@ -56,7 +56,7 @@ struct RipCommand: AsyncParsableCommand {
 
         // Identify media before presenting titles
         Colors.section("Identify Media")
-        let (title, year, isTV, _) = try await lookupMedia(discName: scanResult.discName, config: config)
+        let (title, year, isTV, tmdbId) = try await lookupMedia(discName: scanResult.discName, config: config)
 
         var episodeLabel: String? = nil
         var season = 1
@@ -125,7 +125,9 @@ struct RipCommand: AsyncParsableCommand {
             mediaType: isTV ? .tvshow : .movie,
             jobLabel: jobLabel,
             discType: scanResult.discType,
-            titleSizeBytes: chosen.sizeBytes
+            titleSizeBytes: chosen.sizeBytes,
+            tmdbId: tmdbId,
+            tmdbMediaType: isTV ? "tv" : "movie"
         )
         let encodeInput = EncodeInput(
             outputURL: outputURL,

@@ -7,6 +7,8 @@ public struct RipInput: Sendable {
     public let jobLabel: String
     public let discType: DiscType
     public let titleSizeBytes: Int
+    public let tmdbId: Int?
+    public let tmdbMediaType: String?
 
     public init(
         titleNumber: Int,
@@ -14,7 +16,9 @@ public struct RipInput: Sendable {
         mediaType: RipJob.MediaType,
         jobLabel: String,
         discType: DiscType = .unknown,
-        titleSizeBytes: Int = 0
+        titleSizeBytes: Int = 0,
+        tmdbId: Int? = nil,
+        tmdbMediaType: String? = nil
     ) {
         self.titleNumber = titleNumber
         self.baseTemp = baseTemp
@@ -22,6 +26,8 @@ public struct RipInput: Sendable {
         self.jobLabel = jobLabel
         self.discType = discType
         self.titleSizeBytes = titleSizeBytes
+        self.tmdbId = tmdbId
+        self.tmdbMediaType = tmdbMediaType
     }
 }
 
