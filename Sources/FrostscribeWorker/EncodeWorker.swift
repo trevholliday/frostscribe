@@ -33,6 +33,13 @@ actor EncodeWorker {
     func stop() {
         log("Frostscribe worker shutting down…")
         running = false
+        // Reset any in-flight job back to pending so the next worker start picks it up.
+        if let jobs = try? queueManager.read() {
+            for job in jobs where job.status == .encoding {
+                log("Resetting interrupted job to pending: \(job.label)")
+                try? queueManager.updateStatus(id: job.id, status: .pending)
+            }
+        }
         exit(0)
     }
 

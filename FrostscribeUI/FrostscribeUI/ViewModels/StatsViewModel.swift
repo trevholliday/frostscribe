@@ -49,7 +49,8 @@ final class StatsViewModel {
             avgRipMinutes = totalSec / Double(successful.count) / 60.0
         }
 
-        if let fastest = successful.min(by: { $0.ripDurationSeconds < $1.ripDurationSeconds }) {
+        let timedSuccessful = successful.filter { $0.ripDurationSeconds > 0 }
+        if let fastest = timedSuccessful.min(by: { $0.ripDurationSeconds < $1.ripDurationSeconds }) {
             fastestLabel = fastest.jobLabel
             fastestMinutes = fastest.ripDurationSeconds / 60.0
         }
@@ -60,13 +61,11 @@ final class StatsViewModel {
             uhd:    successful.filter { $0.discType == .uhd }.count
         )
 
-        // Encode stats from queue
-        let allEncodes = (try? QueueManager(appSupportURL: ConfigManager.appSupportURL).read()) ?? []
-        let terminal = allEncodes.filter { $0.status == .done || $0.status == .error }
-        totalEncodes = terminal.count
-        encodeErrors = terminal.filter { $0.status == .error }.count
+        // Encode stats — sourced from rip history (1 encode per rip)
+        totalEncodes = totalAttempts
+        encodeErrors = totalAttempts - totalRips
         encodeSuccessRate = totalEncodes > 0
-            ? Double(totalEncodes - encodeErrors) / Double(totalEncodes) * 100 : 0
+            ? Double(totalRips) / Double(totalEncodes) * 100 : 0
 
         loadSelectionStats()
     }
