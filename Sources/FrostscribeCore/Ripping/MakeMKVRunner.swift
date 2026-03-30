@@ -133,7 +133,7 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
             let videoResolution = buildVideoResolution(from: streams)
             let subtitleCount = streams.values.filter { $0[1] == "Subtitles" }.count
             let orderWeight = Int(attrs[33] ?? "0") ?? 0
-            let angle = attrs[42].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
+            let angle = attrs[15].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
             return DiscTitle(
                 number: num,
                 name: attrs[27] ?? "title_\(num)",

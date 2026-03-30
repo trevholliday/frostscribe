@@ -9,10 +9,6 @@ public enum EncoderPreset {
         }
     }
 
-    public static func discType(for preset: String) -> DiscType {
-        preset == dvd ? .dvd : .bluray
-    }
-
     public static func quality(for discType: DiscType, config: Config) -> Int {
         let encodeQuality: EncodeQuality
         switch discType {

@@ -28,6 +28,7 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
         input: URL,
         output: URL,
         preset: String,
+        discType: String,
         title: String,
         episode: String? = nil,
         audioTracks: [Int]? = nil
@@ -40,6 +41,7 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
                 input: input.path,
                 output: output.path,
                 preset: preset,
+                discType: discType,
                 audioTracks: audioTracks
             )
             jobs.append(job)

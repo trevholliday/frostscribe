@@ -65,7 +65,7 @@ actor EncodeWorker {
             )
 
             let config   = (try? ConfigManager().load()) ?? Config()
-            let discType = EncoderPreset.discType(for: job.preset)
+            let discType = DiscType(rawValue: job.discType) ?? .bluray
             let quality  = EncoderPreset.quality(for: discType, config: config)
             try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks, quality: quality, encoderType: config.encoderType) { pct in
                 let label = String(format: "%.1f%%", pct)

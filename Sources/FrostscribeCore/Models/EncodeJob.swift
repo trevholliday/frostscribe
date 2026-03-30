@@ -14,6 +14,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
     public var input: String
     public var output: String
     public var preset: String
+    public var discType: String
     public var audioTracks: [Int]?
     public var status: Status
     public var progress: String
@@ -23,6 +24,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case id, title, episode, input, output, preset, status, progress
+        case discType = "disc_type"
         case audioTracks = "audio_tracks"
         case addedAt = "added_at"
         case startedAt = "started_at"
@@ -37,6 +39,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         input = try c.decode(String.self, forKey: .input)
         output = try c.decode(String.self, forKey: .output)
         preset = try c.decode(String.self, forKey: .preset)
+        discType = (try? c.decodeIfPresent(String.self, forKey: .discType)) ?? DiscType.bluray.rawValue
         audioTracks = try c.decodeIfPresent([Int].self, forKey: .audioTracks)
         status = (try? c.decode(Status.self, forKey: .status)) ?? .pending
         progress = (try? c.decode(String.self, forKey: .progress)) ?? "—"
@@ -61,6 +64,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         input: String,
         output: String,
         preset: String,
+        discType: String = DiscType.bluray.rawValue,
         audioTracks: [Int]? = nil,
         status: Status = .pending,
         progress: String = "—",
@@ -74,6 +78,7 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         self.input = input
         self.output = output
         self.preset = preset
+        self.discType = discType
         self.audioTracks = audioTracks
         self.status = status
         self.progress = progress

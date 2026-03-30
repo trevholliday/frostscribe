@@ -117,6 +117,7 @@ actor RipWorker {
                 input: mkvURL,
                 output: URL(fileURLWithPath: job.outputPath),
                 preset: job.preset,
+                discType: job.discType,
                 title: job.encodeTitle,
                 episode: job.episode,
                 audioTracks: job.audioTracks

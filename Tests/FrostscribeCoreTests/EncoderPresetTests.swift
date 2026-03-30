@@ -66,7 +66,7 @@ struct EncoderPresetTests {
         #expect(args[encIdx + 1] == "ca_aac,ca_aac")
 
         let abIdx = args.firstIndex(of: "--ab")!
-        #expect(args[abIdx + 1] == "160,160")
+        #expect(args[abIdx + 1] == "320,320")
 
         let nameIdx = args.firstIndex(of: "--aname")!
         #expect(args[nameIdx + 1] == "Track 1,Track 3")
@@ -103,7 +103,7 @@ struct EncoderPresetTests {
         #expect(args.contains("My Preset"))
     }
 
-    @Test func subtitleNoneIsAlwaysPresent() {
+    @Test func subtitleTracksAreAlwaysPresent() {
         let args = EncoderPreset.arguments(
             input: "/in.mkv",
             output: "/out.mkv",
@@ -113,7 +113,7 @@ struct EncoderPresetTests {
         )
         #expect(args.contains("--subtitle"))
         let idx = args.firstIndex(of: "--subtitle")!
-        #expect(args[idx + 1] == "none")
+        #expect(args[idx + 1] == "1,2,3,4,5,6,7,8")
     }
 
     @Test func qualityIsPassedToArguments() {

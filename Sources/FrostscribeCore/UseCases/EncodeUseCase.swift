@@ -3,6 +3,7 @@ import Foundation
 public struct EncodeInput: Sendable {
     public let outputURL: URL
     public let preset: String
+    public let discType: String
     public let title: String
     public let episode: String?
     public let selectedAudioTracks: [Int]?
@@ -10,12 +11,14 @@ public struct EncodeInput: Sendable {
     public init(
         outputURL: URL,
         preset: String,
+        discType: String,
         title: String,
         episode: String? = nil,
         selectedAudioTracks: [Int]? = nil
     ) {
         self.outputURL = outputURL
         self.preset = preset
+        self.discType = discType
         self.title = title
         self.episode = episode
         self.selectedAudioTracks = selectedAudioTracks
@@ -35,6 +38,7 @@ public final class EncodeUseCase: Sendable {
             input: inputMKV,
             output: input.outputURL,
             preset: input.preset,
+            discType: input.discType,
             title: input.title,
             episode: input.episode,
             audioTracks: input.selectedAudioTracks

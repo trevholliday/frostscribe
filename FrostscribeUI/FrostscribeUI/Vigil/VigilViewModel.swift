@@ -133,6 +133,7 @@ final class VigilViewModel {
         let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
+            discType: scanResult.discType.rawValue,
             title: mediaTitle
         )
 

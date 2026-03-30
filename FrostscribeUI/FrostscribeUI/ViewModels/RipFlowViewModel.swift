@@ -386,6 +386,7 @@ final class RipFlowCoordinator {
         let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
+            discType: scanResult.discType.rawValue,
             title: title,
             episode: episodeLabel,
             selectedAudioTracks: selectedTracks
