@@ -57,7 +57,7 @@ final class RipFlowViewModel {
         phase = phaseStack.removeLast()
     }
 
-    var filterShortTitles: Bool { storedConfig?.filterShortTitles ?? true }
+    var filterMovieTitles: Bool { storedConfig?.filterMovieTitles ?? true }
 
     func ejectDisc() {
         Task.detached { DiscEjector().eject() }

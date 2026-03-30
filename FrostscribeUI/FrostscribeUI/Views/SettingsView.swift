@@ -64,9 +64,9 @@ struct SettingsView: View {
                 Toggle("Select audio tracks before ripping", isOn: $config.selectAudioTracks)
                     .tint(FrostTheme.frostCyan)
                     .onChange(of: config.selectAudioTracks) { save() }
-                Toggle("Filter titles under 60 minutes", isOn: $config.filterShortTitles)
+                Toggle("Filter movie titles under 60 minutes", isOn: $config.filterMovieTitles)
                     .tint(FrostTheme.frostCyan)
-                    .onChange(of: config.filterShortTitles) { save() }
+                    .onChange(of: config.filterMovieTitles) { save() }
             }
 
             if let error = saveError {

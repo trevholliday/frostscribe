@@ -17,7 +17,7 @@ struct ConfigCodableTests {
         #expect(config.tvDir == "")
         #expect(config.tempDir == "")
         #expect(config.vigilMode == true)
-        #expect(config.filterShortTitles == true)
+        #expect(config.filterMovieTitles == true)
         #expect(config.qualityDVD == .q80)
         #expect(config.qualityBluray == .q70)
         #expect(config.qualityUHD == .q70)
@@ -46,7 +46,7 @@ struct ConfigCodableTests {
         config.qualityDVD = .q75
         config.qualityBluray = .q65
         config.qualityUHD = .q60
-        config.filterShortTitles = false
+        config.filterMovieTitles = false
 
         let fileURL = dir.appending(path: "config.json")
         let data = try JSONEncoder.frostscribe.encode(config)
@@ -66,41 +66,41 @@ struct ConfigCodableTests {
         #expect(loaded.qualityDVD == .q75)
         #expect(loaded.qualityBluray == .q65)
         #expect(loaded.qualityUHD == .q60)
-        #expect(loaded.filterShortTitles == false)
+        #expect(loaded.filterMovieTitles == false)
     }
 
-    @Test func filterShortTitlesPersistsTrue() throws {
+    @Test func filterMovieTitlesPersistsTrue() throws {
         let dir = FileManager.default.temporaryDirectory
             .appending(path: "config-test-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
         var config = Config()
-        config.filterShortTitles = true
+        config.filterMovieTitles = true
 
         let fileURL = dir.appending(path: "config.json")
         let data = try JSONEncoder.frostscribe.encode(config)
         try data.writeAtomically(to: fileURL)
 
         let loaded = try JSONDecoder.frostscribe.decode(Config.self, from: Data(contentsOf: fileURL))
-        #expect(loaded.filterShortTitles == true)
+        #expect(loaded.filterMovieTitles == true)
     }
 
-    @Test func filterShortTitlesPersistsFalse() throws {
+    @Test func filterMovieTitlesPersistsFalse() throws {
         let dir = FileManager.default.temporaryDirectory
             .appending(path: "config-test-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
         var config = Config()
-        config.filterShortTitles = false
+        config.filterMovieTitles = false
 
         let fileURL = dir.appending(path: "config.json")
         let data = try JSONEncoder.frostscribe.encode(config)
         try data.writeAtomically(to: fileURL)
 
         let loaded = try JSONDecoder.frostscribe.decode(Config.self, from: Data(contentsOf: fileURL))
-        #expect(loaded.filterShortTitles == false)
+        #expect(loaded.filterMovieTitles == false)
     }
 
     @Test func qualityDVDPersists() throws {
@@ -185,7 +185,7 @@ struct ConfigCodableTests {
         #expect(loaded.moviesDir == "/mymovies")
         #expect(loaded.tvDir == "")
         #expect(loaded.vigilMode == true)
-        #expect(loaded.filterShortTitles == true)
+        #expect(loaded.filterMovieTitles == true)
         #expect(loaded.qualityDVD == .q80)
         #expect(loaded.qualityBluray == .q70)
     }

@@ -113,26 +113,32 @@ struct RipFlowView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(activeJobs) { job in
-                            HStack(alignment: .top, spacing: FrostTheme.paddingM) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(job.title)
-                                        .font(.system(size: 19, weight: .bold))
-                                        .lineLimit(1)
-                                    if let ep = job.episode {
-                                        Text(ep)
-                                            .font(.system(size: 15))
-                                            .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(alignment: .top, spacing: FrostTheme.paddingM) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(job.title)
+                                            .font(.system(size: 19, weight: .bold))
+                                            .lineLimit(1)
+                                        if let ep = job.episode {
+                                            Text(ep)
+                                                .font(.system(size: 15))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Text(URL(fileURLWithPath: job.output).lastPathComponent)
+                                            .font(.system(size: 15, design: .monospaced))
+                                            .foregroundStyle(.tertiary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
                                     }
-                                    Text(URL(fileURLWithPath: job.output).lastPathComponent)
-                                        .font(.system(size: 15, design: .monospaced))
-                                        .foregroundStyle(.tertiary)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
+                                    Spacer()
+                                    Text(job.status == .encoding ? job.progress : job.status.rawValue.capitalized)
+                                        .font(.system(size: 15).monospacedDigit())
+                                        .foregroundStyle(job.status == .encoding ? FrostTheme.teal : .secondary)
                                 }
-                                Spacer()
-                                Text(job.status.rawValue.capitalized)
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(job.status == .encoding ? FrostTheme.teal : .secondary)
+                                if job.status == .encoding {
+                                    ProgressView(value: job.progress.progressFraction)
+                                        .tint(FrostTheme.teal)
+                                }
                             }
                             .padding(.vertical, FrostTheme.paddingS)
                             Divider()

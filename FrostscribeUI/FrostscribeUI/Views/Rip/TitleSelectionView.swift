@@ -11,7 +11,7 @@ struct TitleSelectionView: View {
     let episode: Int
 
     private var displayedTitles: [DiscTitle] {
-        guard vm.filterShortTitles else { return scanResult.titles }
+        guard vm.filterMovieTitles && !isTV else { return scanResult.titles }
         return scanResult.titles.filter { $0.durationMinutes >= 60 }
     }
 

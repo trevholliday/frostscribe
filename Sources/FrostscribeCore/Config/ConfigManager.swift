@@ -34,6 +34,8 @@ public final class ConfigManager: Sendable {
         try data.writeAtomically(to: fileURL)
     }
 
+    // ConfigLoading conformance is declared in an extension below.
+
     public func createDirectories(for config: Config) throws {
         let fm = FileManager.default
         for path in [config.moviesDir, config.tvDir, config.tempDir] where !path.isEmpty {
@@ -44,3 +46,5 @@ public final class ConfigManager: Sendable {
         }
     }
 }
+
+extension ConfigManager: ConfigLoading {}
