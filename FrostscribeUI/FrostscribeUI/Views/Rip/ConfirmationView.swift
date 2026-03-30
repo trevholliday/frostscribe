@@ -2,7 +2,7 @@ import SwiftUI
 import FrostscribeCore
 
 struct ConfirmationView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     let ripInput: RipInput
     let encodeInput: EncodeInput
 

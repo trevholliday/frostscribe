@@ -1,15 +1,15 @@
 import Foundation
 import FrostscribeCore
 
+struct DiscBreakdown {
+    let bluray: Int
+    let dvd: Int
+    let uhd: Int
+}
+
 @MainActor
 @Observable
 final class StatsViewModel {
-
-    struct DiscBreakdown {
-        let bluray: Int
-        let dvd: Int
-        let uhd: Int
-    }
 
     private(set) var totalRips: Int = 0
     private(set) var dataRippedGB: Double = 0
@@ -56,9 +56,9 @@ final class StatsViewModel {
         }
 
         breakdown = DiscBreakdown(
-            bluray: successful.filter { $0.discType == .bluray }.count,
-            dvd:    successful.filter { $0.discType == .dvd }.count,
-            uhd:    successful.filter { $0.discType == .uhd }.count
+            bluray: successful.count(where: { $0.discType == .bluray }),
+            dvd:    successful.count(where: { $0.discType == .dvd }),
+            uhd:    successful.count(where: { $0.discType == .uhd })
         )
 
         // Encode stats — sourced from rip history (1 encode per rip)

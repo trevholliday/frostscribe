@@ -87,3 +87,4 @@ public final class RipQueueManager: RipQueueManaging, @unchecked Sendable {
         try data.writeAtomically(to: fileURL)
     }
 }
+

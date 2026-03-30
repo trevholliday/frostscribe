@@ -2,20 +2,20 @@ import SwiftUI
 import FrostscribeCore
 
 struct TMDBSearchView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     let scanResult: DiscScanResult
 
     @State private var isTV = false
     @State private var query: String
     @State private var showManualEntry = false
     @State private var manualTitle = ""
-    @State private var manualYear = String(Calendar.current.component(.year, from: Date()))
+    @State private var manualYear = String(Calendar.current.component(.year, from: .now))
 
-    init(vm: RipFlowViewModel, scanResult: DiscScanResult) {
+    init(vm: RipFlowCoordinator, scanResult: DiscScanResult) {
         self.vm = vm
         self.scanResult = scanResult
         let q = scanResult.discName.map {
-            $0.replacingOccurrences(of: "_", with: " ").capitalized
+            $0.replacing("_", with: " ").capitalized
         } ?? ""
         _query = State(initialValue: q)
     }
@@ -119,11 +119,13 @@ struct TMDBSearchView: View {
                 spacing: 16
             ) {
                 ForEach(vm.tmdbResults, id: \.id) { result in
-                    TMDBResultCard(result: result)
-                        .onTapGesture {
-                            vm.confirmTMDB(result: result, scanResult: scanResult,
-                                           isTV: result.mediaType == .tv)
-                        }
+                    Button {
+                        vm.confirmTMDB(result: result, scanResult: scanResult,
+                                       isTV: result.mediaType == .tv)
+                    } label: {
+                        TMDBResultCard(result: result)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(16)

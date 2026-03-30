@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RipIdleView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
 
     var body: some View {
         VStack(spacing: FrostTheme.paddingL) {

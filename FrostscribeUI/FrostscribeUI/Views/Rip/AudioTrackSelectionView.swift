@@ -2,7 +2,7 @@ import SwiftUI
 import FrostscribeCore
 
 struct AudioTrackSelectionView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     let chosenTitle: DiscTitle
     let scanResult: DiscScanResult
     let title: String
@@ -14,7 +14,7 @@ struct AudioTrackSelectionView: View {
     // selectedIndices uses 1-based track numbers
     @State private var selectedIndices: Set<Int>
 
-    init(vm: RipFlowViewModel, chosenTitle: DiscTitle, scanResult: DiscScanResult,
+    init(vm: RipFlowCoordinator, chosenTitle: DiscTitle, scanResult: DiscScanResult,
          title: String, year: String, isTV: Bool, season: Int, episode: Int) {
         self.vm = vm
         self.chosenTitle = chosenTitle
@@ -29,6 +29,20 @@ struct AudioTrackSelectionView: View {
 
     private var allSelected: Bool { selectedIndices.count == chosenTitle.audioTracks.count }
 
+    private var allSelectedBinding: Binding<Bool> {
+        Binding(
+            get: { allSelected },
+            set: { on in selectedIndices = on ? Set(1...chosenTitle.audioTracks.count) : [] }
+        )
+    }
+
+    private func trackBinding(for num: Int) -> Binding<Bool> {
+        Binding(
+            get: { selectedIndices.contains(num) },
+            set: { on in if on { selectedIndices.insert(num) } else { selectedIndices.remove(num) } }
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             headerRow
@@ -36,16 +50,7 @@ struct AudioTrackSelectionView: View {
             List {
                 // Select all toggle
                 HStack {
-                    Toggle(isOn: Binding(
-                        get: { allSelected },
-                        set: { on in
-                            if on {
-                                selectedIndices = Set(1...chosenTitle.audioTracks.count)
-                            } else {
-                                selectedIndices = []
-                            }
-                        }
-                    )) {
+                    Toggle(isOn: allSelectedBinding) {
                         Text("All tracks")
                             .bold()
                     }
@@ -54,13 +59,7 @@ struct AudioTrackSelectionView: View {
                 ForEach(Array(chosenTitle.audioTracks.enumerated()), id: \.offset) { i, track in
                     let num = i + 1
                     HStack {
-                        Toggle(isOn: Binding(
-                            get: { selectedIndices.contains(num) },
-                            set: { on in
-                                if on { selectedIndices.insert(num) }
-                                else  { selectedIndices.remove(num) }
-                            }
-                        )) {
+                        Toggle(isOn: trackBinding(for: num)) {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 4) {
                                     Text("Track \(num)")

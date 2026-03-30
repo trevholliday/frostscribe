@@ -2,7 +2,7 @@ import SwiftUI
 import FrostscribeCore
 
 struct TVEpisodeView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     let scanResult: DiscScanResult
     let title: String
     let year: String

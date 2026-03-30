@@ -2,8 +2,9 @@ import SwiftUI
 import FrostscribeCore
 
 struct RipFlowView: View {
-    @State private var vm = RipFlowViewModel()
+    @State private var vm = RipFlowCoordinator()
     @State private var showStats = false
+    @State private var ripRecords: [RipRecord] = []
     @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(StatusViewModel.self) private var statusVM
     @Environment(QueueViewModel.self) private var queueVM
@@ -154,8 +155,7 @@ struct RipFlowView: View {
     // MARK: - History detail
 
     private var historyDetail: some View {
-        let ripRecords = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL).load()
-        return ScrollView {
+        ScrollView {
             VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
                 HStack {
                     Text("History")
@@ -253,6 +253,9 @@ struct RipFlowView: View {
             }
             .padding(FrostTheme.paddingL)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .task {
+            ripRecords = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL).load()
         }
     }
 

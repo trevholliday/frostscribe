@@ -4,7 +4,7 @@ import FrostscribeCore
 // MARK: - Ripping screen (carousel + media details)
 
 struct RipRippingView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
 
     var body: some View {
         GeometryReader { geo in
@@ -174,7 +174,9 @@ struct PeekingCarouselView: View {
             currentIndex += 1
         }
         if currentIndex >= imageURLs.count * 2 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.slideDuration + 0.05) {
+            let delay = Self.slideDuration + 0.05
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(delay))
                 var t = Transaction()
                 t.disablesAnimations = true
                 withTransaction(t) { currentIndex = imageURLs.count }

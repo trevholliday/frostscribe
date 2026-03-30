@@ -6,8 +6,10 @@ let appSupportURL = ConfigManager.appSupportURL
 let config = try? ConfigManager().load()
 let logStore = LogStore(appSupportURL: appSupportURL)
 
+let encodeQueueManager = QueueManager(appSupportURL: appSupportURL)
+
 let encodeWorker = EncodeWorker(
-    queueManager: QueueManager(appSupportURL: appSupportURL),
+    queueManager: encodeQueueManager,
     handbrakeRunner: HandBrakeRunner(binPath: config?.handbrakeBin ?? "HandBrakeCLI"),
     hookRunner: HookRunner(command: config?.eventHook ?? ""),
     logStore: logStore
@@ -15,7 +17,7 @@ let encodeWorker = EncodeWorker(
 
 let ripWorker = RipWorker(
     ripQueueManager: RipQueueManager(appSupportURL: appSupportURL),
-    encodeQueueManager: QueueManager(appSupportURL: appSupportURL),
+    encodeQueueManager: encodeQueueManager,
     statusManager: StatusManager(appSupportURL: appSupportURL),
     makemkvBin: config?.makemkvBin ?? "makemkvcon",
     hookRunner: HookRunner(command: config?.eventHook ?? ""),

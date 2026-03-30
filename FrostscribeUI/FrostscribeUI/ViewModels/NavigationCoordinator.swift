@@ -31,5 +31,5 @@ enum AppSection: Hashable {
 @MainActor
 @Observable
 final class NavigationCoordinator {
-    var selectedSection: AppSection? = .rip
+    var selectedSection: AppSection = .rip
 }

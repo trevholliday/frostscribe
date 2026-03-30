@@ -2,7 +2,7 @@ import SwiftUI
 import FrostscribeCore
 
 struct RipCompleteView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     let title: String
     let isError: Bool
     let message: String

@@ -2,7 +2,7 @@ import SwiftUI
 import FrostscribeCore
 
 struct LeftPanelView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(\.openWindow) private var openWindow
 

@@ -516,7 +516,3 @@ final class RipFlowCoordinator {
     }
 }
 
-// MARK: - Compatibility typealias
-
-/// Retained so Xcode's project file reference remains valid.
-typealias RipFlowViewModel = RipFlowCoordinator

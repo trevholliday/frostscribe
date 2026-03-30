@@ -34,7 +34,7 @@ struct MenuBarView: View {
     // MARK: - Navigation
 
     private func openSection(_ section: AppSection) {
-        navCoordinator.selectedSection = .some(section)
+        navCoordinator.selectedSection = section
         openWindow(id: "rip-flow")
     }
 

@@ -2,7 +2,7 @@ import SwiftUI
 import FrostscribeCore
 
 struct TitleSelectionView: View {
-    let vm: RipFlowViewModel
+    let vm: RipFlowCoordinator
     let scanResult: DiscScanResult
     let mediaTitle: String
     let year: String
@@ -43,17 +43,19 @@ struct TitleSelectionView: View {
             .padding(.vertical, FrostTheme.paddingS)
             Divider()
             List(displayedTitles, id: \.number) { title in
-                TitleRow(
-                    title: title,
-                    isMain: title.isMainTitleCandidate,
-                    isSuggested: title.number == vm.suggestedTitleNumber
-                )
-                .contentShape(Rectangle())
-                .onTapGesture {
+                Button {
                     vm.selectTitle(title, scanResult: scanResult,
                                    mediaTitle: mediaTitle, year: year,
                                    isTV: isTV, season: season, episode: episode)
+                } label: {
+                    TitleRow(
+                        title: title,
+                        isMain: title.isMainTitleCandidate,
+                        isSuggested: title.number == vm.suggestedTitleNumber
+                    )
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
             .listStyle(.plain)
         }
@@ -290,13 +292,3 @@ private struct TitleDetailPopover: View {
     }
 }
 
-// MARK: - Helpers
-
-private func sectionHeader(_ title: String, subtitle: String) -> some View {
-    HStack {
-        Spacer()
-        Text(subtitle)
-            .font(.system(size: 15))
-            .foregroundStyle(.secondary)
-    }
-}
