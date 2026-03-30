@@ -12,6 +12,11 @@
                         ❄  disc to library · natively  ❄
 </pre>
 
+> [!WARNING]
+> **Do not rip new discs on `main` until the `encoder-settings` branch is merged.**
+>
+> The current build on `main` uses the **old hardware encoder (vt_h265)** at a lower quality setting. The `encoder-settings` branch replaces this with software x265 encoding at RF 20, which produces significantly better quality — especially for DVDs upscaled to 1080p. Merging that branch and reinstalling the worker is required before any new rips should be started.
+
 # Frostscribe
 
 A native macOS tool for ripping and preserving physical disc media to a local [Jellyfin](https://jellyfin.org), [Plex](https://plex.tv), or [Kodi](https://kodi.tv) library.
