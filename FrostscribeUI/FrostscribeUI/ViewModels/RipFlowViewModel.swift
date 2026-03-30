@@ -115,7 +115,7 @@ final class RipFlowCoordinator {
     }
 
     func ejectDisc() {
-        Task.detached { DiscEjector().eject() }
+        Task { DiscEjector().eject() }
     }
 
     // MARK: - Initialize (resume in-progress rip on launch)
@@ -296,7 +296,7 @@ final class RipFlowCoordinator {
                      isTV: Bool, season: Int, episode: Int) {
         phaseStack.append(phase)
         let mediaType: RipJob.MediaType = isTV ? .tvshow : .movie
-        Task.detached {
+        Task {
             TitleSelectionStore(appSupportURL: ConfigManager.appSupportURL).record(
                 selected: discTitle,
                 allTitles: scanResult.titles,
@@ -424,7 +424,7 @@ final class RipFlowCoordinator {
     }
 
     private func kickWorker() {
-        Task.detached {
+        Task {
             let check = Process()
             check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
             check.arguments = ["list"]

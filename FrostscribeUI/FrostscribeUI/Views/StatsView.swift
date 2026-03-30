@@ -54,7 +54,7 @@ struct StatsView: View {
         .background(FrostTheme.background)
         .foregroundStyle(FrostTheme.textPrimary)
         .colorScheme(.dark)
-        .onAppear { vm.load() }
+        .task { vm.load() }
     }
 
     // MARK: - Cards

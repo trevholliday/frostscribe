@@ -80,15 +80,21 @@ struct RipRippingView: View {
         }
     }
 
+    private struct IndexedCrewMember: Identifiable {
+        let id: Int
+        let member: MediaDetails.CrewMember
+    }
+
     private func crewGrid(_ crew: [MediaDetails.CrewMember]) -> some View {
+        let indexed = crew.enumerated().map { IndexedCrewMember(id: $0.offset, member: $0.element) }
         let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
         return LazyVGrid(columns: columns, alignment: .leading, spacing: FrostTheme.paddingM) {
-            ForEach(Array(crew.enumerated()), id: \.offset) { _, member in
+            ForEach(indexed) { item in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(member.name)
+                    Text(item.member.name)
                         .font(.system(size: 19, weight: .bold))
                         .lineLimit(1)
-                    Text(member.job)
+                    Text(item.member.job)
                         .font(.system(size: 15))
                         .foregroundStyle(.secondary)
                 }
@@ -103,11 +109,11 @@ struct PeekingCarouselView: View {
     let imageURLs: [URL]
 
     @State private var currentIndex: Int = 0
+    @State private var tickToggle: Bool = false
 
     private static let slideDuration: Double = 0.5
     private static let cardFraction: CGFloat = 0.35
     private static let spacing: CGFloat = 14
-    private let timer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     private var looped: [URL] {
         guard imageURLs.count > 1 else { return imageURLs }
@@ -127,16 +133,23 @@ struct PeekingCarouselView: View {
                     .frame(width: geo.size.width, height: geo.size.height)
             } else {
                 HStack(spacing: Self.spacing) {
-                    ForEach(Array(looped.enumerated()), id: \.offset) { _, url in
+                    ForEach(looped, id: \.self) { url in
                         carouselCard(url: url, width: cardWidth, height: geo.size.height)
                     }
                 }
                 .offset(x: centerX - offsetX)
                 .onAppear { currentIndex = imageURLs.count }
-                .onReceive(timer) { _ in advance(cardWidth: cardWidth) }
+                .onChange(of: tickToggle) { advance() }
             }
         }
         .clipped()
+        .task {
+            guard imageURLs.count > 1 else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(15))
+                tickToggle.toggle()
+            }
+        }
     }
 
     private func carouselCard(url: URL, width: CGFloat, height: CGFloat) -> some View {
@@ -168,7 +181,7 @@ struct PeekingCarouselView: View {
         }
     }
 
-    private func advance(cardWidth: CGFloat) {
+    private func advance() {
         guard imageURLs.count > 1 else { return }
         withAnimation(.easeInOut(duration: Self.slideDuration)) {
             currentIndex += 1

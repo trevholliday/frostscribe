@@ -12,15 +12,6 @@ final class VigilViewModel {
         case scanning
         case ripping(progress: Int)
         case error(String)
-
-        static func == (lhs: Phase, rhs: Phase) -> Bool {
-            switch (lhs, rhs) {
-            case (.idle, .idle), (.scanning, .scanning): return true
-            case (.ripping(let a), .ripping(let b)): return a == b
-            case (.error(let a), .error(let b)):     return a == b
-            default: return false
-            }
-        }
     }
 
     private(set) var phase: Phase = .idle

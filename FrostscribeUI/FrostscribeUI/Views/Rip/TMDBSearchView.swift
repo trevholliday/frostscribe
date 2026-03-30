@@ -67,7 +67,7 @@ struct TMDBSearchView: View {
                 manualEntryForm
             }
         }
-        .onAppear {
+        .task {
             if vm.isTMDBConfigured && !query.isEmpty && vm.tmdbResults.isEmpty {
                 search()
             }
