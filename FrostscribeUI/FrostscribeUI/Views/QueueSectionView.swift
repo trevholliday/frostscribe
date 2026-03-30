@@ -22,7 +22,8 @@ struct QueueSectionView: View {
                 }
             }
 
-            if queueVM.jobs.isEmpty {
+            let activeJobs = queueVM.jobs.filter(\.isActive)
+            if activeJobs.isEmpty {
                 Text("Queue is empty")
                     .font(.subheadline)
                     .foregroundStyle(FrostTheme.textPrimary.opacity(0.35))
@@ -30,11 +31,11 @@ struct QueueSectionView: View {
                     .padding(.vertical, FrostTheme.paddingS)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    ForEach(Array(queueVM.jobs.prefix(Self.maxVisible))) { job in
+                    ForEach(Array(activeJobs.prefix(Self.maxVisible))) { job in
                         QueueRowView(job: job)
                     }
-                    if queueVM.jobs.count > Self.maxVisible {
-                        Text("+ \(queueVM.jobs.count - Self.maxVisible) more")
+                    if activeJobs.count > Self.maxVisible {
+                        Text("+ \(activeJobs.count - Self.maxVisible) more")
                             .font(.caption)
                             .foregroundStyle(FrostTheme.textPrimary.opacity(0.4))
                     }
