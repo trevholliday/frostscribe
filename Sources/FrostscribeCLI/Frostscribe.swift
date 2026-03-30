@@ -5,7 +5,7 @@ struct Frostscribe: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "frostscribe",
         abstract: "A native macOS tool for ripping and preserving disc media.",
-        version: "0.2.1",
+        version: "0.3.0",
         subcommands: [
             InitCommand.self,
             RipCommand.self,
