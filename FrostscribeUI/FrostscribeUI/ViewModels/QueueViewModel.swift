@@ -43,8 +43,7 @@ final class QueueViewModel {
                 preset: job.preset,
                 title: job.title,
                 episode: job.episode,
-                audioTracks: job.audioTracks,
-                quality: job.quality
+                audioTracks: job.audioTracks
             )
             refresh()
         } catch {}

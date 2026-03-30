@@ -23,7 +23,6 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
     public var encodeTitle: String
     public var episode: String?
     public var audioTracks: [Int]?
-    public var quality: Int
     // TMDB reference (stored at queue time for reliable resume)
     public var tmdbId: Int?
     public var tmdbMediaType: String?
@@ -47,7 +46,6 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         case encodeTitle   = "encode_title"
         case episode
         case audioTracks   = "audio_tracks"
-        case quality
         case tmdbId        = "tmdb_id"
         case tmdbMediaType = "tmdb_media_type"
         case status
@@ -70,7 +68,6 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         encodeTitle: String,
         episode: String? = nil,
         audioTracks: [Int]? = nil,
-        quality: Int,
         tmdbId: Int? = nil,
         tmdbMediaType: String? = nil,
         status: Status = .pending,
@@ -91,7 +88,6 @@ public struct RipQueueJob: Codable, Identifiable, Sendable {
         self.encodeTitle   = encodeTitle
         self.episode       = episode
         self.audioTracks   = audioTracks
-        self.quality       = quality
         self.tmdbId        = tmdbId
         self.tmdbMediaType = tmdbMediaType
         self.status        = status

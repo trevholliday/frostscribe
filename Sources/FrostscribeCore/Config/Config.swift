@@ -13,6 +13,7 @@ public struct Config: Sendable {
     /// When false, AutoScribe is active — the app auto-rips any inserted disc without user input.
     public var vigilMode: Bool
     public var selectAudioTracks: Bool
+    public var encoderType: EncoderType
     public var qualityDVD: EncodeQuality
     public var qualityBluray: EncodeQuality
     public var qualityUHD: EncodeQuality
@@ -30,6 +31,7 @@ public struct Config: Sendable {
         eventHook: String = "",
         vigilMode: Bool = true,
         selectAudioTracks: Bool = false,
+        encoderType: EncoderType = .software,
         qualityDVD: EncodeQuality = .rf20,
         qualityBluray: EncodeQuality = .rf20,
         qualityUHD: EncodeQuality = .rf20,
@@ -46,6 +48,7 @@ public struct Config: Sendable {
         self.eventHook = eventHook
         self.vigilMode = vigilMode
         self.selectAudioTracks = selectAudioTracks
+        self.encoderType = encoderType
         self.qualityDVD = qualityDVD
         self.qualityBluray = qualityBluray
         self.qualityUHD = qualityUHD
@@ -57,7 +60,8 @@ extension Config: Codable {
     enum CodingKeys: String, CodingKey {
         case mediaServer, moviesDir, tvDir, tempDir, tmdbApiKey, makemkvKey,
              makemkvBin, handbrakeBin, eventHook, vigilMode,
-             selectAudioTracks, qualityDVD, qualityBluray, qualityUHD,
+             selectAudioTracks, encoderType,
+             qualityDVD, qualityBluray, qualityUHD,
              filterMovieTitles
     }
 
@@ -74,6 +78,7 @@ extension Config: Codable {
         eventHook            = (try? c.decode(String.self,         forKey: .eventHook))            ?? ""
         vigilMode            = (try? c.decode(Bool.self,           forKey: .vigilMode))         ?? true
         selectAudioTracks    = (try? c.decode(Bool.self,           forKey: .selectAudioTracks)) ?? false
+        encoderType          = (try? c.decode(EncoderType.self,    forKey: .encoderType))       ?? .software
         qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .rf20
         qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .rf20
         qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .rf20

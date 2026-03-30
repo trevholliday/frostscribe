@@ -46,7 +46,7 @@ struct QueueCommand: ParsableCommand {
             if verbose {
                 Colors.verbose("Input:   \(job.input)")
                 Colors.verbose("Output:  \(job.output)")
-                Colors.verbose("Preset:  \(job.preset)  Quality: \(job.quality)")
+                Colors.verbose("Preset:  \(job.preset)")
                 if let tracks = job.audioTracks {
                     Colors.verbose("Audio:   tracks \(tracks.map(String.init).joined(separator: ", "))")
                 }

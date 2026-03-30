@@ -43,7 +43,7 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
     func read() throws -> [EncodeJob] { [] }
     func activeJobs() throws -> [EncodeJob] { [] }
 
-    func add(input: URL, output: URL, preset: String, title: String, episode: String?, audioTracks: [Int]?, quality: Int) throws {
+    func add(input: URL, output: URL, preset: String, title: String, episode: String?, audioTracks: [Int]?) throws {
         if let error = addError { throw error }
         addCalls.append(AddCall(input: input, output: output, preset: preset, title: title, episode: episode, audioTracks: audioTracks))
     }
@@ -217,8 +217,7 @@ struct EncodeUseCaseTests {
             outputURL: URL(fileURLWithPath: "/output/Movie.mkv"),
             preset: "H.265 MKV 1080p30",
             title: "The Matrix",
-            episode: episode,
-            quality: 70
+            episode: episode
         )
     }
 

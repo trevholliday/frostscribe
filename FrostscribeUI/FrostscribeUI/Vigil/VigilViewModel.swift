@@ -133,8 +133,7 @@ final class VigilViewModel {
         let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
-            title: mediaTitle,
-            quality: EncoderPreset.quality(for: scanResult.discType, config: config)
+            title: mediaTitle
         )
 
         hook.fire(event: "ripping_started", title: "Ripping Started", body: mediaTitle)
@@ -174,12 +173,12 @@ final class VigilViewModel {
     // MARK: - TMDB
 
     private func lookupTitle(discName: String?, config: Config) async -> (String?, String, TMDBClient.MediaType?) {
-        let currentYear = String(Calendar.current.component(.year, from: Date()))
+        let currentYear = String(Calendar.current.component(.year, from: .now))
         let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
         guard tmdb.isConfigured, let name = discName else { return (nil, currentYear, nil) }
 
         let query = name
-            .replacingOccurrences(of: "_", with: " ")
+            .replacing("_", with: " ")
             .capitalized
         guard let results = try? await tmdb.searchMulti(query: query),
               let top = results.first else {
