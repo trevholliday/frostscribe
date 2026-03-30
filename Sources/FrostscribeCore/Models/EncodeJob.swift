@@ -14,8 +14,8 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
     public var input: String
     public var output: String
     public var preset: String
+    public var discType: String
     public var audioTracks: [Int]?
-    public var quality: Int
     public var status: Status
     public var progress: String
     public var addedAt: Date
@@ -24,8 +24,8 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case id, title, episode, input, output, preset, status, progress
+        case discType = "disc_type"
         case audioTracks = "audio_tracks"
-        case quality
         case addedAt = "added_at"
         case startedAt = "started_at"
         case completedAt = "completed_at"
@@ -39,8 +39,8 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         input = try c.decode(String.self, forKey: .input)
         output = try c.decode(String.self, forKey: .output)
         preset = try c.decode(String.self, forKey: .preset)
+        discType = (try? c.decodeIfPresent(String.self, forKey: .discType)) ?? DiscType.bluray.rawValue
         audioTracks = try c.decodeIfPresent([Int].self, forKey: .audioTracks)
-        quality = (try? c.decodeIfPresent(Int.self, forKey: .quality)) ?? 70
         status = (try? c.decode(Status.self, forKey: .status)) ?? .pending
         progress = (try? c.decode(String.self, forKey: .progress)) ?? "—"
         addedAt = (try? c.decodeIfPresent(Date.self, forKey: .addedAt)) ?? .now
@@ -64,8 +64,8 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         input: String,
         output: String,
         preset: String,
+        discType: String = DiscType.bluray.rawValue,
         audioTracks: [Int]? = nil,
-        quality: Int,
         status: Status = .pending,
         progress: String = "—",
         addedAt: Date = .now,
@@ -78,8 +78,8 @@ public struct EncodeJob: Codable, Identifiable, Sendable {
         self.input = input
         self.output = output
         self.preset = preset
+        self.discType = discType
         self.audioTracks = audioTracks
-        self.quality = quality
         self.status = status
         self.progress = progress
         self.addedAt = addedAt

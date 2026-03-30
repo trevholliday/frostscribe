@@ -41,10 +41,10 @@ final class QueueViewModel {
                 input: URL(fileURLWithPath: job.input),
                 output: URL(fileURLWithPath: job.output),
                 preset: job.preset,
+                discType: job.discType,
                 title: job.title,
                 episode: job.episode,
-                audioTracks: job.audioTracks,
-                quality: job.quality
+                audioTracks: job.audioTracks
             )
             refresh()
         } catch {}

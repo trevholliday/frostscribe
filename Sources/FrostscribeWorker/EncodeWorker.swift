@@ -64,7 +64,10 @@ actor EncodeWorker {
                 withIntermediateDirectories: true
             )
 
-            try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks, quality: job.quality) { pct in
+            let config   = (try? ConfigManager().load()) ?? Config()
+            let discType = DiscType(rawValue: job.discType) ?? .bluray
+            let quality  = EncoderPreset.quality(for: discType, config: config)
+            try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks, quality: quality, encoderType: config.encoderType) { pct in
                 let label = String(format: "%.1f%%", pct)
                 try? qm.updateProgress(id: id, progress: label)
             }

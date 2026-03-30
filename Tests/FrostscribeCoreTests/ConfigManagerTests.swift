@@ -18,10 +18,11 @@ struct ConfigCodableTests {
         #expect(config.tempDir == "")
         #expect(config.vigilMode == true)
         #expect(config.filterMovieTitles == true)
-        #expect(config.qualityDVD == .q80)
-        #expect(config.qualityBluray == .q70)
-        #expect(config.qualityUHD == .q70)
+        #expect(config.qualityDVD == .rf20)
+        #expect(config.qualityBluray == .rf20)
+        #expect(config.qualityUHD == .rf20)
         #expect(config.selectAudioTracks == false)
+        #expect(config.encoderType == .software)
     }
 
     // MARK: - Round-trip
@@ -43,9 +44,10 @@ struct ConfigCodableTests {
         config.eventHook = "notify.sh"
         config.vigilMode = false
         config.selectAudioTracks = true
-        config.qualityDVD = .q75
-        config.qualityBluray = .q65
-        config.qualityUHD = .q60
+        config.encoderType = .hardware
+        config.qualityDVD = .rf22
+        config.qualityBluray = .rf24
+        config.qualityUHD = .rf26
         config.filterMovieTitles = false
 
         let fileURL = dir.appending(path: "config.json")
@@ -63,9 +65,10 @@ struct ConfigCodableTests {
         #expect(loaded.eventHook == "notify.sh")
         #expect(loaded.vigilMode == false)
         #expect(loaded.selectAudioTracks == true)
-        #expect(loaded.qualityDVD == .q75)
-        #expect(loaded.qualityBluray == .q65)
-        #expect(loaded.qualityUHD == .q60)
+        #expect(loaded.encoderType == .hardware)
+        #expect(loaded.qualityDVD == .rf22)
+        #expect(loaded.qualityBluray == .rf24)
+        #expect(loaded.qualityUHD == .rf26)
         #expect(loaded.filterMovieTitles == false)
     }
 
@@ -110,14 +113,14 @@ struct ConfigCodableTests {
         defer { try? FileManager.default.removeItem(at: dir) }
 
         var config = Config()
-        config.qualityDVD = .q65
+        config.qualityDVD = .rf24
 
         let fileURL = dir.appending(path: "config.json")
         let data = try JSONEncoder.frostscribe.encode(config)
         try data.writeAtomically(to: fileURL)
 
         let loaded = try JSONDecoder.frostscribe.decode(Config.self, from: Data(contentsOf: fileURL))
-        #expect(loaded.qualityDVD == .q65)
+        #expect(loaded.qualityDVD == .rf24)
     }
 
     @Test func qualityBlurayPersists() throws {
@@ -127,14 +130,14 @@ struct ConfigCodableTests {
         defer { try? FileManager.default.removeItem(at: dir) }
 
         var config = Config()
-        config.qualityBluray = .q80
+        config.qualityBluray = .rf18
 
         let fileURL = dir.appending(path: "config.json")
         let data = try JSONEncoder.frostscribe.encode(config)
         try data.writeAtomically(to: fileURL)
 
         let loaded = try JSONDecoder.frostscribe.decode(Config.self, from: Data(contentsOf: fileURL))
-        #expect(loaded.qualityBluray == .q80)
+        #expect(loaded.qualityBluray == .rf18)
     }
 
     @Test func qualityUHDPersists() throws {
@@ -144,14 +147,31 @@ struct ConfigCodableTests {
         defer { try? FileManager.default.removeItem(at: dir) }
 
         var config = Config()
-        config.qualityUHD = .q75
+        config.qualityUHD = .rf22
 
         let fileURL = dir.appending(path: "config.json")
         let data = try JSONEncoder.frostscribe.encode(config)
         try data.writeAtomically(to: fileURL)
 
         let loaded = try JSONDecoder.frostscribe.decode(Config.self, from: Data(contentsOf: fileURL))
-        #expect(loaded.qualityUHD == .q75)
+        #expect(loaded.qualityUHD == .rf22)
+    }
+
+    @Test func encoderTypePersists() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appending(path: "config-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var config = Config()
+        config.encoderType = .hardware
+
+        let fileURL = dir.appending(path: "config.json")
+        let data = try JSONEncoder.frostscribe.encode(config)
+        try data.writeAtomically(to: fileURL)
+
+        let loaded = try JSONDecoder.frostscribe.decode(Config.self, from: Data(contentsOf: fileURL))
+        #expect(loaded.encoderType == .hardware)
     }
 
     @Test func unknownKeysAreIgnoredGracefully() throws {
@@ -170,7 +190,7 @@ struct ConfigCodableTests {
         #expect(loaded.moviesDir == "/movies")
         #expect(loaded.vigilMode == false)
         // Unknown key doesn't cause a throw and defaults are applied
-        #expect(loaded.qualityDVD == .q80)
+        #expect(loaded.qualityDVD == .rf20)
     }
 
     @Test func missingKeysUseDefaults() throws {
@@ -186,7 +206,7 @@ struct ConfigCodableTests {
         #expect(loaded.tvDir == "")
         #expect(loaded.vigilMode == true)
         #expect(loaded.filterMovieTitles == true)
-        #expect(loaded.qualityDVD == .q80)
-        #expect(loaded.qualityBluray == .q70)
+        #expect(loaded.qualityDVD == .rf20)
+        #expect(loaded.qualityBluray == .rf20)
     }
 }

@@ -132,15 +132,14 @@ struct RipCommand: AsyncParsableCommand {
         let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
+            discType: scanResult.discType.rawValue,
             title: title,
             episode: episodeLabel,
-            selectedAudioTracks: selectedAudioTracks,
-            quality: EncoderPreset.quality(for: scanResult.discType, config: config)
+            selectedAudioTracks: selectedAudioTracks
         )
 
         if verbose {
             Colors.verbose("Preset:  \(encodeInput.preset)")
-            Colors.verbose("Quality: \(encodeInput.quality)")
             if let tracks = encodeInput.selectedAudioTracks {
                 Colors.verbose("Audio tracks: \(tracks.map(String.init).joined(separator: ", "))")
             } else {

@@ -14,4 +14,22 @@ public enum EncodeQuality: Int, Codable, Sendable, CaseIterable {
         case .rf26: return "RF 26 — Very Efficient"
         }
     }
+
+    /// Equivalent quality on the vt_h265 0–100 scale (higher = better).
+    public var hardwareQuality: Int {
+        switch self {
+        case .rf18: return 80
+        case .rf20: return 72
+        case .rf22: return 65
+        case .rf24: return 58
+        case .rf26: return 50
+        }
+    }
+
+    public func value(for encoderType: EncoderType) -> Int {
+        switch encoderType {
+        case .software: return rawValue
+        case .hardware: return hardwareQuality
+        }
+    }
 }

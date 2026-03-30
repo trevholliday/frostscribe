@@ -32,6 +32,7 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
         let input: URL
         let output: URL
         let preset: String
+        let discType: String
         let title: String
         let episode: String?
         let audioTracks: [Int]?
@@ -43,9 +44,9 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
     func read() throws -> [EncodeJob] { [] }
     func activeJobs() throws -> [EncodeJob] { [] }
 
-    func add(input: URL, output: URL, preset: String, title: String, episode: String?, audioTracks: [Int]?, quality: Int) throws {
+    func add(input: URL, output: URL, preset: String, discType: String, title: String, episode: String?, audioTracks: [Int]?) throws {
         if let error = addError { throw error }
-        addCalls.append(AddCall(input: input, output: output, preset: preset, title: title, episode: episode, audioTracks: audioTracks))
+        addCalls.append(AddCall(input: input, output: output, preset: preset, discType: discType, title: title, episode: episode, audioTracks: audioTracks))
     }
 
     func updateProgress(id: String, progress: String) throws {}
@@ -216,9 +217,9 @@ struct EncodeUseCaseTests {
         EncodeInput(
             outputURL: URL(fileURLWithPath: "/output/Movie.mkv"),
             preset: "H.265 MKV 1080p30",
+            discType: DiscType.dvd.rawValue,
             title: "The Matrix",
-            episode: episode,
-            quality: 70
+            episode: episode
         )
     }
 

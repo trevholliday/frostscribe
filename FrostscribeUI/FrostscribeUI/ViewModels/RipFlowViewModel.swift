@@ -3,14 +3,14 @@ import FrostscribeCore
 
 @MainActor
 @Observable
-final class RipFlowViewModel {
+final class RipFlowCoordinator {
 
     // MARK: - Phase
 
     enum Phase {
         case idle
         case scanning
-        case identify(DiscScanResult)                         // TMDB search + media type selection
+        case identify(DiscScanResult)
         case tvEpisode(DiscScanResult, title: String, year: String)
         case titleSelection(DiscScanResult, title: String, year: String, isTV: Bool, season: Int, episode: Int)
         case audioTrackSelection(DiscTitle, DiscScanResult, title: String, year: String,
@@ -21,16 +21,15 @@ final class RipFlowViewModel {
         case error(String)
     }
 
-    // MARK: - Published state
+    // MARK: - State
 
     private(set) var phase: Phase = .idle
     private(set) var tmdbResults: [TMDBClient.SearchResult] = []
     private(set) var isSearching = false
     private(set) var scanMessage: String = ""
     private(set) var ripMessage: String = ""
-    private(set) var suggestedTitleNumber: Int? = nil
+    private(set) var suggestedTitleNumber: Int?
 
-    // Persisted across phases for the left panel / carousel
     private(set) var posterURL: URL?
     private(set) var backdropURLs: [URL] = []
     private(set) var confirmedTitle: String?
@@ -44,10 +43,8 @@ final class RipFlowViewModel {
         backdropURLs.isEmpty ? [posterURL].compactMap { $0 } : backdropURLs
     }
 
-    // Rip estimation
     private(set) var ripEstimate: RipEstimate?
 
-    // Phase navigation history (never contains .scanning/.ripping/.done/.error/.idle)
     private var phaseStack: [Phase] = []
 
     var canGoBack: Bool { !phaseStack.isEmpty }
@@ -58,10 +55,6 @@ final class RipFlowViewModel {
     }
 
     var filterMovieTitles: Bool { storedConfig?.filterMovieTitles ?? true }
-
-    func ejectDisc() {
-        Task.detached { DiscEjector().eject() }
-    }
 
     var estimatedSecondsRemaining: Double? {
         guard let estimate = ripEstimate,
@@ -93,19 +86,50 @@ final class RipFlowViewModel {
         !(storedConfig?.tmdbApiKey.isEmpty ?? true)
     }
 
-    // MARK: - Private
+    // MARK: - Dependencies
+
+    private let configLoader: any ConfigLoading
+    private let ripQueue: any RipQueueManaging
+    private let makeMKVFactory: @Sendable (String) -> any MakeMKVRunning
+    private let tmdbFactory: @Sendable (String) -> any TMDBSearching
+
+    // MARK: - Private state
 
     private var storedConfig: Config?
     private var ripTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
     private var currentRipJobId: String?
 
+    // MARK: - Init
+
+    init(
+        configLoader: any ConfigLoading = ConfigManager(),
+        ripQueue: any RipQueueManaging = RipQueueManager(appSupportURL: ConfigManager.appSupportURL),
+        makeMKVFactory: @escaping @Sendable (String) -> any MakeMKVRunning = { MakeMKVRunner(binPath: $0) },
+        tmdbFactory: @escaping @Sendable (String) -> any TMDBSearching = { TMDBClient(apiKey: $0) }
+    ) {
+        self.configLoader = configLoader
+        self.ripQueue = ripQueue
+        self.makeMKVFactory = makeMKVFactory
+        self.tmdbFactory = tmdbFactory
+    }
+
+    // MARK: - Navigation
+
+    func goBack() {
+        guard !phaseStack.isEmpty else { return }
+        phase = phaseStack.removeLast()
+    }
+
+    func ejectDisc() {
+        Task.detached { DiscEjector().eject() }
+    }
+
     // MARK: - Initialize (resume in-progress rip on launch)
 
     func initialize() {
         guard case .idle = phase else { return }
         let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
-        let ripQueue  = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
 
         guard let file = try? statusMgr.read(),
               file.status == .ripping,
@@ -113,16 +137,14 @@ final class RipFlowViewModel {
               let jobs = try? ripQueue.read(),
               let queueJob = jobs.first(where: { $0.isActive }) else { return }
 
-        let pct   = Int(currentJob.progress.replacingOccurrences(of: "%", with: "")) ?? 0
+        let pct   = Int(currentJob.progress.replacing("%", with: "")) ?? 0
         let title = queueJob.encodeTitle
-        // Parse 4-digit year from jobLabel e.g. "The Fifth Element (1997)"
         let yearMatch = queueJob.jobLabel.range(of: #"\((\d{4})\)"#, options: .regularExpression)
         let year = yearMatch.map { String(queueJob.jobLabel[$0].dropFirst().dropLast()) } ?? ""
 
         confirmedTitle = title
         confirmedYear  = year
 
-        // Compute time estimate from historical rip rates
         let discType = DiscType(rawValue: queueJob.discType) ?? .unknown
         let store = RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
         ripEstimate = RipEstimator(store: store).estimate(discType: discType, sizeBytes: queueJob.titleSizeBytes)
@@ -131,26 +153,22 @@ final class RipFlowViewModel {
         phase = .ripping(title: queueJob.jobLabel, progress: pct)
         ripTask = Task { await pollRip(jobId: queueJob.id, title: queueJob.jobLabel) }
 
-        // Fetch TMDB data in background
-        let config = try? ConfigManager().load()
-        guard let config, !config.tmdbApiKey.isEmpty else { return }
+        guard let config = try? configLoader.load(), !config.tmdbApiKey.isEmpty else { return }
         storedConfig = config
         let isTV = queueJob.mediaType == "tvshow"
         let storedTmdbId = queueJob.tmdbId
         let storedTmdbType = queueJob.tmdbMediaType
+        let tmdb = tmdbFactory(config.tmdbApiKey)
         Task {
-            let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
             let resolvedId: Int
             let resolvedType: TMDBClient.MediaType
 
             if let tmdbId = storedTmdbId,
                let typeStr = storedTmdbType,
                let mediaType = TMDBClient.MediaType(rawValue: typeStr) {
-                // Direct lookup — no search needed
                 resolvedId = tmdbId
                 resolvedType = mediaType
             } else {
-                // Fall back to search
                 let query = year.isEmpty ? title : "\(title) \(year)"
                 guard let results = try? await tmdb.searchMulti(query: query),
                       let best = results.first(where: { isTV ? $0.mediaType == .tv : $0.mediaType == .movie })
@@ -178,9 +196,9 @@ final class RipFlowViewModel {
 
     private func scan() async {
         do {
-            let config = try ConfigManager().load()
+            let config = try configLoader.load()
             storedConfig = config
-            let runner = MakeMKVRunner(binPath: config.makemkvBin)
+            let runner = makeMKVFactory(config.makemkvBin)
             let result = try await runner.scan { [weak self] line in
                 guard let self else { return }
                 switch MakeMKVParser.parse(line) {
@@ -205,18 +223,14 @@ final class RipFlowViewModel {
     // MARK: - Identify / TMDB
 
     func searchTMDB(query: String, scanResult: DiscScanResult, isTV: Bool) {
-        triggerSearch(query: query, scanResult: scanResult, isTV: isTV)
-    }
-
-    private func triggerSearch(query: String, scanResult: DiscScanResult, isTV: Bool) {
         guard let config = storedConfig, !config.tmdbApiKey.isEmpty else { return }
         searchTask?.cancel()
         isSearching = true
         tmdbResults = []
 
+        let tmdb = tmdbFactory(config.tmdbApiKey)
         searchTask = Task {
             defer { isSearching = false }
-            let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
             guard let results = try? await tmdb.searchMulti(query: query) else { return }
             let filtered = results.filter { isTV ? $0.mediaType == .tv : $0.mediaType == .movie }
             tmdbResults = filtered.isEmpty ? results : filtered
@@ -228,8 +242,8 @@ final class RipFlowViewModel {
         confirmedTmdbMediaType = result.mediaType == .tv ? "tv" : "movie"
         posterURL = result.posterURL
         if let config = storedConfig {
+            let tmdb = tmdbFactory(config.tmdbApiKey)
             Task {
-                let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
                 async let backdropFetch = tmdb.backdrops(id: result.id, mediaType: result.mediaType)
                 async let detailsFetch  = tmdb.details(id: result.id, mediaType: result.mediaType)
                 let urls = (try? await backdropFetch) ?? []
@@ -241,10 +255,9 @@ final class RipFlowViewModel {
     }
 
     func enterManually(title: String, year: String, scanResult: DiscScanResult, isTV: Bool) {
-        // Attempt a background TMDB lookup to fetch images even for manual entries
         if let config = storedConfig, !config.tmdbApiKey.isEmpty {
+            let tmdb = tmdbFactory(config.tmdbApiKey)
             Task {
-                let tmdb = TMDBClient(apiKey: config.tmdbApiKey)
                 let query = year.isEmpty ? title : "\(title) \(year)"
                 if let results = try? await tmdb.searchMulti(query: query),
                    let best = results.first {
@@ -289,7 +302,6 @@ final class RipFlowViewModel {
                      mediaTitle: String, year: String,
                      isTV: Bool, season: Int, episode: Int) {
         phaseStack.append(phase)
-        // Record this selection for ML training data
         let mediaType: RipJob.MediaType = isTV ? .tvshow : .movie
         Task.detached {
             TitleSelectionStore(appSupportURL: ConfigManager.appSupportURL).record(
@@ -316,7 +328,8 @@ final class RipFlowViewModel {
                                          isTV: isTV, season: season, episode: episode)
         } else {
             buildConfirmation(chosenTitle: chosenTitle, scanResult: scanResult, title: title,
-                               year: year, isTV: isTV, season: season, episode: episode, selectedTracks: nil)
+                               year: year, isTV: isTV, season: season, episode: episode,
+                               selectedTracks: nil)
         }
     }
 
@@ -324,7 +337,8 @@ final class RipFlowViewModel {
                            title: String, year: String, isTV: Bool, season: Int, episode: Int) {
         phaseStack.append(phase)
         buildConfirmation(chosenTitle: chosenTitle, scanResult: scanResult, title: title,
-                           year: year, isTV: isTV, season: season, episode: episode, selectedTracks: tracks)
+                           year: year, isTV: isTV, season: season, episode: episode,
+                           selectedTracks: tracks)
     }
 
     private func buildConfirmation(chosenTitle: DiscTitle, scanResult: DiscScanResult,
@@ -372,16 +386,16 @@ final class RipFlowViewModel {
         let encodeInput = EncodeInput(
             outputURL: outputURL,
             preset: EncoderPreset.preset(for: scanResult.discType),
+            discType: scanResult.discType.rawValue,
             title: title,
             episode: episodeLabel,
-            selectedAudioTracks: selectedTracks,
-            quality: EncoderPreset.quality(for: scanResult.discType, config: config)
+            selectedAudioTracks: selectedTracks
         )
         confirmedEncodeInput = encodeInput
         phase = .confirmation(ripInput, encodeInput)
     }
 
-    // MARK: - Enqueue rip (handed off to background worker)
+    // MARK: - Enqueue rip
 
     func confirm(_ ripInput: RipInput, _ encodeInput: EncodeInput) {
         let job = RipQueueJob(
@@ -396,12 +410,10 @@ final class RipFlowViewModel {
             encodeTitle: encodeInput.title,
             episode: encodeInput.episode,
             audioTracks: encodeInput.selectedAudioTracks,
-            quality: encodeInput.quality,
             tmdbId: ripInput.tmdbId,
             tmdbMediaType: ripInput.tmdbMediaType
         )
 
-        let ripQueue = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
         do {
             try ripQueue.add(job)
         } catch {
@@ -419,46 +431,45 @@ final class RipFlowViewModel {
     }
 
     private func kickWorker() {
-        // `launchctl list` (no args) outputs PID\tExit\tLabel per line; "-" PID means not running.
-        let check = Process()
-        check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-        check.arguments = ["list"]
-        let pipe = Pipe()
-        check.standardOutput = pipe
-        check.standardError = FileHandle.nullDevice
-        try? check.run()
-        check.waitUntilExit()
+        Task.detached {
+            let check = Process()
+            check.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            check.arguments = ["list"]
+            let pipe = Pipe()
+            check.standardOutput = pipe
+            check.standardError = FileHandle.nullDevice
+            try? check.run()
+            check.waitUntilExit()
 
-        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        let line = output.split(separator: "\n").first { $0.contains("com.frostscribe.worker") }
-        let pid = line?.split(separator: "\t").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "-"
-        guard pid == "-" else { return }
+            let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let workerLine = output.split(separator: "\n").first { $0.contains("com.frostscribe.worker") }
+            let pid = workerLine?.split(separator: "\t").first.map(String.init)?
+                .trimmingCharacters(in: .whitespaces) ?? "-"
+            guard pid == "-" else { return }
 
-        let start = Process()
-        start.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-        start.arguments = ["start", "com.frostscribe.worker"]
-        start.standardOutput = FileHandle.nullDevice
-        start.standardError = FileHandle.nullDevice
-        try? start.run()
+            let start = Process()
+            start.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            start.arguments = ["start", "com.frostscribe.worker"]
+            start.standardOutput = FileHandle.nullDevice
+            start.standardError = FileHandle.nullDevice
+            try? start.run()
+        }
     }
 
     private func pollRip(jobId: String, title: String) async {
-        let ripQueue  = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
         let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
 
         while !Task.isCancelled {
-            // Reflect live progress from the status file (written by worker's RipUseCase)
             if let file = try? statusMgr.read(),
                file.status == .ripping,
                let currentJob = file.currentJob {
-                let pct = Int(currentJob.progress.replacingOccurrences(of: "%", with: "")) ?? 0
+                let pct = Int(currentJob.progress.replacing("%", with: "")) ?? 0
                 phase = .ripping(title: title, progress: pct)
                 if let msg = currentJob.currentItem, !msg.isEmpty {
                     ripMessage = msg
                 }
             }
 
-            // Check rip queue for terminal state
             if let jobs = try? ripQueue.read() {
                 if let job = jobs.first(where: { $0.id == jobId }) {
                     switch job.status {
@@ -472,7 +483,6 @@ final class RipFlowViewModel {
                         break
                     }
                 } else {
-                    // Job was removed (e.g. queue cleared) — reset to idle
                     phase = .idle
                     return
                 }
@@ -485,9 +495,7 @@ final class RipFlowViewModel {
     // MARK: - Reset
 
     func reset() {
-        // Signal the worker to terminate makemkvcon before resetting UI state.
         if let jobId = currentRipJobId {
-            let ripQueue = RipQueueManager(appSupportURL: ConfigManager.appSupportURL)
             try? ripQueue.markCancelled(id: jobId)
         }
         currentRipJobId = nil
@@ -514,3 +522,8 @@ final class RipFlowViewModel {
         phase = .idle
     }
 }
+
+// MARK: - Compatibility typealias
+
+/// Retained so Xcode's project file reference remains valid.
+typealias RipFlowViewModel = RipFlowCoordinator

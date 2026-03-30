@@ -120,6 +120,8 @@ public final class TMDBClient: Sendable {
         }
     }
 
+    // TMDBSearching conformance is declared in an extension below.
+
     public func seasonEpisodeCount(tvId: Int, season: Int) async throws -> Int? {
         guard isConfigured else { return nil }
 
@@ -215,6 +217,8 @@ public final class TMDBClient: Sendable {
         }
     }
 
+    // MARK: - Response types (TV)
+
     private struct TVDetailResponse: Decodable {
         var tagline: String?
         var overview: String?
@@ -239,5 +243,11 @@ public final class TMDBClient: Sendable {
                 case rating
             }
         }
+    }
+}
+
+extension TMDBClient: TMDBSearching {
+    public func backdrops(id: Int, mediaType: TMDBClient.MediaType) async throws -> [URL] {
+        try await backdrops(id: id, mediaType: mediaType, limit: 12)
     }
 }

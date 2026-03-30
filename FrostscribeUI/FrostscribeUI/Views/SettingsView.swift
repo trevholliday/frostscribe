@@ -37,6 +37,20 @@ struct SettingsView: View {
                 secureRow("TMDB API key", hint: "optional", value: $config.tmdbApiKey,  saved: savedConfig.tmdbApiKey)
             }
 
+            Section("Encoder") {
+                Picker("Encoder", selection: $config.encoderType) {
+                    ForEach(EncoderType.allCases, id: \.self) { type in
+                        Text(type.displayName).tag(type)
+                    }
+                }
+                .onChange(of: config.encoderType) { save() }
+                Text(config.encoderType == .software
+                     ? "Software x265 — best quality, slower encoding."
+                     : "Hardware VideoToolbox — faster encoding, slightly lower quality.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Encode Quality") {
                 Picker("DVD", selection: $config.qualityDVD) {
                     ForEach(EncodeQuality.allCases, id: \.self) { q in
@@ -100,20 +114,24 @@ struct SettingsView: View {
 
     // MARK: - Vigil / AutoScribe toggle
 
+    private var vigilModeBinding: Binding<Bool> {
+        Binding(
+            get: { config.vigilMode },
+            set: { newValue in
+                if !newValue {
+                    // Turning off Vigil = enabling AutoScribe — requires confirmation
+                    showAutoScribeConfirm = true
+                } else {
+                    config.vigilMode = true
+                    save()
+                }
+            }
+        )
+    }
+
     private var vigilModeToggle: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("Vigil Mode", isOn: Binding(
-                get: { config.vigilMode },
-                set: { newValue in
-                    if !newValue {
-                        // Turning off Vigil = enabling AutoScribe — requires confirmation
-                        showAutoScribeConfirm = true
-                    } else {
-                        config.vigilMode = true
-                        save()
-                    }
-                }
-            ))
+            Toggle("Vigil Mode", isOn: vigilModeBinding)
             .tint(FrostTheme.frostCyan)
             Text(config.vigilMode
                  ? "You are present — ripping is guided and interactive."
