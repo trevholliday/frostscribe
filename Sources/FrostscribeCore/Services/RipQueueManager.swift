@@ -2,7 +2,7 @@ import Foundation
 
 // @unchecked Sendable is intentional: NSLock serializes all file operations,
 // preventing TOCTOU races between the UI process and the worker daemon.
-public final class RipQueueManager: @unchecked Sendable {
+public final class RipQueueManager: RipQueueManaging, @unchecked Sendable {
     private struct QueueFile: Codable {
         var jobs: [RipQueueJob]
     }

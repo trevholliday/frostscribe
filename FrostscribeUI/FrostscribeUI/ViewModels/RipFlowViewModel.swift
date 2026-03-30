@@ -114,13 +114,6 @@ final class RipFlowCoordinator {
         self.tmdbFactory = tmdbFactory
     }
 
-    // MARK: - Navigation
-
-    func goBack() {
-        guard !phaseStack.isEmpty else { return }
-        phase = phaseStack.removeLast()
-    }
-
     func ejectDisc() {
         Task.detached { DiscEjector().eject() }
     }

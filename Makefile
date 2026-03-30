@@ -14,12 +14,14 @@
 build:
 	swift build -c release
 
+BREW_BIN := $(shell brew --prefix)/bin
+
 install:
 	@echo "→ Building CLI and worker..."
 	swift build -c release --product frostscribe --product frostscribe-worker
-	@echo "→ Installing CLI binaries to /usr/local/bin..."
-	cp $(CURDIR)/.build/release/frostscribe /usr/local/bin/frostscribe
-	cp $(CURDIR)/.build/release/frostscribe-worker /usr/local/bin/frostscribe-worker
+	@echo "→ Installing CLI binaries to $(BREW_BIN)..."
+	cp $(CURDIR)/.build/release/frostscribe $(BREW_BIN)/frostscribe
+	cp $(CURDIR)/.build/release/frostscribe-worker $(BREW_BIN)/frostscribe-worker
 	@echo "→ Building FrostscribeUI..."
 	xcodebuild -project FrostscribeUI/FrostscribeUI.xcodeproj \
 	           -scheme FrostscribeUI \
@@ -30,7 +32,7 @@ install:
 	rm -rf /Applications/FrostscribeUI.app
 	cp -R /tmp/frostscribe-build/Build/Products/Release/FrostscribeUI.app /Applications/
 	@echo "→ Reinstalling and starting worker..."
-	frostscribe worker reinstall
+	$(CURDIR)/.build/release/frostscribe worker reinstall
 	@echo ""
 	@echo "✓ All done."
 

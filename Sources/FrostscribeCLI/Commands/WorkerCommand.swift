@@ -39,6 +39,10 @@ struct WorkerStart: ParsableCommand {
             at: ConfigManager.appSupportURL,
             withIntermediateDirectories: true
         )
+        try FileManager.default.createDirectory(
+            at: plistURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
 
         let plist = buildPlist(binPath: binPath, logPath: logPath)
         try plist.write(to: plistURL, atomically: true, encoding: .utf8)
@@ -164,6 +168,11 @@ struct WorkerReinstall: ParsableCommand {
 
         try FileManager.default.createDirectory(
             at: ConfigManager.appSupportURL,
+            withIntermediateDirectories: true
+        )
+
+        try FileManager.default.createDirectory(
+            at: plistURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
 
