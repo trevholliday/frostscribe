@@ -4,6 +4,12 @@ import FrostscribeCore
 struct RipFlowView: View {
     @State private var vm = RipFlowViewModel()
     @State private var showStats = false
+    @State private var historyTab: HistoryTab = .rips
+
+    private enum HistoryTab: String, CaseIterable {
+        case rips = "Rips"
+        case encodeFailed = "Failed Encodes"
+    }
     @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(StatusViewModel.self) private var statusVM
     @Environment(QueueViewModel.self) private var queueVM
@@ -175,84 +181,132 @@ struct RipFlowView: View {
                         .frame(minWidth: 640, minHeight: 480)
                 }
 
-                if statusVM.file.history.isEmpty {
-                    Text("No history yet.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(statusVM.file.history.enumerated()), id: \.offset) { _, entry in
-                            let record = ripRecords.first {
-                                $0.jobLabel == entry.title &&
-                                abs($0.timestamp.timeIntervalSince(entry.startedAt)) < 300
-                            }
-                            let encodeJob = queueVM.jobs.first { $0.title == entry.title }
-                            let encoded = encodeJob?.status == .done
-                            let encodeFailed = encodeJob?.status == .error
-                            let ripFailed = record?.success == false
-                            let entryYear = entry.title.range(of: #"\((\d{4})\)"#, options: .regularExpression)
-                                .map { String(entry.title[$0].dropFirst().dropLast()) }
-                            HStack(alignment: .top, spacing: FrostTheme.paddingM) {
-                                // Left: title + year
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(entry.title)
-                                        .font(.system(size: 19, weight: .bold))
-                                        .lineLimit(1)
-                                        .foregroundStyle(ripFailed || encodeFailed ? FrostTheme.alert : .primary)
-                                    if let y = entryYear {
-                                        Text(y)
-                                            .font(.system(size: 15))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    if let r = record {
-                                        HStack(spacing: 4) {
-                                            Text(r.discType.displayName)
-                                            Text("·")
-                                            Text(formatBytes(r.titleSizeBytes))
-                                            Text("·")
-                                            Text(formatDuration(r.ripDurationSeconds))
-                                        }
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(.tertiary)
-                                    }
-                                }
-                                Spacer()
-                                // Right: date + pills
-                                VStack(alignment: .trailing, spacing: 4) {
-                                    Text(entry.startedAt, style: .date)
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(.tertiary)
-                                    HStack(spacing: 4) {
-                                        if ripFailed {
-                                            pill("Rip Failed", color: FrostTheme.alert)
-                                        } else {
-                                            pill("Ripped", color: FrostTheme.teal)
-                                        }
-                                        if encodeFailed {
-                                            Button {
-                                                if let job = encodeJob { queueVM.requeue(job) }
-                                            } label: {
-                                                pill("Encode Failed — Re-encode", color: FrostTheme.alert)
-                                            }
-                                            .buttonStyle(.plain)
-                                        } else if encoded {
-                                            pill("Encoded", color: FrostTheme.glacier)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.vertical, FrostTheme.paddingS)
-                            Divider()
-                        }
+                Picker("", selection: $historyTab) {
+                    ForEach(HistoryTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
                     }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
 
-                // Rip rate stats (requires at least one record)
-                if !ripRecords.isEmpty {
-                    ripRateStats(records: ripRecords)
+                if historyTab == .rips {
+                    ripsTab(ripRecords: ripRecords)
+                } else {
+                    encodeFailed
                 }
             }
             .padding(FrostTheme.paddingL)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func ripsTab(ripRecords: [RipRecord]) -> some View {
+        let sorted = ripRecords.sorted { $0.timestamp > $1.timestamp }
+        return VStack(alignment: .leading, spacing: FrostTheme.paddingL) {
+            if sorted.isEmpty {
+                Text("No history yet.")
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(sorted) { record in
+                        let encodeJob = queueVM.jobs.first { $0.title == record.jobLabel }
+                        let encoded = encodeJob?.status == .done
+                        let encodeFailed = encodeJob?.status == .error
+                        HStack(alignment: .top, spacing: FrostTheme.paddingM) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(record.jobLabel)
+                                    .font(.system(size: 19, weight: .bold))
+                                    .lineLimit(1)
+                                    .foregroundStyle(!record.success || encodeFailed ? FrostTheme.alert : .primary)
+                                HStack(spacing: 4) {
+                                    Text(record.discType.displayName)
+                                    Text("·")
+                                    Text(formatBytes(record.titleSizeBytes))
+                                    Text("·")
+                                    Text(formatDuration(record.ripDurationSeconds))
+                                }
+                                .font(.system(size: 14))
+                                .foregroundStyle(.tertiary)
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text(record.timestamp, style: .date)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.tertiary)
+                                HStack(spacing: 4) {
+                                    if !record.success {
+                                        pill("Rip Failed", color: FrostTheme.alert)
+                                    } else {
+                                        pill("Ripped", color: FrostTheme.teal)
+                                    }
+                                    if encodeFailed {
+                                        Button {
+                                            if let job = encodeJob { queueVM.requeue(job) }
+                                        } label: {
+                                            pill("Encode Failed — Re-encode", color: FrostTheme.alert)
+                                        }
+                                        .buttonStyle(.plain)
+                                    } else if encoded {
+                                        pill("Encoded", color: FrostTheme.glacier)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, FrostTheme.paddingS)
+                        Divider()
+                    }
+                }
+            }
+
+            if !sorted.isEmpty {
+                ripRateStats(records: ripRecords)
+            }
+        }
+    }
+
+    private var encodeFailed: some View {
+        let superseded = Set(queueVM.jobs
+            .filter { $0.status == .pending || $0.status == .encoding || $0.status == .done }
+            .map { $0.output })
+        let failed = queueVM.jobs.filter { $0.status == .error && !superseded.contains($0.output) }
+        return VStack(alignment: .leading, spacing: 0) {
+            if failed.isEmpty {
+                Text("No failed encodes.")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(failed) { job in
+                    HStack(alignment: .top, spacing: FrostTheme.paddingM) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(job.label)
+                                .font(.system(size: 19, weight: .bold))
+                                .lineLimit(1)
+                                .foregroundStyle(FrostTheme.alert)
+                            Text(URL(fileURLWithPath: job.output).lastPathComponent)
+                                .font(.system(size: 14, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        Spacer()
+                        HStack(spacing: FrostTheme.paddingS) {
+                            Button {
+                                queueVM.requeue(job)
+                            } label: {
+                                pill("Re-encode", color: FrostTheme.teal)
+                            }
+                            .buttonStyle(.plain)
+                            Button {
+                                queueVM.remove(job)
+                            } label: {
+                                pill("Remove", color: .secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, FrostTheme.paddingS)
+                    Divider()
+                }
+            }
         }
     }
 

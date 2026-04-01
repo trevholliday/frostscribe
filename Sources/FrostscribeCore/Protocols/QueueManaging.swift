@@ -6,6 +6,7 @@ public protocol QueueManaging: Sendable {
     func add(input: URL, output: URL, preset: String, discType: String, title: String, episode: String?, audioTracks: [Int]?) throws
     func updateProgress(id: String, progress: String) throws
     func updateStatus(id: String, status: EncodeJob.Status, progress: String?, completedAt: Date?) throws
+    func remove(id: String) throws
 }
 
 public extension QueueManaging {

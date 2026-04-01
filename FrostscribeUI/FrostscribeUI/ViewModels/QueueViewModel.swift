@@ -35,6 +35,11 @@ final class QueueViewModel {
         jobs = (try? queueManager.read()) ?? []
     }
 
+    func remove(_ job: EncodeJob) {
+        try? queueManager.remove(id: job.id)
+        refresh()
+    }
+
     func requeue(_ job: EncodeJob) {
         do {
             try queueManager.add(

@@ -74,6 +74,14 @@ public final class QueueManager: QueueManaging, @unchecked Sendable {
         }
     }
 
+    public func remove(id: String) throws {
+        try lock.withLock {
+            var jobs = try _read()
+            jobs.removeAll { $0.id == id }
+            try _write(jobs)
+        }
+    }
+
     private func _read() throws -> [EncodeJob] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return []
