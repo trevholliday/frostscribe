@@ -1,6 +1,21 @@
 import Foundation
 import FrostscribeCore
 
+// Only writes progress to queue.json when the percentage moves by ≥ 0.5 points.
+// The readabilityHandler fires very frequently; throttling avoids hammering the file.
+private final class ProgressThrottle: @unchecked Sendable {
+    private let lock = NSLock()
+    private var last: Double = -1
+
+    func shouldUpdate(_ pct: Double) -> Bool {
+        lock.withLock {
+            guard pct - last >= 0.5 else { return false }
+            last = pct
+            return true
+        }
+    }
+}
+
 actor EncodeWorker {
     private let queueManager: any QueueManaging
     private let handbrakeRunner: any HandBrakeRunning
@@ -76,7 +91,11 @@ actor EncodeWorker {
             let discType    = DiscType(rawValue: job.discType) ?? .bluray
             let quality     = EncoderPreset.quality(for: discType, config: config)
             let encoderType = config.encoderType(for: discType)
+            // Throttle progress writes: only update queue.json when progress changes by ≥0.5%
+            // to avoid hammering the file on every HandBrake output line.
+            let throttle = ProgressThrottle()
             try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks, quality: quality, encoderType: encoderType) { [qm] pct in
+                guard throttle.shouldUpdate(pct) else { return }
                 try? qm.updateProgress(id: id, progress: String(format: "%.1f%%", pct))
             }
 

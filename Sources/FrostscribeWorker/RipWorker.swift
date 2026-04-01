@@ -39,6 +39,10 @@ actor RipWorker {
 
     func stop() {
         running = false
+        // Reset any in-flight rip back to pending so the next start retries it.
+        if let count = try? ripQueueManager.resetStuck(), count > 0 {
+            log("Reset \(count) interrupted rip job(s) to pending")
+        }
     }
 
     // MARK: - Poll
