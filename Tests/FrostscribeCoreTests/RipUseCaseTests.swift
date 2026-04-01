@@ -51,6 +51,7 @@ final class SpyQueueManager: QueueManaging, @unchecked Sendable {
 
     func updateProgress(id: String, progress: String) throws {}
     func updateStatus(id: String, status: EncodeJob.Status, progress: String?, completedAt: Date?) throws {}
+    func remove(id: String) throws {}
 }
 
 final class SpyStatusManager: StatusManaging, @unchecked Sendable {
