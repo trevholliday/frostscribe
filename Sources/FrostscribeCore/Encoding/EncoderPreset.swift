@@ -16,7 +16,7 @@ public enum EncoderPreset {
         case .bluray:         encodeQuality = config.qualityBluray
         case .dvd, .unknown:  encodeQuality = config.qualityDVD
         }
-        return encodeQuality.value(for: config.encoderType)
+        return encodeQuality.value(for: config.encoderType(for: discType))
     }
 
     public static func arguments(input: String, output: String, preset: String, audioTracks: [Int]?, quality: Int, encoderType: EncoderType = .software) -> [String] {
@@ -32,10 +32,12 @@ public enum EncoderPreset {
             "--subtitle", "1,2,3,4,5,6,7,8",
         ]
         if encoderType == .software {
-            args += ["--encoder-preset", "medium"]
+            args += ["--encoder-preset", "fast"]
+        } else {
+            args += ["--encoder-preset", "quality"]
         }
         if isDVD {
-            args += ["--width", "1920", "--height", "1080", "--comb-detect", "--decomb"]
+            args += ["--comb-detect", "--decomb", "--color-matrix", "601"]
         }
         return args + audio
     }

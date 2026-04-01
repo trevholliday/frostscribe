@@ -13,7 +13,9 @@ public struct Config: Sendable {
     /// When false, AutoScribe is active — the app auto-rips any inserted disc without user input.
     public var vigilMode: Bool
     public var selectAudioTracks: Bool
-    public var encoderType: EncoderType
+    public var encoderTypeDVD: EncoderType
+    public var encoderTypeBluray: EncoderType
+    public var encoderTypeUHD: EncoderType
     public var qualityDVD: EncodeQuality
     public var qualityBluray: EncodeQuality
     public var qualityUHD: EncodeQuality
@@ -31,10 +33,12 @@ public struct Config: Sendable {
         eventHook: String = "",
         vigilMode: Bool = true,
         selectAudioTracks: Bool = false,
-        encoderType: EncoderType = .software,
+        encoderTypeDVD: EncoderType = .software,
+        encoderTypeBluray: EncoderType = .hardware,
+        encoderTypeUHD: EncoderType = .hardware,
         qualityDVD: EncodeQuality = .rf20,
-        qualityBluray: EncodeQuality = .rf20,
-        qualityUHD: EncodeQuality = .rf20,
+        qualityBluray: EncodeQuality = .rf18,
+        qualityUHD: EncodeQuality = .rf18,
         filterMovieTitles: Bool = true
     ) {
         self.mediaServer = mediaServer
@@ -48,7 +52,9 @@ public struct Config: Sendable {
         self.eventHook = eventHook
         self.vigilMode = vigilMode
         self.selectAudioTracks = selectAudioTracks
-        self.encoderType = encoderType
+        self.encoderTypeDVD = encoderTypeDVD
+        self.encoderTypeBluray = encoderTypeBluray
+        self.encoderTypeUHD = encoderTypeUHD
         self.qualityDVD = qualityDVD
         self.qualityBluray = qualityBluray
         self.qualityUHD = qualityUHD
@@ -56,11 +62,22 @@ public struct Config: Sendable {
     }
 }
 
+extension Config {
+    public func encoderType(for discType: DiscType) -> EncoderType {
+        switch discType {
+        case .dvd, .unknown: return encoderTypeDVD
+        case .bluray:        return encoderTypeBluray
+        case .uhd:           return encoderTypeUHD
+        }
+    }
+}
+
 extension Config: Codable {
     enum CodingKeys: String, CodingKey {
         case mediaServer, moviesDir, tvDir, tempDir, tmdbApiKey, makemkvKey,
              makemkvBin, handbrakeBin, eventHook, vigilMode,
-             selectAudioTracks, encoderType,
+             selectAudioTracks,
+             encoderTypeDVD, encoderTypeBluray, encoderTypeUHD,
              qualityDVD, qualityBluray, qualityUHD,
              filterMovieTitles
     }
@@ -78,10 +95,12 @@ extension Config: Codable {
         eventHook            = (try? c.decode(String.self,         forKey: .eventHook))            ?? ""
         vigilMode            = (try? c.decode(Bool.self,           forKey: .vigilMode))         ?? true
         selectAudioTracks    = (try? c.decode(Bool.self,           forKey: .selectAudioTracks)) ?? false
-        encoderType          = (try? c.decode(EncoderType.self,    forKey: .encoderType))       ?? .software
+        encoderTypeDVD       = (try? c.decode(EncoderType.self,    forKey: .encoderTypeDVD))    ?? .software
+        encoderTypeBluray    = (try? c.decode(EncoderType.self,    forKey: .encoderTypeBluray)) ?? .hardware
+        encoderTypeUHD       = (try? c.decode(EncoderType.self,    forKey: .encoderTypeUHD))    ?? .hardware
         qualityDVD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityDVD))        ?? .rf20
-        qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .rf20
-        qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .rf20
+        qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .rf18
+        qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .rf18
         filterMovieTitles    = (try? c.decode(Bool.self,           forKey: .filterMovieTitles)) ?? true
     }
 }

@@ -10,6 +10,7 @@ actor RipWorker {
     private let logStore: LogStore
     private var running = false
     private let pollInterval: TimeInterval = 5
+    private let dateFormatter: ISO8601DateFormatter = ISO8601DateFormatter()
 
     init(
         ripQueueManager: RipQueueManager,
@@ -136,7 +137,7 @@ actor RipWorker {
     }
 
     private func log(_ message: String, level: String = "info") {
-        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let timestamp = dateFormatter.string(from: Date())
         print("[\(timestamp)] \(message)")
         fflush(stdout)
         logStore.append(timestamp: timestamp, message: message, level: level)

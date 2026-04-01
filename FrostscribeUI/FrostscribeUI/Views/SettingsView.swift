@@ -37,39 +37,10 @@ struct SettingsView: View {
                 secureRow("TMDB API key", hint: "optional", value: $config.tmdbApiKey,  saved: savedConfig.tmdbApiKey)
             }
 
-            Section("Encoder") {
-                Picker("Encoder", selection: $config.encoderType) {
-                    ForEach(EncoderType.allCases, id: \.self) { type in
-                        Text(type.displayName).tag(type)
-                    }
-                }
-                .onChange(of: config.encoderType) { save() }
-                Text(config.encoderType == .software
-                     ? "Software x265 — best quality, slower encoding."
-                     : "Hardware VideoToolbox — faster encoding, slightly lower quality.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Encode Quality") {
-                Picker("DVD", selection: $config.qualityDVD) {
-                    ForEach(EncodeQuality.allCases, id: \.self) { q in
-                        Text(q.displayName).tag(q)
-                    }
-                }
-                .onChange(of: config.qualityDVD) { save() }
-                Picker("Blu-ray", selection: $config.qualityBluray) {
-                    ForEach(EncodeQuality.allCases, id: \.self) { q in
-                        Text(q.displayName).tag(q)
-                    }
-                }
-                .onChange(of: config.qualityBluray) { save() }
-                Picker("UHD", selection: $config.qualityUHD) {
-                    ForEach(EncodeQuality.allCases, id: \.self) { q in
-                        Text(q.displayName).tag(q)
-                    }
-                }
-                .onChange(of: config.qualityUHD) { save() }
+            Section("Encoder & Quality") {
+                encoderQualityRow("DVD",     encoder: $config.encoderTypeDVD,     quality: $config.qualityDVD)
+                encoderQualityRow("Blu-ray", encoder: $config.encoderTypeBluray,  quality: $config.qualityBluray)
+                encoderQualityRow("UHD",     encoder: $config.encoderTypeUHD,     quality: $config.qualityUHD)
             }
 
             Section("Options") {
@@ -151,6 +122,35 @@ struct SettingsView: View {
             Button("Keep Vigil Mode", role: .cancel) { }
         } message: {
             Text("AutoScribe will automatically rip any disc inserted into the drive without asking you first. Make sure you only insert discs you own.")
+        }
+    }
+
+    // MARK: - Encoder + Quality row
+
+    private func encoderQualityRow(_ label: String,
+                                   encoder: Binding<EncoderType>,
+                                   quality: Binding<EncodeQuality>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Picker("Encoder", selection: encoder) {
+                    ForEach(EncoderType.allCases, id: \.self) { t in
+                        Text(t.displayName).tag(t)
+                    }
+                }
+                .onChange(of: encoder.wrappedValue) { save() }
+                .labelsHidden()
+
+                Picker("Quality", selection: quality) {
+                    ForEach(EncodeQuality.allCases, id: \.self) { q in
+                        Text(q.displayName).tag(q)
+                    }
+                }
+                .onChange(of: quality.wrappedValue) { save() }
+                .labelsHidden()
+            }
         }
     }
 

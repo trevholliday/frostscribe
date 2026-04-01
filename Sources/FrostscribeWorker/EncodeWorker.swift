@@ -8,6 +8,7 @@ actor EncodeWorker {
     private let logStore: LogStore
     private var running = false
     private let pollInterval: TimeInterval = 10
+    private let dateFormatter: ISO8601DateFormatter = ISO8601DateFormatter()
 
     init(
         queueManager: any QueueManaging,
@@ -71,12 +72,12 @@ actor EncodeWorker {
                 withIntermediateDirectories: true
             )
 
-            let config   = (try? ConfigManager().load()) ?? Config()
-            let discType = DiscType(rawValue: job.discType) ?? .bluray
-            let quality  = EncoderPreset.quality(for: discType, config: config)
-            try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks, quality: quality, encoderType: config.encoderType) { pct in
-                let label = String(format: "%.1f%%", pct)
-                try? qm.updateProgress(id: id, progress: label)
+            let config      = (try? ConfigManager().load()) ?? Config()
+            let discType    = DiscType(rawValue: job.discType) ?? .bluray
+            let quality     = EncoderPreset.quality(for: discType, config: config)
+            let encoderType = config.encoderType(for: discType)
+            try await handbrakeRunner.encode(input: input, output: output, preset: job.preset, audioTracks: job.audioTracks, quality: quality, encoderType: encoderType) { [qm] pct in
+                try? qm.updateProgress(id: id, progress: String(format: "%.1f%%", pct))
             }
 
             log("Encode complete: \(job.label)")
@@ -95,7 +96,7 @@ actor EncodeWorker {
     }
 
     private func log(_ message: String, level: String = "info") {
-        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let timestamp = dateFormatter.string(from: Date())
         print("[\(timestamp)] \(message)")
         fflush(stdout)
         logStore.append(timestamp: timestamp, message: message, level: level)
