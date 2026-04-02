@@ -108,6 +108,13 @@ actor EncodeWorker {
 
             hookRunner.fire(event: "encode_complete", title: "Encode Complete", body: job.label)
         } catch {
+            let nsErr = error as NSError
+            if nsErr.domain == NSCocoaErrorDomain && nsErr.code == 513 {
+                log("NAS write permission denied for \(job.label) — stopping worker. Check NAS access and restart.", level: "error")
+                hookRunner.fire(event: "nas_permission_error", title: "NAS Permission Error", body: "Worker stopped — check NAS write access.")
+                stop()
+                return
+            }
             log("Encode failed for \(job.label): \(error)", level: "error")
             try? queueManager.updateStatus(id: job.id, status: .error)
             hookRunner.fire(event: "encode_failed", title: "Encode Failed", body: job.label)

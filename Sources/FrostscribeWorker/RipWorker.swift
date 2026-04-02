@@ -133,6 +133,13 @@ actor RipWorker {
             hookRunner.fire(event: "rip_complete", title: "Rip Complete",
                             body: "\(job.jobLabel) added to encode queue")
         } catch {
+            let nsErr = error as NSError
+            if nsErr.domain == NSCocoaErrorDomain && nsErr.code == 513 {
+                log("NAS write permission denied for \(job.jobLabel) — stopping worker. Check NAS access and restart.", level: "error")
+                hookRunner.fire(event: "nas_permission_error", title: "NAS Permission Error", body: "Worker stopped — check NAS write access.")
+                stop()
+                return
+            }
             log("Rip failed for \(job.jobLabel): \(error)", level: "error")
             try? ripQueueManager.updateStatus(id: job.id, status: .error,
                                               errorMessage: error.localizedDescription)
