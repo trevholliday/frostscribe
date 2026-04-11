@@ -47,6 +47,14 @@ Frostscribe wraps `makemkvcon` and `HandBrakeCLI` into a polished interactive CL
 brew install handbrake
 ```
 
+- [VLC](https://www.videolan.org/vlc/) — optional, for in-app disc preview. To play encrypted Blu-rays in VLC, also install `libaacs` and place a `KEYDB.cfg` keys database at `~/.config/aacs/KEYDB.cfg`:
+
+```bash
+brew install libaacs
+mkdir -p ~/.config/aacs
+# Download KEYDB.cfg from vlc-bluray.whoknowsmy.name and place it at ~/.config/aacs/KEYDB.cfg
+```
+
 ---
 
 ## Installation
