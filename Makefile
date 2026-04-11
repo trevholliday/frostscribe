@@ -15,7 +15,8 @@ BREW_BIN := $(shell brew --prefix)/bin
 
 install:
 	@echo "→ Building CLI and worker..."
-	swift build -c release --product frostscribe --product frostscribe-worker
+	swift build -c release --product frostscribe
+	swift build -c release --product frostscribe-worker
 	@echo "→ Installing CLI binaries to $(BREW_BIN)..."
 	cp $(CURDIR)/.build/release/frostscribe $(BREW_BIN)/frostscribe
 	cp $(CURDIR)/.build/release/frostscribe-worker $(BREW_BIN)/frostscribe-worker
@@ -26,6 +27,8 @@ install:
 	           -derivedDataPath /tmp/frostscribe-build \
 	           build 2>&1 | grep -E "error:|warning:|BUILD"
 	@echo "→ Installing FrostscribeUI..."
+	killall FrostscribeUI 2>/dev/null || true
+	sleep 0.5
 	rm -rf /Applications/FrostscribeUI.app
 	cp -R /tmp/frostscribe-build/Build/Products/Release/FrostscribeUI.app /Applications/
 	@echo "→ Reinstalling and starting worker..."

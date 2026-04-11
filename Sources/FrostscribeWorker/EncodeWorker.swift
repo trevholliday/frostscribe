@@ -49,6 +49,8 @@ actor EncodeWorker {
     func stop() {
         log("Frostscribe worker shutting down…")
         running = false
+        // Kill any in-flight HandBrakeCLI process so it doesn't outlive the worker.
+        handbrakeRunner.cancel()
         // Reset any in-flight job back to pending so the next worker start picks it up.
         if let jobs = try? queueManager.read() {
             for job in jobs where job.status == .encoding {
@@ -119,6 +121,11 @@ actor EncodeWorker {
             try? FileManager.default.removeItem(at: rawMKV.deletingLastPathComponent())
 
             hookRunner.fire(event: "encode_complete", title: "Encode Complete", body: job.label)
+        } catch is CancellationError {
+            // HandBrakeCLI was killed by a signal (e.g. worker restart) — reset to pending
+            // so the next worker start picks it up instead of leaving it in error state.
+            log("Encode cancelled (process killed), resetting to pending: \(job.label)")
+            try? queueManager.updateStatus(id: job.id, status: .pending)
         } catch {
             let nsErr = error as NSError
             if nsErr.domain == NSCocoaErrorDomain && nsErr.code == 513 {

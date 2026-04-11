@@ -10,4 +10,5 @@ public protocol HandBrakeRunning: Sendable {
         encoderType: EncoderType,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws
+    func cancel()
 }

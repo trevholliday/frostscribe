@@ -161,7 +161,31 @@ struct WorkerReinstall: ParsableCommand {
     func run() throws {
         Colors.info("Stopping worker...")
         _ = launchctl("bootout", "gui/\(getuid())/\(label)")
-        Thread.sleep(forTimeInterval: 0.5)
+
+        // Wait for the worker process to fully exit (up to 5 s) before proceeding.
+        // A 0.5 s sleep is not enough — the worker may still be cancelling HandBrakeCLI
+        // and resetting queue state. Starting a new worker while the old one is alive
+        // causes both to poll the queue simultaneously and spawn duplicate encodes.
+        let workerName = URL(fileURLWithPath: resolveWorkerBin()).lastPathComponent
+        for _ in 0..<50 {
+            Thread.sleep(forTimeInterval: 0.1)
+            let check = Process()
+            check.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+            check.arguments = ["-x", workerName]
+            check.standardOutput = FileHandle.nullDevice
+            check.standardError  = FileHandle.nullDevice
+            guard (try? check.run()) != nil else { break }
+            check.waitUntilExit()
+            if check.terminationStatus != 0 { break }  // no matching process — worker is gone
+        }
+
+        // Kill any orphaned HandBrakeCLI processes left behind by the old worker.
+        let killHB = Process()
+        killHB.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+        killHB.arguments = ["-9", "HandBrakeCLI"]
+        killHB.standardOutput = FileHandle.nullDevice
+        killHB.standardError  = FileHandle.nullDevice
+        if (try? killHB.run()) != nil { killHB.waitUntilExit() }
 
         let binPath = resolveWorkerBin()
         let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path
@@ -192,7 +216,7 @@ struct WorkerReinstall: ParsableCommand {
         Colors.info("Opening FrostscribeUI...")
         let open = Process()
         open.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        open.arguments = ["-a", "FrostscribeUI"]
+        open.arguments = ["/Applications/FrostscribeUI.app"]
         try? open.run()
 
         Colors.success("Reinstall complete.")

@@ -456,7 +456,12 @@ final class RipFlowCoordinator {
             let statusFile = try? statusMgr.read()
 
             if let file = statusFile, file.status == .ripping, let currentJob = file.currentJob {
-                let pct = Int(currentJob.progress.replacing("%", with: "")) ?? 0
+                var pct = Int(currentJob.progress.replacing("%", with: "")) ?? 0
+                // MakeMKV reports "Copy complete" at ~97% before the worker moves the
+                // file — treat this as 100% so the UI doesn't appear frozen.
+                if let msg = currentJob.currentItem, msg.hasPrefix("Copy complete") {
+                    pct = 100
+                }
                 phase = .ripping(title: title, progress: pct)
                 if let msg = currentJob.currentItem, !msg.isEmpty {
                     ripMessage = msg

@@ -89,6 +89,10 @@ public final class HandBrakeRunner: HandBrakeRunning, @unchecked Sendable {
         }
     }
 
+    public func cancel() {
+        activeProcess?.terminate()
+    }
+
     private func resolvedBinPath() -> String {
         if binPath.isEmpty { return "HandBrakeCLI" }
         return binPath
