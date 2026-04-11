@@ -89,6 +89,18 @@ actor EncodeWorker {
 
             let config      = (try? ConfigManager().load()) ?? Config()
             let discType    = DiscType(rawValue: job.discType) ?? .bluray
+            let skipEncode  = config.skipEncodingDVD && (discType == .dvd || discType == .unknown)
+
+            if skipEncode {
+                try? FileManager.default.removeItem(at: output)
+                try FileManager.default.moveItem(at: input, to: output)
+                try? FileManager.default.removeItem(at: input.deletingLastPathComponent())
+                log("Encode skipped, raw MKV moved to library: \(job.label)")
+                try queueManager.updateStatus(id: job.id, status: .done, completedAt: .now)
+                hookRunner.fire(event: "encode_complete", title: "Rip Complete", body: job.label)
+                return
+            }
+
             let quality     = EncoderPreset.quality(for: discType, config: config)
             let encoderType = config.encoderType(for: discType)
             // Throttle progress writes: only update queue.json when progress changes by ≥0.5%

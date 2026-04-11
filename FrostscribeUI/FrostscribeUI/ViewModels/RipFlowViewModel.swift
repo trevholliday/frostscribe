@@ -453,9 +453,9 @@ final class RipFlowCoordinator {
         let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
 
         while !Task.isCancelled {
-            if let file = try? statusMgr.read(),
-               file.status == .ripping,
-               let currentJob = file.currentJob {
+            let statusFile = try? statusMgr.read()
+
+            if let file = statusFile, file.status == .ripping, let currentJob = file.currentJob {
                 let pct = Int(currentJob.progress.replacing("%", with: "")) ?? 0
                 phase = .ripping(title: title, progress: pct)
                 if let msg = currentJob.currentItem, !msg.isEmpty {
@@ -473,7 +473,11 @@ final class RipFlowCoordinator {
                         phase = .error(job.errorMessage ?? "Rip failed")
                         return
                     default:
-                        break
+                        // Status went idle but queue not yet updated — rip finished, worker is
+                        // moving the file. Show 100% so the UI doesn't appear frozen.
+                        if statusFile?.status != .ripping {
+                            phase = .ripping(title: title, progress: 100)
+                        }
                     }
                 } else {
                     phase = .idle

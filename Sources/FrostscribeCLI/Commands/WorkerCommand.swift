@@ -275,17 +275,17 @@ private func launchctl(_ args: String...) -> Int32 {
 }
 
 private func resolveWorkerBin() -> String {
-    let sibling = URL(fileURLWithPath: CommandLine.arguments[0])
-        .deletingLastPathComponent()
-        .appending(path: "frostscribe-worker")
-        .path
-
-    if FileManager.default.fileExists(atPath: sibling) { return sibling }
-
+    // Prefer installed Homebrew/system paths over the sibling so that
+    // reinstall always writes the stable installed binary to the plist,
+    // not a temp build-dir path.
     for path in ["/opt/homebrew/bin/frostscribe-worker", "/usr/local/bin/frostscribe-worker"] {
         if FileManager.default.fileExists(atPath: path) { return path }
     }
 
+    let sibling = URL(fileURLWithPath: CommandLine.arguments[0])
+        .deletingLastPathComponent()
+        .appending(path: "frostscribe-worker")
+        .path
     return sibling
 }
 

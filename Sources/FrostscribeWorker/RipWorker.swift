@@ -117,21 +117,38 @@ actor RipWorker {
             }
             watchTask.cancel()
 
-            // Hand off to encode queue
-            try encodeQueueManager.add(
-                input: mkvURL,
-                output: URL(fileURLWithPath: job.outputPath),
-                preset: job.preset,
-                discType: job.discType,
-                title: job.encodeTitle,
-                episode: job.episode,
-                audioTracks: job.audioTracks
-            )
+            let config     = (try? ConfigManager().load()) ?? Config()
+            let skipEncode = config.skipEncodingDVD && (discType == .dvd || discType == .unknown)
 
-            log("Rip complete, queued encode: \(job.jobLabel)")
-            try ripQueueManager.updateStatus(id: job.id, status: .done, completedAt: .now)
-            hookRunner.fire(event: "rip_complete", title: "Rip Complete",
-                            body: "\(job.jobLabel) added to encode queue")
+            if skipEncode {
+                // Move raw MKV directly to the library, skipping HandBrake.
+                let outputURL = URL(fileURLWithPath: job.outputPath)
+                try FileManager.default.createDirectory(
+                    at: outputURL.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                try? FileManager.default.removeItem(at: outputURL)
+                try FileManager.default.moveItem(at: mkvURL, to: outputURL)
+                try? FileManager.default.removeItem(at: mkvURL.deletingLastPathComponent())
+                log("Rip complete, raw MKV moved to library (encoding skipped): \(job.jobLabel)")
+                try ripQueueManager.updateStatus(id: job.id, status: .done, completedAt: .now)
+                hookRunner.fire(event: "rip_complete", title: "Rip Complete", body: job.jobLabel)
+            } else {
+                // Hand off to encode queue
+                try encodeQueueManager.add(
+                    input: mkvURL,
+                    output: URL(fileURLWithPath: job.outputPath),
+                    preset: job.preset,
+                    discType: job.discType,
+                    title: job.encodeTitle,
+                    episode: job.episode,
+                    audioTracks: job.audioTracks
+                )
+                log("Rip complete, queued encode: \(job.jobLabel)")
+                try ripQueueManager.updateStatus(id: job.id, status: .done, completedAt: .now)
+                hookRunner.fire(event: "rip_complete", title: "Rip Complete",
+                                body: "\(job.jobLabel) added to encode queue")
+            }
         } catch {
             let nsErr = error as NSError
             if nsErr.domain == NSCocoaErrorDomain && nsErr.code == 513 {

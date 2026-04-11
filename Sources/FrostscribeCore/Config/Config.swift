@@ -20,6 +20,8 @@ public struct Config: Sendable {
     public var qualityBluray: EncodeQuality
     public var qualityUHD: EncodeQuality
     public var filterMovieTitles: Bool
+    /// When true, DVD rips skip HandBrake and the raw MKV is moved directly to the library.
+    public var skipEncodingDVD: Bool
 
     public init(
         mediaServer: MediaServer = .jellyfin,
@@ -39,7 +41,8 @@ public struct Config: Sendable {
         qualityDVD: EncodeQuality = .rf20,
         qualityBluray: EncodeQuality = .rf18,
         qualityUHD: EncodeQuality = .rf18,
-        filterMovieTitles: Bool = true
+        filterMovieTitles: Bool = true,
+        skipEncodingDVD: Bool = false
     ) {
         self.mediaServer = mediaServer
         self.moviesDir = moviesDir
@@ -59,6 +62,7 @@ public struct Config: Sendable {
         self.qualityBluray = qualityBluray
         self.qualityUHD = qualityUHD
         self.filterMovieTitles = filterMovieTitles
+        self.skipEncodingDVD   = skipEncodingDVD
     }
 }
 
@@ -79,7 +83,7 @@ extension Config: Codable {
              selectAudioTracks,
              encoderTypeDVD, encoderTypeBluray, encoderTypeUHD,
              qualityDVD, qualityBluray, qualityUHD,
-             filterMovieTitles
+             filterMovieTitles, skipEncodingDVD
     }
 
     public init(from decoder: Decoder) throws {
@@ -102,5 +106,6 @@ extension Config: Codable {
         qualityBluray        = (try? c.decode(EncodeQuality.self,  forKey: .qualityBluray))     ?? .rf18
         qualityUHD           = (try? c.decode(EncodeQuality.self,  forKey: .qualityUHD))        ?? .rf18
         filterMovieTitles    = (try? c.decode(Bool.self,           forKey: .filterMovieTitles)) ?? true
+        skipEncodingDVD      = (try? c.decode(Bool.self,           forKey: .skipEncodingDVD))   ?? false
     }
 }

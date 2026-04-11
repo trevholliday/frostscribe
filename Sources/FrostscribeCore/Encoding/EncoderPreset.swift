@@ -37,7 +37,8 @@ public enum EncoderPreset {
             args += ["--encoder-preset", "quality"]
         }
         if isDVD {
-            args += ["--comb-detect", "--decomb", "--color-matrix", "601"]
+            // Upscale DVDs to 720p — Infuse labels correctly, much faster than 1080p.
+            args += ["--height", "720", "--comb-detect", "--decomb", "--color-matrix", "601"]
         }
         return args + audio
     }

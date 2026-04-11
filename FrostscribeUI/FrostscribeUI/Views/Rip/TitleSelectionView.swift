@@ -17,6 +17,17 @@ struct TitleSelectionView: View {
 
     private var filteredCount: Int { scanResult.titles.count - displayedTitles.count }
 
+    /// Resolves the block device path (e.g. /dev/disk10) for the mounted disc volume.
+    private var discDevicePath: String? {
+        guard let name = scanResult.discName else { return nil }
+        let volPath = "/Volumes/\(name)"
+        var fs = statfs()
+        guard statfs(volPath, &fs) == 0 else { return nil }
+        return withUnsafeBytes(of: fs.f_mntfromname) { bytes in
+            String(cString: bytes.baseAddress!.assumingMemoryBound(to: CChar.self))
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -46,7 +57,9 @@ struct TitleSelectionView: View {
                 TitleRow(
                     title: title,
                     isMain: title.isMainTitleCandidate,
-                    isSuggested: title.number == vm.suggestedTitleNumber
+                    isSuggested: title.number == vm.suggestedTitleNumber,
+                    discDevicePath: discDevicePath,
+                    discType: scanResult.discType
                 )
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -66,6 +79,8 @@ private struct TitleRow: View {
     let title: DiscTitle
     let isMain: Bool
     let isSuggested: Bool
+    let discDevicePath: String?
+    let discType: DiscType
 
     @State private var showDetail = false
 
@@ -115,6 +130,19 @@ private struct TitleRow: View {
 
             Spacer(minLength: 0)
 
+            // Play in VLC button
+            if discDevicePath != nil {
+                Button {
+                    playInVLC()
+                } label: {
+                    Image(systemName: "play.circle")
+                        .font(.system(size: 18))
+                        .foregroundStyle(FrostTheme.glacier.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .help("Play title \(title.number) in VLC")
+            }
+
             // Info button
             Button {
                 showDetail = true
@@ -130,6 +158,20 @@ private struct TitleRow: View {
         }
         .padding(.vertical, 6)
         .opacity(isMain ? 1.0 : 0.75)
+    }
+
+    private func playInVLC() {
+        guard let device = discDevicePath else { return }
+        let scheme = discType == .dvd ? "dvd" : "bluray"
+        // VLC uses 1-indexed titles; MakeMKV uses 0-indexed.
+        let titleNum = title.number + 1
+        guard let url = URL(string: "\(scheme)://\(device)#\(titleNum)") else { return }
+        if let vlcURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.videolan.vlc") {
+            NSWorkspace.shared.open([url], withApplicationAt: vlcURL,
+                                    configuration: NSWorkspace.OpenConfiguration())
+        } else {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     // MARK: - Sub-views

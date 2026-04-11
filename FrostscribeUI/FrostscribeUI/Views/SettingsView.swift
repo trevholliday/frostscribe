@@ -38,6 +38,14 @@ struct SettingsView: View {
             }
 
             Section("Encoder & Quality") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Skip encoding for DVDs", isOn: $config.skipEncodingDVD)
+                        .tint(FrostTheme.frostCyan)
+                        .onChange(of: config.skipEncodingDVD) { save() }
+                    Text("Raw MKV is moved directly to the library. Recommended when storage is not a concern.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 encoderQualityRow("DVD",     encoder: $config.encoderTypeDVD,     quality: $config.qualityDVD)
                 encoderQualityRow("Blu-ray", encoder: $config.encoderTypeBluray,  quality: $config.qualityBluray)
                 encoderQualityRow("UHD",     encoder: $config.encoderTypeUHD,     quality: $config.qualityUHD)
@@ -317,7 +325,10 @@ private struct WorkerHealthSection: View {
         Task.detached {
             let start = Date()
             let p = Process()
-            p.executableURL = URL(fileURLWithPath: "/usr/local/bin/frostscribe")
+            let frostscribeBin = FileManager.default.fileExists(atPath: "/opt/homebrew/bin/frostscribe")
+                ? "/opt/homebrew/bin/frostscribe"
+                : "/usr/local/bin/frostscribe"
+            p.executableURL = URL(fileURLWithPath: frostscribeBin)
             p.arguments = ["worker", "reinstall"]
             p.standardOutput = FileHandle.nullDevice
             p.standardError = FileHandle.nullDevice

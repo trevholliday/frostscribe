@@ -19,10 +19,10 @@ public enum EncodeQuality: Int, Codable, Sendable, CaseIterable {
     public var hardwareQuality: Int {
         switch self {
         case .rf18: return 80
-        case .rf20: return 72
-        case .rf22: return 65
-        case .rf24: return 58
-        case .rf26: return 50
+        case .rf20: return 82
+        case .rf22: return 75
+        case .rf24: return 67
+        case .rf26: return 60
         }
     }
 
