@@ -176,15 +176,15 @@ private struct TitleRow: View {
             }
         } else {
             // Blu-ray: title selection requires --bluray-title=N as a CLI argument.
-            // Use NSWorkspace.openApplication so VLC launches through its app bundle
-            // (launching the raw binary via Process silently fails for GUI apps).
-            guard let vlcAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.videolan.vlc") else { return }
+            // Use `open -n -a VLC --args` — the most reliable way to pass arguments
+            // to a macOS app bundle, including when VLC is already running.
             let mrl = "bluray://\(volPath.path)/"
-            let config = NSWorkspace.OpenConfiguration()
-            config.arguments = ["--bluray-title=\(titleNum)", mrl]
-            // Force a new instance so arguments are processed even if VLC is already open.
-            config.createsNewApplicationInstance = true
-            NSWorkspace.shared.openApplication(at: vlcAppURL, configuration: config, completionHandler: nil)
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-n", "-a", "VLC", "--args", "--bluray-title=\(titleNum)", mrl]
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            try? process.run()
         }
     }
 
@@ -282,6 +282,13 @@ private struct TitleDetailPopover: View {
                     specRow("Angle", "\(angle)")
                 }
                 specRow("Subtitles",  "\(title.subtitleCount)")
+                if let segments = title.segmentsMap {
+                    let formatted = segments
+                        .split(separator: ",")
+                        .map { String(format: "%05d.mpls", Int($0.trimmingCharacters(in: .whitespaces)) ?? 0) }
+                        .joined(separator: ", ")
+                    specRow("Segments", formatted)
+                }
             }
 
             // Audio tracks

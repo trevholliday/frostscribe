@@ -64,6 +64,19 @@ public struct HeuristicTitleSuggester: TitleSuggesting {
         // commentary/special-edition variants typically have 2 or fewer.
         s += min(Double(title.audioTracks.count), 8) * 1.5
 
+        // Penalise interleaved segment maps — commentary tracks alternate between
+        // two segment number ranges (e.g. 301,310,303,311,305,312,307), producing
+        // many down-steps. Theatrical cuts are monotonically sequential.
+        if let map = title.segmentsMap {
+            let nums = map.split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+            if nums.count > 2 {
+                let decreases = zip(nums, nums.dropFirst()).filter { $1 < $0 }.count
+                let interleaveRatio = Double(decreases) / Double(nums.count - 1)
+                if interleaveRatio > 0.3 { s -= 20 }
+            }
+        }
+
         // Penalise very short titles regardless of other signals
         if title.durationMinutes < 30 { s -= 20 }
 
