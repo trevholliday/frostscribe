@@ -64,6 +64,7 @@ public final class RipUseCase: Sendable {
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: ":", with: "-")
         let tempDir = input.baseTemp.appending(path: safeName)
+        try? FileManager.default.removeItem(at: tempDir)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
         let progressJob = ProgressJobRef(base: ripJob)
@@ -76,11 +77,14 @@ public final class RipUseCase: Sendable {
         }
 
         // Poll file size every 500ms for real-time progress — PRGV:current resets per segment.
+        // Track the high-water mark so OS buffering/flush events can't send progress backwards.
         let expectedBytes = input.titleSizeBytes
         let sizePoller = Task {
+            var maxWritten = 0
             while !Task.isCancelled {
                 if expectedBytes > 0, let written = dirBytes(tempDir) {
-                    let pct = min(Int(Double(written) / Double(expectedBytes) * 100), 99)
+                    maxWritten = max(maxWritten, written)
+                    let pct = min(Int(Double(maxWritten) / Double(expectedBytes) * 100), 99)
                     progressJob.update(pct: pct)
                     try? self.status.write(status: .ripping, job: progressJob.job)
                     onProgress(pct)
@@ -152,8 +156,13 @@ extension RipUseCase {
         guard let contents = try? FileManager.default.contentsOfDirectory(
             at: dir, includingPropertiesForKeys: [.fileSizeKey]
         ) else { return nil }
-        return contents.compactMap {
+        // Only count .mkv files — MakeMKV may create temp/segment files alongside
+        // the output that inflate the total and cause progress to spike and drop.
+        let mkvFiles = contents.filter { $0.pathExtension.lowercased() == "mkv" }
+        let sizes = mkvFiles.compactMap {
             try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize
-        }.reduce(0, +)
+        }
+        guard !sizes.isEmpty else { return nil }
+        return sizes.reduce(0, +)
     }
 }

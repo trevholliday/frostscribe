@@ -9,7 +9,7 @@ actor RipWorker {
     private let hookRunner: HookRunner
     private let logStore: LogStore
     private var running = false
-    private var activeRipTask: Task<Void, Error>? = nil
+    private var activeRipTask: Task<URL, Error>? = nil
     private let pollInterval: TimeInterval = 5
     private let dateFormatter: ISO8601DateFormatter = ISO8601DateFormatter()
 
