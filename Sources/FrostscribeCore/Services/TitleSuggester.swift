@@ -20,7 +20,13 @@ public struct HeuristicTitleSuggester: TitleSuggesting {
 
     public func suggest(from titles: [DiscTitle]) -> DiscTitle? {
         guard !titles.isEmpty else { return nil }
-        return titles.max { score($0, in: titles) < score($1, in: titles) }
+        // When scores are tied, prefer the lower title number — MakeMKV lists
+        // the primary playlist first; honeypot duplicates tend to appear later.
+        return titles.max {
+            let sa = score($0, in: titles), sb = score($1, in: titles)
+            if sa != sb { return sa < sb }
+            return $0.number > $1.number  // higher number loses the tie
+        }
     }
 
     // MARK: - Scoring
@@ -53,6 +59,10 @@ public struct HeuristicTitleSuggester: TitleSuggesting {
 
         // Penalise angle variants (extras/special features often have angle > 0)
         if let angle = title.angle, angle > 1 { s -= 8 }
+
+        // Audio track count — multilingual main features ship with many tracks;
+        // commentary/special-edition variants typically have 2 or fewer.
+        s += min(Double(title.audioTracks.count), 8) * 1.5
 
         // Penalise very short titles regardless of other signals
         if title.durationMinutes < 30 { s -= 20 }

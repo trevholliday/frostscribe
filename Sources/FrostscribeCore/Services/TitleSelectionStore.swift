@@ -24,6 +24,8 @@ extension TitleSelectionRecord: FetchableRecord {
         videoHeight      = row["video_height"]
         subtitleCount    = row["subtitle_count"]
         orderWeight      = row["order_weight"]
+        segmentsMap      = row["segments_map"]
+        titleDescription = row["title_description"]
         durationRank     = row["duration_rank"]
         sizeRank         = row["size_rank"]
     }
@@ -52,6 +54,8 @@ extension TitleSelectionRecord: MutablePersistableRecord {
         container["video_height"]     = videoHeight
         container["subtitle_count"]   = subtitleCount
         container["order_weight"]     = orderWeight
+        container["segments_map"]     = segmentsMap
+        container["title_description"] = titleDescription
         container["duration_rank"]    = durationRank
         container["size_rank"]        = sizeRank
     }
@@ -98,6 +102,16 @@ public struct TitleSelectionStore: Sendable {
                 t.column("order_weight", .integer).notNull()
                 t.column("duration_rank", .integer).notNull()
                 t.column("size_rank", .integer).notNull()
+            }
+        }
+        migrator.registerMigration("v2") { db in
+            try db.alter(table: "title_selections") { t in
+                t.add(column: "segments_map", .text)
+            }
+        }
+        migrator.registerMigration("v3") { db in
+            try db.alter(table: "title_selections") { t in
+                t.add(column: "title_description", .text)
             }
         }
         try migrator.migrate(db)
@@ -150,6 +164,8 @@ public struct TitleSelectionStore: Sendable {
                 videoHeight:      res?.1 ?? 0,
                 subtitleCount:    title.subtitleCount,
                 orderWeight:      title.orderWeight,
+                segmentsMap:      title.segmentsMap,
+                titleDescription: title.titleDescription,
                 durationRank:     durationRankMap[title.number] ?? allTitles.count,
                 sizeRank:         sizeRankMap[title.number] ?? allTitles.count
             )

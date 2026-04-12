@@ -9,6 +9,7 @@ actor RipWorker {
     private let hookRunner: HookRunner
     private let logStore: LogStore
     private var running = false
+    private var activeRipTask: Task<Void, Error>? = nil
     private let pollInterval: TimeInterval = 5
     private let dateFormatter: ISO8601DateFormatter = ISO8601DateFormatter()
 
@@ -39,6 +40,9 @@ actor RipWorker {
 
     func stop() {
         running = false
+        // Cancel any in-flight rip so makemkvcon doesn't outlive the worker.
+        activeRipTask?.cancel()
+        activeRipTask = nil
         // Reset any in-flight rip back to pending so the next start retries it.
         if let count = try? ripQueueManager.resetStuck(), count > 0 {
             log("Reset \(count) interrupted rip job(s) to pending")
@@ -83,8 +87,9 @@ actor RipWorker {
                 historyStore: RipHistoryStore(appSupportURL: ConfigManager.appSupportURL)
             )
 
-            // Wrap in a Task so the cancellation watcher can cancel it.
+            // Wrap in a Task so the cancellation watcher (and stop()) can cancel it.
             let ripTask = Task { try await ripUseCase.execute(ripInput) { _ in } }
+            activeRipTask = ripTask
 
             // Watch for a cancellation signal written to the queue by the UI.
             let queueManager = ripQueueManager
@@ -102,7 +107,9 @@ actor RipWorker {
             let mkvURL: URL
             do {
                 mkvURL = try await ripTask.value
+                activeRipTask = nil
             } catch {
+                activeRipTask = nil
                 watchTask.cancel()
                 if error is CancellationError || ripTask.isCancelled {
                     log("Rip cancelled: \(job.jobLabel)")

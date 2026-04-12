@@ -163,7 +163,6 @@ private struct TitleRow: View {
         guard let volPath = discVolumePath else { return }
         // VLC uses 1-indexed titles; MakeMKV uses 0-indexed.
         let titleNum = title.number + 1
-        let vlcExec = "/Applications/VLC.app/Contents/MacOS/VLC"
 
         if discType == .dvd {
             // DVD: #N title selector works in the MRL
@@ -176,12 +175,16 @@ private struct TitleRow: View {
                 NSWorkspace.shared.open(url)
             }
         } else {
-            // Blu-ray: title selection requires --bluray-title=N CLI argument
+            // Blu-ray: title selection requires --bluray-title=N as a CLI argument.
+            // Use NSWorkspace.openApplication so VLC launches through its app bundle
+            // (launching the raw binary via Process silently fails for GUI apps).
+            guard let vlcAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.videolan.vlc") else { return }
             let mrl = "bluray://\(volPath.path)/"
-            let proc = Process()
-            proc.executableURL = URL(fileURLWithPath: vlcExec)
-            proc.arguments = ["--bluray-title=\(titleNum)", mrl]
-            try? proc.run()
+            let config = NSWorkspace.OpenConfiguration()
+            config.arguments = ["--bluray-title=\(titleNum)", mrl]
+            // Force a new instance so arguments are processed even if VLC is already open.
+            config.createsNewApplicationInstance = true
+            NSWorkspace.shared.openApplication(at: vlcAppURL, configuration: config, completionHandler: nil)
         }
     }
 

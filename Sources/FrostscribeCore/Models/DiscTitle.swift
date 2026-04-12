@@ -1,6 +1,8 @@
 public struct DiscTitle: Codable, Sendable {
     public var number: Int
     public var name: String
+    /// Human-readable title description from MakeMKV (attrs[2]), e.g. "Feature Film", "Director's Commentary".
+    public var titleDescription: String?
     public var duration: String
     public var chapters: String
     public var sizeBytes: Int
@@ -12,6 +14,9 @@ public struct DiscTitle: Codable, Sendable {
     public var subtitleCount: Int
     /// MakeMKV order weight — 0 means this is a primary title candidate. Lower = more likely main feature.
     public var orderWeight: Int
+    /// MakeMKV segment map — comma-separated list of BDMV segment IDs used by this title.
+    /// Honeypot titles often reuse the same segments as the real title in a different order.
+    public var segmentsMap: String?
 
     public var sizeFormatted: String {
         let gb = Double(sizeBytes) / 1_073_741_824
@@ -42,6 +47,7 @@ public struct DiscTitle: Codable, Sendable {
     public init(
         number: Int,
         name: String,
+        titleDescription: String? = nil,
         duration: String,
         chapters: String,
         sizeBytes: Int,
@@ -49,10 +55,12 @@ public struct DiscTitle: Codable, Sendable {
         audioTracks: [AudioTrack] = [],
         videoResolution: String? = nil,
         subtitleCount: Int = 0,
-        orderWeight: Int = 0
+        orderWeight: Int = 0,
+        segmentsMap: String? = nil
     ) {
         self.number = number
         self.name = name
+        self.titleDescription = titleDescription
         self.duration = duration
         self.chapters = chapters
         self.sizeBytes = sizeBytes
@@ -61,5 +69,6 @@ public struct DiscTitle: Codable, Sendable {
         self.videoResolution = videoResolution
         self.subtitleCount = subtitleCount
         self.orderWeight = orderWeight
+        self.segmentsMap = segmentsMap
     }
 }

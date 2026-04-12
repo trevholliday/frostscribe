@@ -179,13 +179,15 @@ struct WorkerReinstall: ParsableCommand {
             if check.terminationStatus != 0 { break }  // no matching process — worker is gone
         }
 
-        // Kill any orphaned HandBrakeCLI processes left behind by the old worker.
-        let killHB = Process()
-        killHB.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
-        killHB.arguments = ["-9", "HandBrakeCLI"]
-        killHB.standardOutput = FileHandle.nullDevice
-        killHB.standardError  = FileHandle.nullDevice
-        if (try? killHB.run()) != nil { killHB.waitUntilExit() }
+        // Kill any orphaned child processes left behind by the old worker.
+        for procName in ["HandBrakeCLI", "makemkvcon"] {
+            let kill = Process()
+            kill.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+            kill.arguments = ["-9", procName]
+            kill.standardOutput = FileHandle.nullDevice
+            kill.standardError  = FileHandle.nullDevice
+            if (try? kill.run()) != nil { kill.waitUntilExit() }
+        }
 
         let binPath = resolveWorkerBin()
         let logPath = ConfigManager.appSupportURL.appending(path: "worker.log").path

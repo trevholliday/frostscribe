@@ -132,11 +132,14 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
             let audioTracks = buildAudioTracks(from: streams)
             let videoResolution = buildVideoResolution(from: streams)
             let subtitleCount = streams.values.filter { $0[1] == "Subtitles" }.count
-            let orderWeight = Int(attrs[33] ?? "0") ?? 0
-            let angle = attrs[15].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
+            let orderWeight      = Int(attrs[33] ?? "0") ?? 0
+            let angle            = attrs[15].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
+            let segmentsMap      = attrs[26].flatMap { $0.isEmpty ? nil : $0 }
+            let titleDescription = attrs[2].flatMap { $0.isEmpty ? nil : $0 }
             return DiscTitle(
                 number: num,
                 name: attrs[27] ?? "title_\(num)",
+                titleDescription: titleDescription,
                 duration: attrs[9] ?? "?",
                 chapters: attrs[8] ?? "?",
                 sizeBytes: sizeBytes,
@@ -144,7 +147,8 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
                 audioTracks: audioTracks,
                 videoResolution: videoResolution,
                 subtitleCount: subtitleCount,
-                orderWeight: orderWeight
+                orderWeight: orderWeight,
+                segmentsMap: segmentsMap
             )
         }.sorted { $0.number < $1.number }
 

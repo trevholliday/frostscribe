@@ -26,6 +26,10 @@ public struct TitleSelectionRecord: Identifiable, Sendable {
     public var videoHeight: Int       // 0 when unknown
     public var subtitleCount: Int
     public var orderWeight: Int
+    /// MakeMKV segment map — comma-separated BDMV segment IDs. Useful for identifying honeypot titles.
+    public var segmentsMap: String?
+    /// Human-readable title description from MakeMKV (e.g. "Feature Film", "Director's Commentary").
+    public var titleDescription: String?
 
     // ── Relative features (computed at record time) ──────────────────────────
     /// 1 = longest title on disc
@@ -53,6 +57,8 @@ public struct TitleSelectionRecord: Identifiable, Sendable {
         videoHeight: Int,
         subtitleCount: Int,
         orderWeight: Int,
+        segmentsMap: String?,
+        titleDescription: String?,
         durationRank: Int,
         sizeRank: Int
     ) {
@@ -75,6 +81,8 @@ public struct TitleSelectionRecord: Identifiable, Sendable {
         self.videoHeight = videoHeight
         self.subtitleCount = subtitleCount
         self.orderWeight = orderWeight
+        self.segmentsMap = segmentsMap
+        self.titleDescription = titleDescription
         self.durationRank = durationRank
         self.sizeRank = sizeRank
     }
