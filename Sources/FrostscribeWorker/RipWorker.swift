@@ -88,7 +88,8 @@ actor RipWorker {
             )
 
             // Wrap in a Task so the cancellation watcher (and stop()) can cancel it.
-            let ripTask = Task { try await ripUseCase.execute(ripInput) { _ in } }
+            // shouldEject:false — worker handles ejection after checking for more pending jobs.
+            let ripTask = Task { try await ripUseCase.execute(ripInput, onProgress: { _ in }, shouldEject: false) }
             activeRipTask = ripTask
 
             // Watch for a cancellation signal written to the queue by the UI.
@@ -123,6 +124,10 @@ actor RipWorker {
                 return
             }
             watchTask.cancel()
+
+            // Eject only if no more pending rip jobs remain — don't eject between episodes.
+            let pendingRemaining = (try? ripQueueManager.read())?.filter { $0.status == .pending }.count ?? 0
+            if pendingRemaining == 0 { DiscEjector().eject() }
 
             let config     = (try? ConfigManager().load()) ?? Config()
             let skipEncode = config.skipEncodingDVD && (discType == .dvd || discType == .unknown)

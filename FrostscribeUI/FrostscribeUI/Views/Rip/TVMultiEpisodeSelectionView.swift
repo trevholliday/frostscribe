@@ -6,11 +6,20 @@ struct TVMultiEpisodeSelectionView: View {
     let scanResult: DiscScanResult
     let title: String
     let year: String
-    let season: Int
-    let startEpisode: Int
 
-    // title.number → selected
+    @State private var season: Int
+    @State private var startEpisode: Int
     @State private var selected: Set<Int> = []
+
+    init(vm: RipFlowViewModel, scanResult: DiscScanResult, title: String, year: String,
+         season: Int, startEpisode: Int) {
+        self.vm = vm
+        self.scanResult = scanResult
+        self.title = title
+        self.year = year
+        self._season = State(initialValue: season)
+        self._startEpisode = State(initialValue: startEpisode)
+    }
 
     /// Titles long enough to be real episodes (excludes disc menus, trailers).
     private var displayedTitles: [DiscTitle] {
@@ -32,7 +41,7 @@ struct TVMultiEpisodeSelectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
-            HStack {
+            HStack(spacing: FrostTheme.paddingM) {
                 if vm.canGoBack {
                     Button { vm.goBack() } label: {
                         Label("Back", systemImage: "chevron.left")
@@ -41,11 +50,21 @@ struct TVMultiEpisodeSelectionView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                 }
+
+                Stepper("S\(String(format: "%02d", season))", value: $season, in: 1...99)
+                    .fixedSize()
+                    .font(.system(size: 15, design: .monospaced))
+
+                Stepper("from E\(String(format: "%02d", startEpisode))", value: $startEpisode, in: 1...999)
+                    .fixedSize()
+                    .font(.system(size: 15, design: .monospaced))
+
                 Spacer()
-                Text("Season \(season) · \(selected.count) episode\(selected.count == 1 ? "" : "s") selected")
+
+                Text("\(selected.count) episode\(selected.count == 1 ? "" : "s") selected")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
-                Spacer()
+
                 Button("Abort Rip", role: .destructive) { vm.reset() }
                     .buttonStyle(.frostDestructive)
             }

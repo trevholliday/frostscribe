@@ -53,7 +53,8 @@ public final class RipUseCase: Sendable {
     public func execute(
         _ input: RipInput,
         onMessage: @escaping @Sendable (String) -> Void = { _ in },
-        onProgress: @escaping @Sendable (Int) -> Void
+        onProgress: @escaping @Sendable (Int) -> Void,
+        shouldEject: Bool = true
     ) async throws -> URL {
         let startDate = Date.now
         let ripJob = RipJob(type: input.mediaType, title: input.jobLabel)
@@ -118,7 +119,7 @@ public final class RipUseCase: Sendable {
         onProgress(100)
 
         let mkv = try findMKV(in: tempDir)
-        ejector.eject()
+        if shouldEject { ejector.eject() }
 
         if input.titleSizeBytes > 0 {
             let record = RipRecord(

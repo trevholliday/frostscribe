@@ -272,7 +272,7 @@ final class RipFlowCoordinator {
         confirmedTitle = title
         confirmedYear = year
         if isTV {
-            phase = .tvEpisode(scanResult, title: title, year: year)
+            phase = .tvMultiEpisode(scanResult, title: title, year: year, season: 1, startEpisode: 1)
         } else {
             suggestedTitleNumber = HeuristicTitleSuggester().suggest(from: scanResult.titles)?.number
             phase = .titleSelection(scanResult, title: title, year: year,
@@ -296,6 +296,8 @@ final class RipFlowCoordinator {
         title: String, year: String, season: Int
     ) {
         let config = storedConfig ?? Config()
+        var jobIds: [String] = []
+
         for discTitle in selectedTitles {
             guard let episodeNum = episodeAssignments[discTitle.number] else { continue }
             let episodeLabel = String(format: "S%02dE%02d", season, episodeNum)
@@ -321,10 +323,47 @@ final class RipFlowCoordinator {
                 tmdbMediaType: confirmedTmdbMediaType
             )
             try? ripQueue.add(job)
+            jobIds.append(job.id)
         }
+
         kickWorker()
-        let count = selectedTitles.count
-        phase = .done(title: "\(title) — \(count) episode\(count == 1 ? "" : "s") queued")
+
+        guard !jobIds.isEmpty else { return }
+        let count = jobIds.count
+        let firstEp = episodeAssignments.values.min() ?? 1
+        let firstLabel = "\(title) — \(String(format: "S%02dE%02d", season, firstEp))"
+        currentRipJobId = jobIds.first
+        phase = .ripping(title: firstLabel, progress: 0)
+        let ids = jobIds
+        let showTitle = title
+        ripTask = Task { await self.pollMultipleRips(jobIds: ids, showTitle: showTitle, count: count) }
+    }
+
+    private func pollMultipleRips(jobIds: [String], showTitle: String, count: Int) async {
+        let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
+
+        while !Task.isCancelled {
+            if let file = try? statusMgr.read(), file.status == .ripping,
+               let currentJob = file.currentJob {
+                var pct = Int(currentJob.progress.replacing("%", with: "")) ?? 0
+                if let msg = currentJob.currentItem, msg.hasPrefix("Copy complete") { pct = 100 }
+                phase = .ripping(title: currentJob.title ?? showTitle, progress: pct)
+                if let msg = currentJob.currentItem, !msg.isEmpty { ripMessage = msg }
+            }
+
+            if let jobs = try? ripQueue.read() {
+                let ours = jobs.filter { jobIds.contains($0.id) }
+                let allTerminal = !ours.isEmpty && ours.allSatisfy {
+                    $0.status == .done || $0.status == .error || $0.status == .cancelled
+                }
+                if allTerminal {
+                    phase = .done(title: "\(showTitle) — \(count) episode\(count == 1 ? "" : "s") queued")
+                    return
+                }
+            }
+
+            try? await Task.sleep(for: .seconds(2))
+        }
     }
 
     // MARK: - Title selection
