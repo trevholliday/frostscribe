@@ -253,7 +253,7 @@ private struct TitleRow: View {
 
 // MARK: - Detail popover
 
-private struct TitleDetailPopover: View {
+struct TitleDetailPopover: View {
     let title: DiscTitle
 
     var body: some View {

@@ -46,68 +46,15 @@ struct MovieMultiTitleSelectionView: View {
             Divider()
 
             List(displayedTitles, id: \.number) { t in
-                let isSelected = selected.contains(t.number)
-                let isSuggested = t.number == vm.suggestedTitleNumber
-
-                HStack(alignment: .center, spacing: FrostTheme.paddingM) {
-                    // Checkbox
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 20))
-                        .foregroundStyle(isSelected ? FrostTheme.teal : Color.secondary)
-
-                    // Info
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text(t.name)
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                                .lineLimit(1)
-                            if isSuggested {
-                                badge("SUGGESTED", color: .purple)
-                            }
-                            if t.isMainTitleCandidate {
-                                badge("MAIN", color: FrostTheme.teal)
-                            }
-                            if t.is4K {
-                                badge("4K", color: FrostTheme.frostCyan)
-                            } else if let res = t.videoResolution {
-                                badge(resLabel(res), color: .secondary)
-                            }
-                        }
-
-                        HStack(spacing: 4) {
-                            Text(t.duration)
-                            separator
-                            Text("\(t.chapters) ch")
-                            separator
-                            Text(t.sizeFormatted)
-                                .foregroundStyle(isSelected ? FrostTheme.teal : Color.secondary)
-                        }
-                        .font(.system(size: 14).monospacedDigit())
-                        .foregroundStyle(.secondary)
-
-                        if !t.audioTracks.isEmpty {
-                            let first = t.audioTracks[0]
-                            let rest  = t.audioTracks.count - 1
-                            HStack(spacing: 4) {
-                                Text(first.summary)
-                                    .foregroundStyle(first.isLossless ? FrostTheme.teal : Color.secondary)
-                                if rest > 0 {
-                                    Text("+ \(rest) more").foregroundStyle(.tertiary)
-                                }
-                            }
-                            .font(.system(size: 13))
-                        }
-                    }
-
-                    Spacer(minLength: 0)
-                }
-                .padding(.vertical, 5)
-                .opacity(isSelected ? 1.0 : 0.7)
+                MovieTitleRow(
+                    title: t,
+                    isSelected: selected.contains(t.number),
+                    isSuggested: t.number == vm.suggestedTitleNumber
+                )
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if isSelected { selected.remove(t.number) }
-                    else          { selected.insert(t.number) }
+                    if selected.contains(t.number) { selected.remove(t.number) }
+                    else                           { selected.insert(t.number) }
                 }
             }
             .listStyle(.plain)
@@ -167,8 +114,86 @@ struct MovieMultiTitleSelectionView: View {
         }
     }
 
-    private var separator: some View {
-        Text("·").foregroundStyle(.tertiary)
+}
+
+// MARK: - Row
+
+private struct MovieTitleRow: View {
+    let title: DiscTitle
+    let isSelected: Bool
+    let isSuggested: Bool
+
+    @State private var showDetail = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: FrostTheme.paddingM) {
+            // Checkbox
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 20))
+                .foregroundStyle(isSelected ? FrostTheme.teal : Color.secondary)
+
+            // Info
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(title.name)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                        .lineLimit(1)
+                    if isSuggested {
+                        badge("SUGGESTED", color: .purple)
+                    }
+                    if title.isMainTitleCandidate {
+                        badge("MAIN", color: FrostTheme.teal)
+                    }
+                    if title.is4K {
+                        badge("4K", color: FrostTheme.frostCyan)
+                    } else if let res = title.videoResolution {
+                        badge(resLabel(res), color: .secondary)
+                    }
+                }
+
+                HStack(spacing: 4) {
+                    Text(title.duration)
+                    Text("·").foregroundStyle(.tertiary)
+                    Text("\(title.chapters) ch")
+                    Text("·").foregroundStyle(.tertiary)
+                    Text(title.sizeFormatted)
+                        .foregroundStyle(isSelected ? FrostTheme.teal : Color.secondary)
+                }
+                .font(.system(size: 14).monospacedDigit())
+                .foregroundStyle(.secondary)
+
+                if !title.audioTracks.isEmpty {
+                    let first = title.audioTracks[0]
+                    let rest  = title.audioTracks.count - 1
+                    HStack(spacing: 4) {
+                        Text(first.summary)
+                            .foregroundStyle(first.isLossless ? FrostTheme.teal : Color.secondary)
+                        if rest > 0 {
+                            Text("+ \(rest) more").foregroundStyle(.tertiary)
+                        }
+                    }
+                    .font(.system(size: 13))
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            // Info button
+            Button {
+                showDetail = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(FrostTheme.glacier.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showDetail, arrowEdge: .trailing) {
+                TitleDetailPopover(title: title)
+            }
+        }
+        .padding(.vertical, 5)
+        .opacity(isSelected ? 1.0 : 0.7)
     }
 
     private func badge(_ label: String, color: Color) -> some View {
