@@ -12,6 +12,7 @@ final class RipFlowCoordinator {
         case scanning
         case identify(DiscScanResult)
         case tvEpisode(DiscScanResult, title: String, year: String)
+        case tvMultiEpisode(DiscScanResult, title: String, year: String, season: Int, startEpisode: Int)
         case titleSelection(DiscScanResult, title: String, year: String, isTV: Bool, season: Int, episode: Int)
         case audioTrackSelection(DiscTitle, DiscScanResult, title: String, year: String,
                                  isTV: Bool, season: Int, episode: Int)
@@ -284,9 +285,46 @@ final class RipFlowCoordinator {
     func setEpisode(season: Int, episode: Int, scanResult: DiscScanResult,
                     title: String, year: String) {
         phaseStack.append(phase)
-        suggestedTitleNumber = HeuristicTitleSuggester().suggest(from: scanResult.titles)?.number
-        phase = .titleSelection(scanResult, title: title, year: year,
-                                isTV: true, season: season, episode: episode)
+        phase = .tvMultiEpisode(scanResult, title: title, year: year,
+                                season: season, startEpisode: episode)
+    }
+
+    func confirmMultipleEpisodes(
+        selectedTitles: [DiscTitle],
+        episodeAssignments: [Int: Int],
+        scanResult: DiscScanResult,
+        title: String, year: String, season: Int
+    ) {
+        let config = storedConfig ?? Config()
+        for discTitle in selectedTitles {
+            guard let episodeNum = episodeAssignments[discTitle.number] else { continue }
+            let episodeLabel = String(format: "S%02dE%02d", season, episodeNum)
+            let outputURL = PathBuilder.episodePath(
+                show: title, year: year, season: season, episode: episodeNum,
+                baseDir: URL(fileURLWithPath: config.tvDir),
+                mediaServer: config.mediaServer
+            )
+            let jobLabel = "\(title) — \(episodeLabel)"
+            let job = RipQueueJob(
+                titleNumber: discTitle.number,
+                baseTempPath: config.tempDir,
+                mediaType: RipJob.MediaType.tvshow.rawValue,
+                jobLabel: jobLabel,
+                discType: scanResult.discType.rawValue,
+                titleSizeBytes: discTitle.sizeBytes,
+                outputPath: outputURL.path,
+                preset: EncoderPreset.preset(for: scanResult.discType),
+                encodeTitle: title,
+                episode: episodeLabel,
+                audioTracks: nil,
+                tmdbId: confirmedTmdbId,
+                tmdbMediaType: confirmedTmdbMediaType
+            )
+            try? ripQueue.add(job)
+        }
+        kickWorker()
+        let count = selectedTitles.count
+        phase = .done(title: "\(title) — \(count) episode\(count == 1 ? "" : "s") queued")
     }
 
     // MARK: - Title selection

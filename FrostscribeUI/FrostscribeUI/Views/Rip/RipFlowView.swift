@@ -75,6 +75,9 @@ struct RipFlowView: View {
             TMDBSearchView(vm: vm, scanResult: scanResult)
         case .tvEpisode(let scanResult, let mediaTitle, let year):
             TVEpisodeView(vm: vm, scanResult: scanResult, title: mediaTitle, year: year)
+        case .tvMultiEpisode(let scanResult, let mediaTitle, let year, let season, let startEpisode):
+            TVMultiEpisodeSelectionView(vm: vm, scanResult: scanResult, title: mediaTitle, year: year,
+                                        season: season, startEpisode: startEpisode)
         case .titleSelection(let scanResult, let mediaTitle, let year, let isTV, let season, let episode):
             TitleSelectionView(vm: vm, scanResult: scanResult,
                                mediaTitle: mediaTitle, year: year,
