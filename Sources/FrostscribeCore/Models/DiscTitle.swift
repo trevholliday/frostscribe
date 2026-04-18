@@ -17,6 +17,8 @@ public struct DiscTitle: Codable, Sendable {
     /// MakeMKV segment map — comma-separated list of BDMV segment IDs used by this title.
     /// Honeypot titles often reuse the same segments as the real title in a different order.
     public var segmentsMap: String?
+    /// Primary MPLS playlist file for this title (e.g. "00028.mpls"), from MakeMKV attrs[16].
+    public var playlistFile: String?
 
     public var sizeFormatted: String {
         let gb = Double(sizeBytes) / 1_073_741_824
@@ -56,7 +58,8 @@ public struct DiscTitle: Codable, Sendable {
         videoResolution: String? = nil,
         subtitleCount: Int = 0,
         orderWeight: Int = 0,
-        segmentsMap: String? = nil
+        segmentsMap: String? = nil,
+        playlistFile: String? = nil
     ) {
         self.number = number
         self.name = name
@@ -70,5 +73,6 @@ public struct DiscTitle: Codable, Sendable {
         self.subtitleCount = subtitleCount
         self.orderWeight = orderWeight
         self.segmentsMap = segmentsMap
+        self.playlistFile = playlistFile
     }
 }

@@ -43,8 +43,33 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
     // MARK: - Sync implementations
 
     private func scanSync(onMessage: @escaping @Sendable (String) -> Void) throws -> DiscScanResult {
-        let output = try run(arguments: ["-r", "info", "disc:0"], onLine: onMessage)
-        return buildScanResult(from: output)
+        // Read all scan output synchronously to avoid a race where the readabilityHandler
+        // is nil'd before the kernel pipe buffer is drained, causing titles to be lost.
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: resolvedBinPath())
+        process.arguments = ["-r", "info", "disc:0"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        activeProcess = process
+        try process.run()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        activeProcess = nil
+
+        guard process.terminationStatus == 0 else {
+            if process.terminationReason == .uncaughtSignal { throw CancellationError() }
+            throw FrostscribeError.makemkvFailed(exitCode: process.terminationStatus)
+        }
+
+        let lines = (String(data: data, encoding: .utf8) ?? "")
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        lines.forEach(onMessage)
+        return buildScanResult(from: lines)
     }
 
     private func ripSync(
@@ -127,7 +152,7 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
         }
 
         let titles: [DiscTitle] = titleData.compactMap { num, attrs in
-            guard let sizeStr = attrs[11], let sizeBytes = Int(sizeStr) else { return nil }
+            let sizeBytes = attrs[11].flatMap { Int($0) } ?? 0
             let streams = streamData[num] ?? [:]
             let audioTracks = buildAudioTracks(from: streams)
             let videoResolution = buildVideoResolution(from: streams)
@@ -136,6 +161,7 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
             let angle            = attrs[15].flatMap { Int($0) }.flatMap { $0 > 0 ? $0 : nil }
             let segmentsMap      = attrs[26].flatMap { $0.isEmpty ? nil : $0 }
             let titleDescription = attrs[2].flatMap { $0.isEmpty ? nil : $0 }
+            let playlistFile     = attrs[16].flatMap { $0.isEmpty ? nil : $0 }
             return DiscTitle(
                 number: num,
                 name: attrs[27] ?? "title_\(num)",
@@ -148,7 +174,8 @@ public final class MakeMKVRunner: @unchecked Sendable, MakeMKVRunning {
                 videoResolution: videoResolution,
                 subtitleCount: subtitleCount,
                 orderWeight: orderWeight,
-                segmentsMap: segmentsMap
+                segmentsMap: segmentsMap,
+                playlistFile: playlistFile
             )
         }.sorted { $0.number < $1.number }
 

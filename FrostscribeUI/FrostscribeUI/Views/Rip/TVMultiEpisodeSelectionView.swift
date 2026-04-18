@@ -21,9 +21,9 @@ struct TVMultiEpisodeSelectionView: View {
         self._startEpisode = State(initialValue: startEpisode)
     }
 
-    /// Titles long enough to be real episodes (excludes disc menus, trailers).
+    /// All titles from the scan — let the user decide what's an episode.
     private var displayedTitles: [DiscTitle] {
-        scanResult.titles.filter { $0.durationMinutes >= 3 }
+        scanResult.titles
     }
 
     /// Maps each selected title.number → its assigned episode number,
@@ -103,6 +103,12 @@ struct TVMultiEpisodeSelectionView: View {
                             .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                             .lineLimit(1)
 
+                        if let playlist = t.playlistFile {
+                            Text(playlist)
+                                .font(.system(size: 13, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                        }
+
                         HStack(spacing: 4) {
                             Text(t.duration)
                             separator
@@ -174,7 +180,9 @@ struct TVMultiEpisodeSelectionView: View {
             .padding(FrostTheme.paddingM)
         }
         .onAppear {
-            selected = Set(displayedTitles.map(\.number))
+            // Pre-select titles that look like real episodes (>= 5 min).
+            // Menus, trailers, and short clips are shown but left unchecked.
+            selected = Set(displayedTitles.filter { $0.durationMinutes >= 5 }.map(\.number))
         }
     }
 
