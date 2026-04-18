@@ -12,6 +12,20 @@ public enum PathBuilder {
         return baseDir.appending(path: folder).appending(path: filename)
     }
 
+    /// Used when multiple titles from the same disc are ripped as separate files.
+    /// e.g. version 1 → "Title (Year) - t01.mkv"
+    public static func moviePathVersioned(
+        title: String,
+        year: String,
+        version: Int,
+        baseDir: URL,
+        mediaServer: MediaServer
+    ) -> URL {
+        let folder = "\(title) (\(year))"
+        let filename = "\(title) (\(year)) - t\(String(format: "%02d", version)).mkv"
+        return baseDir.appending(path: folder).appending(path: filename)
+    }
+
     public static func episodePath(
         show: String,
         year: String,

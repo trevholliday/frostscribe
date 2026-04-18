@@ -13,6 +13,7 @@ final class RipFlowCoordinator {
         case identify(DiscScanResult)
         case tvEpisode(DiscScanResult, title: String, year: String)
         case tvMultiEpisode(DiscScanResult, title: String, year: String, season: Int, startEpisode: Int)
+        case movieMultiTitle(DiscScanResult, title: String, year: String)
         case titleSelection(DiscScanResult, title: String, year: String, isTV: Bool, season: Int, episode: Int)
         case audioTrackSelection(DiscTitle, DiscScanResult, title: String, year: String,
                                  isTV: Bool, season: Int, episode: Int)
@@ -45,6 +46,7 @@ final class RipFlowCoordinator {
     }
 
     private(set) var ripEstimate: RipEstimate?
+    private(set) var pendingRipJobLabels: [String] = []
 
     private var phaseStack: [Phase] = []
 
@@ -275,8 +277,7 @@ final class RipFlowCoordinator {
             phase = .tvMultiEpisode(scanResult, title: title, year: year, season: 1, startEpisode: 1)
         } else {
             suggestedTitleNumber = HeuristicTitleSuggester().suggest(from: scanResult.titles)?.number
-            phase = .titleSelection(scanResult, title: title, year: year,
-                                    isTV: false, season: 1, episode: 1)
+            phase = .movieMultiTitle(scanResult, title: title, year: year)
         }
     }
 
@@ -336,10 +337,67 @@ final class RipFlowCoordinator {
         phase = .ripping(title: firstLabel, progress: 0)
         let ids = jobIds
         let showTitle = title
-        ripTask = Task { await self.pollMultipleRips(jobIds: ids, showTitle: showTitle, count: count) }
+        ripTask = Task { await self.pollMultipleRips(jobIds: ids, showTitle: showTitle, count: count, isTV: true) }
     }
 
-    private func pollMultipleRips(jobIds: [String], showTitle: String, count: Int) async {
+    func confirmMultipleMovies(
+        selectedTitles: [DiscTitle],
+        scanResult: DiscScanResult,
+        title: String, year: String
+    ) {
+        let config = storedConfig ?? Config()
+        var jobIds: [String] = []
+        let multi = selectedTitles.count > 1
+
+        for (idx, discTitle) in selectedTitles.enumerated() {
+            let outputURL: URL
+            if multi {
+                outputURL = PathBuilder.moviePathVersioned(
+                    title: title, year: year, version: idx + 1,
+                    baseDir: URL(fileURLWithPath: config.moviesDir),
+                    mediaServer: config.mediaServer
+                )
+            } else {
+                outputURL = PathBuilder.moviePath(
+                    title: title, year: year,
+                    baseDir: URL(fileURLWithPath: config.moviesDir),
+                    mediaServer: config.mediaServer
+                )
+            }
+            let versionLabel = multi ? " (Version \(idx + 1))" : ""
+            let jobLabel = "\(title) (\(year))\(versionLabel)"
+            let job = RipQueueJob(
+                titleNumber: discTitle.number,
+                baseTempPath: config.tempDir,
+                mediaType: RipJob.MediaType.movie.rawValue,
+                jobLabel: jobLabel,
+                discType: scanResult.discType.rawValue,
+                titleSizeBytes: discTitle.sizeBytes,
+                outputPath: outputURL.path,
+                preset: EncoderPreset.preset(for: scanResult.discType),
+                encodeTitle: title,
+                episode: nil,
+                audioTracks: nil,
+                tmdbId: confirmedTmdbId,
+                tmdbMediaType: confirmedTmdbMediaType
+            )
+            try? ripQueue.add(job)
+            jobIds.append(job.id)
+        }
+
+        kickWorker()
+
+        guard !jobIds.isEmpty else { return }
+        let count = jobIds.count
+        let firstLabel = "\(title) (\(year))\(multi ? " (Version 1)" : "")"
+        currentRipJobId = jobIds.first
+        phase = .ripping(title: firstLabel, progress: 0)
+        let ids = jobIds
+        let showTitle = title
+        ripTask = Task { await self.pollMultipleRips(jobIds: ids, showTitle: showTitle, count: count, isTV: false) }
+    }
+
+    private func pollMultipleRips(jobIds: [String], showTitle: String, count: Int, isTV: Bool = true) async {
         let statusMgr = StatusManager(appSupportURL: ConfigManager.appSupportURL)
 
         while !Task.isCancelled {
@@ -353,11 +411,15 @@ final class RipFlowCoordinator {
 
             if let jobs = try? ripQueue.read() {
                 let ours = jobs.filter { jobIds.contains($0.id) }
+                let pending = ours.filter { $0.status == .pending }
+                pendingRipJobLabels = pending.map { $0.jobLabel }
                 let allTerminal = !ours.isEmpty && ours.allSatisfy {
                     $0.status == .done || $0.status == .error || $0.status == .cancelled
                 }
                 if allTerminal {
-                    phase = .done(title: "\(showTitle) — \(count) episode\(count == 1 ? "" : "s") queued")
+                    pendingRipJobLabels = []
+                    let noun = isTV ? "episode\(count == 1 ? "" : "s")" : "title\(count == 1 ? "" : "s")"
+                    phase = .done(title: "\(showTitle) — \(count) \(noun) queued")
                     return
                 }
             }
@@ -598,6 +660,7 @@ final class RipFlowCoordinator {
         confirmedTmdbId = nil
         confirmedTmdbMediaType = nil
         ripEstimate = nil
+        pendingRipJobLabels = []
         phase = .idle
     }
 }

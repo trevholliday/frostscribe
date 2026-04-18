@@ -149,6 +149,26 @@ struct LeftPanelView: View {
                     }
                 }
                 RipLogOverlay(message: vm.ripMessage)
+                if !vm.pendingRipJobLabels.isEmpty {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("QUEUED")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.tertiary)
+                            .padding(.bottom, 1)
+                        ForEach(vm.pendingRipJobLabels, id: \.self) { label in
+                            HStack(spacing: 5) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.tertiary)
+                                Text(label)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+                }
             } else if case .done = vm.phase {
                 Label("Added to queue", systemImage: "checkmark.circle.fill")
                     .font(.system(size: 18))

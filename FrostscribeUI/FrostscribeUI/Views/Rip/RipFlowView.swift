@@ -8,7 +8,7 @@ struct RipFlowView: View {
 
     private enum HistoryTab: String, CaseIterable {
         case rips = "Rips"
-        case encodeFailed = "Failed Encodes"
+        case encodes = "Encodes"
     }
     @Environment(NavigationCoordinator.self) private var navCoordinator
     @Environment(StatusViewModel.self) private var statusVM
@@ -78,6 +78,8 @@ struct RipFlowView: View {
         case .tvMultiEpisode(let scanResult, let mediaTitle, let year, let season, let startEpisode):
             TVMultiEpisodeSelectionView(vm: vm, scanResult: scanResult, title: mediaTitle, year: year,
                                         season: season, startEpisode: startEpisode)
+        case .movieMultiTitle(let scanResult, let title, let year):
+            MovieMultiTitleSelectionView(vm: vm, scanResult: scanResult, title: title, year: year)
         case .titleSelection(let scanResult, let mediaTitle, let year, let isTV, let season, let episode):
             TitleSelectionView(vm: vm, scanResult: scanResult,
                                mediaTitle: mediaTitle, year: year,
@@ -195,7 +197,7 @@ struct RipFlowView: View {
                 if historyTab == .rips {
                     ripsTab(ripRecords: ripRecords)
                 } else {
-                    encodeFailed
+                    encodesTab
                 }
             }
             .padding(FrostTheme.paddingL)
@@ -267,23 +269,27 @@ struct RipFlowView: View {
         }
     }
 
-    private var encodeFailed: some View {
-        let superseded = Set(queueVM.jobs
-            .filter { $0.status == .pending || $0.status == .encoding || $0.status == .done }
+    private var encodesTab: some View {
+        // Jobs that are currently pending/encoding supersede older done/error jobs for the same output.
+        let active = Set(queueVM.jobs
+            .filter { $0.status == .pending || $0.status == .encoding }
             .map { $0.output })
-        let failed = queueVM.jobs.filter { $0.status == .error && !superseded.contains($0.output) }
+        let jobs = queueVM.jobs
+            .filter { ($0.status == .done || $0.status == .error) && !active.contains($0.output) }
+            .sorted { ($0.completedAt ?? $0.addedAt) > ($1.completedAt ?? $1.addedAt) }
         return VStack(alignment: .leading, spacing: 0) {
-            if failed.isEmpty {
-                Text("No failed encodes.")
+            if jobs.isEmpty {
+                Text("No encode history.")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(failed) { job in
+                ForEach(jobs) { job in
+                    let failed = job.status == .error
                     HStack(alignment: .top, spacing: FrostTheme.paddingM) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(job.label)
                                 .font(.system(size: 19, weight: .bold))
                                 .lineLimit(1)
-                                .foregroundStyle(FrostTheme.alert)
+                                .foregroundStyle(failed ? FrostTheme.alert : .primary)
                             Text(URL(fileURLWithPath: job.output).lastPathComponent)
                                 .font(.system(size: 14, design: .monospaced))
                                 .foregroundStyle(.tertiary)
@@ -292,21 +298,28 @@ struct RipFlowView: View {
                         }
                         Spacer()
                         HStack(spacing: FrostTheme.paddingS) {
-                            Button {
-                                queueVM.requeue(job)
-                            } label: {
-                                pill("Re-encode", color: FrostTheme.teal)
+                            if failed {
+                                Button {
+                                    queueVM.requeue(job)
+                                } label: {
+                                    pill("Re-encode", color: FrostTheme.teal)
+                                }
+                                .buttonStyle(.plain)
+                                Button {
+                                    queueVM.remove(job)
+                                } label: {
+                                    pill("Remove", color: .secondary)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                pill("Done", color: FrostTheme.glacier)
                             }
-                            .buttonStyle(.plain)
-                            Button {
-                                queueVM.remove(job)
-                            } label: {
-                                pill("Remove", color: .secondary)
-                            }
-                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.vertical, FrostTheme.paddingS)
+                    .contextMenu {
+                        Button("Re-encode") { queueVM.requeue(job) }
+                    }
                     Divider()
                 }
             }
