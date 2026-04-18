@@ -30,10 +30,8 @@ Frostscribe wraps `makemkvcon` and `HandBrakeCLI` into a polished interactive CL
 | Menu bar app + GUI rip flow | ✅ Stable |
 | CLI rip flow | ✅ Stable |
 | Event hooks (Home Assistant, etc.) | ✅ Stable |
-| TV show ripping | ⚠️ Functional, not thoroughly tested |
+| TV show ripping | ✅ Stable |
 | AutoScribe (auto-rip without prompting) | ⚠️ Experimental |
-
-> TV show ripping works end-to-end but has not been tested across a wide variety of discs and edge cases. Episode numbering and season path formatting should be verified for your media server.
 
 ---
 
@@ -124,6 +122,8 @@ Click **Rip Disc** to open the guided rip flow:
 5. The rip runs in the background worker — closing the app will not interrupt it
 6. Encoding begins automatically when the rip finishes
 7. Push notification fires on completion (configure via `event_hook`)
+
+**TV show discs:** After identifying the show, Frostscribe presents all episode-length titles with checkboxes. Set the season and starting episode number, select the episodes you want, and click **Queue Episodes**. Each episode is queued as a separate rip job; the disc is not ejected until all jobs complete.
 
 **Vigil Mode** (default) means ripping is guided and interactive. Disable it in Settings to enable **AutoScribe**, which rips any inserted disc automatically without prompting.
 
