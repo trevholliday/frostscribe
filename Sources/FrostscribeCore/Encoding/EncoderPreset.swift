@@ -37,8 +37,22 @@ public enum EncoderPreset {
             args += ["--encoder-preset", "quality"]
         }
         if isDVD {
-            // Upscale DVDs to 720p — Infuse labels correctly, much faster than 1080p.
-            args += ["--height", "720", "--comb-detect", "--decomb", "--color-matrix", "601"]
+            // Square-pixel 720p. Height alone keeps the preset's anamorphic 720-wide
+            // frame and leaves the horizontal upscale to the player. maxWidth caps
+            // scope titles; 4:3 lands at 960×720. Filters stay cheap: permissive comb
+            // detection avoids blending fine detail, lapsharp runs after the scale.
+            args += [
+                "--non-anamorphic",
+                "--height", "720",
+                "--maxWidth", "1280",
+                "--detelecine",
+                "--comb-detect", "permissive",
+                "--decomb",
+                "--chroma-smooth", "ultralight",
+                "--lapsharp", "light",
+                "--lapsharp-tune", "film",
+                "--color-matrix", "601",
+            ]
         }
         return args + audio
     }

@@ -116,6 +116,44 @@ struct EncoderPresetTests {
         #expect(args[idx + 1] == "1,2,3,4,5,6,7,8")
     }
 
+    @Test func dvdArgumentsScaleToSquarePixel720p() {
+        let args = EncoderPreset.arguments(
+            input: "/in.mkv",
+            output: "/out.mkv",
+            preset: EncoderPreset.dvd,
+            audioTracks: nil,
+            quality: 18
+        )
+
+        #expect(args.contains("--non-anamorphic"))
+        #expect(flag(args, "--height") == "720")
+        #expect(flag(args, "--maxWidth") == "1280")
+        #expect(args.contains("--detelecine"))
+        #expect(flag(args, "--comb-detect") == "permissive")
+        #expect(args.contains("--decomb"))
+        #expect(flag(args, "--chroma-smooth") == "ultralight")
+        #expect(flag(args, "--lapsharp") == "light")
+        #expect(flag(args, "--lapsharp-tune") == "film")
+        #expect(flag(args, "--color-matrix") == "601")
+    }
+
+    @Test func blurayArgumentsLeavePictureSizeToThePreset() {
+        let args = EncoderPreset.arguments(
+            input: "/in.mkv",
+            output: "/out.mkv",
+            preset: EncoderPreset.bluray,
+            audioTracks: nil,
+            quality: 18
+        )
+
+        #expect(!args.contains("--non-anamorphic"))
+        #expect(!args.contains("--height"))
+        #expect(!args.contains("--maxWidth"))
+        #expect(!args.contains("--detelecine"))
+        #expect(!args.contains("--lapsharp"))
+        #expect(!args.contains("--chroma-smooth"))
+    }
+
     @Test func qualityIsPassedToArguments() {
         let args = EncoderPreset.arguments(
             input: "/in.mkv",
@@ -128,4 +166,9 @@ struct EncoderPresetTests {
         let idx = args.firstIndex(of: "--quality")!
         #expect(args[idx + 1] == "75")
     }
+}
+
+private func flag(_ args: [String], _ name: String) -> String? {
+    guard let idx = args.firstIndex(of: name), args.indices.contains(idx + 1) else { return nil }
+    return args[idx + 1]
 }
